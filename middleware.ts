@@ -1,25 +1,38 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-export const config = { matcher: ["/admin/:path*"] };
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
 
-export function middleware(req: NextRequest) {
-  const user = process.env.ADMIN_BASIC_USER || "admin";
-  const pass = process.env.ADMIN_BASIC_PASS || "change-me";
-  const auth = req.headers.get("authorization");
+  // Only protect admin routes
+  if (pathname.startsWith('/admin')) {
+    const adminToken = process.env.ADMIN_TOKEN
 
-  if (!auth) {
-    return new NextResponse("Auth required", {
-      status: 401,
-      headers: { "WWW-Authenticate": 'Basic realm="Carascan Admin"' }
-    });
+    // Token from URL ?token=xxxx
+    const urlToken = request.nextUrl.searchParams.get('token')
+
+    // Token from cookie
+    const cookieToken = request.cookies.get('admin_token')?.value
+
+    // If URL token matches, set cookie and allow access
+    if (urlToken && urlToken === adminToken) {
+      const response = NextResponse.next()
+      response.cookies.set('admin_token', adminToken!, {
+        httpOnly: true,
+        secure: true,
+        path: '/',
+      })
+      return response
+    }
+
+    // If cookie token matches, allow access
+    if (cookieToken && cookieToken === adminToken) {
+      return NextResponse.next()
+    }
+
+    // Otherwise block
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
-  const [scheme, encoded] = auth.split(" ");
-  if (scheme !== "Basic" || !encoded) return NextResponse.json({ error: "Bad auth" }, { status: 401 });
-
-  const decoded = Buffer.from(encoded, "base64").toString("utf-8");
-  const [u, p] = decoded.split(":");
-  if (u != user || p != pass) return new NextResponse("Unauthorized", { status: 401 });
-
-  return NextResponse.next();
+  return NextResponse.next()
 }
