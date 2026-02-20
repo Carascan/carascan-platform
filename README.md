@@ -58,3 +58,4 @@ npm run dev
 - Plate: **60mm W x 90mm H**, R3 corners
 - Hole marks: Ø4.2 at (5,5), (55,5), (5,85), (55,85)
 - QR: **40×40** at X=10..50, Y=45..85
+Deployment refresh
