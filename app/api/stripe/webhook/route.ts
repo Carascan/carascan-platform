@@ -19,8 +19,12 @@ function randToken(len = 48) {
 }
 
 export async function POST(req: Request) {
+  console.log("CARASCAN_WEBHOOK_DEPLOY", new Date().toISOString());
+
   const stripe = stripeClient();
   const sb = supabaseAdmin();
+  ...
+}
 
   const sig = headers().get("stripe-signature");
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
