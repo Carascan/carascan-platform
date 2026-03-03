@@ -8,13 +8,19 @@ import { sendEmail } from "@/lib/notifyEmail";
 function randSlug(len = 10) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let out = "";
-  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < len; i++) {
+    out += chars[Math.floor(Math.random() * chars.length)];
+  }
   return out;
 }
+
 function randToken(len = 48) {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const chars =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let out = "";
-  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < len; i++) {
+    out += chars[Math.floor(Math.random() * chars.length)];
+  }
   return out;
 }
 
@@ -23,39 +29,53 @@ export async function POST(req: Request) {
 
   const stripe = stripeClient();
   const sb = supabaseAdmin();
-  ...
-}
 
   const sig = headers().get("stripe-signature");
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
+
   if (!sig || !secret) {
-    return NextResponse.json({ error: "Missing webhook config" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing webhook config" },
+      { status: 400 }
+    );
   }
 
   const rawBody = await req.text();
   let event: any;
+
   try {
     event = stripe.webhooks.constructEvent(rawBody, sig, secret);
   } catch (err: any) {
-    return NextResponse.json({ error: `Webhook signature failed: ${err.message}` }, { status: 400 });
+    return NextResponse.json(
+      { error: `Webhook signature failed: ${err.message}` },
+      { status: 400 }
+    );
   }
 
   if (event.type === "checkout.session.completed") {
     try {
       const session = event.data.object as any;
-      const email = session.customer_details?.email as string | undefined;
-      const shipping = session.shipping_details?.address;
+      console.log("checkout.session.completed", session.id);
 
-      console.log("checkout.session.completed", { sessionId: session.id, email });
+      const email = session.customer_details?.email ?? null;
+      const shipping = session.customer_details?.address ?? null;
 
+      // Generate unique slug
       let slug = randSlug(10);
       for (let i = 0; i < 5; i++) {
-        const { data: existing, error } = await sb.from("plates").select("id").eq("slug", slug).maybeSingle();
-        if (error) throw new Error(`slug check failed: ${error.message}`);
-        if (!existing) break;
+        const { data, error } = await sb
+          .from("plates")
+          .select("id")
+          .eq("slug", slug)
+          .maybeSingle();
+
+        if (error) throw new Error(error.message);
+        if (!data) break;
+
         slug = randSlug(10);
       }
 
+      // Insert plate
       const { data: plate, error: plateErr } = await sb
         .from("plates")
         .insert({
@@ -76,40 +96,52 @@ export async function POST(req: Request) {
       const baseUrl = process.env.APP_BASE_URL!;
       const plateUrl = `${baseUrl}/p/${slug}`;
 
+      // Generate QR
       const png = await makeQrPngBuffer(plateUrl);
       const filePath = `${slug}.png`;
 
-      const up = await sb.storage.from("qr").upload(filePath, png, {
-        contentType: "image/png",
-        upsert: true,
-      });
-      if (up.error) throw new Error(`qr upload failed: ${up.error.message}`);
+      const upload = await sb.storage
+        .from("qr")
+        .upload(filePath, png, {
+          contentType: "image/png",
+          upsert: true,
+        });
 
-      const { data: pub } = sb.storage.from("qr").getPublicUrl(filePath);
-      if (!pub?.publicUrl) throw new Error("qr public url missing");
+      if (upload.error) {
+        throw new Error(upload.error.message);
+      }
 
+      const { data: publicData } = sb.storage
+        .from("qr")
+        .getPublicUrl(filePath);
+
+      // Insert profile
       const r1 = await sb.from("plate_profiles").insert({
         plate_id: plate.id,
         caravan_name: "Caravan",
         bio: null,
         owner_photo_url: null,
       });
-      if (r1.error) throw new Error(`plate_profiles insert failed: ${r1.error.message}`);
 
+      if (r1.error) throw new Error(r1.error.message);
+
+      // Insert design
       const r2 = await sb.from("plate_designs").insert({
         plate_id: plate.id,
         text_line_1: "Caravan",
         text_line_2: null,
         logo_url: null,
-        qr_url: pub.publicUrl,
+        qr_url: publicData.publicUrl,
         proof_approved: false,
         plate_width_mm: 60,
         plate_height_mm: 90,
         qr_size_mm: 40,
         hole_diameter_mm: 4.2,
       });
-      if (r2.error) throw new Error(`plate_designs insert failed: ${r2.error.message}`);
 
+      if (r2.error) throw new Error(r2.error.message);
+
+      // Insert order
       const r3 = await sb.from("orders").insert({
         plate_id: plate.id,
         status: "paid",
@@ -117,40 +149,52 @@ export async function POST(req: Request) {
         stripe_payment_intent_id: session.payment_intent,
         amount_total_cents: session.amount_total,
         currency: session.currency,
-        shipping_name: session.shipping_details?.name,
-        shipping_line1: shipping?.line1,
-        shipping_line2: shipping?.line2,
-        shipping_city: shipping?.city,
-        shipping_state: shipping?.state,
-        shipping_postcode: shipping?.postal_code,
-        shipping_country: shipping?.country,
+        shipping_name: session.customer_details?.name ?? null,
+        shipping_line1: shipping?.line1 ?? null,
+        shipping_line2: shipping?.line2 ?? null,
+        shipping_city: shipping?.city ?? null,
+        shipping_state: shipping?.state ?? null,
+        shipping_postcode: shipping?.postal_code ?? null,
+        shipping_country: shipping?.country ?? null,
       });
-      if (r3.error) throw new Error(`orders insert failed: ${r3.error.message}`);
 
+      if (r3.error) throw new Error(r3.error.message);
+
+      // Setup token
       const token = randToken(48);
-      const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString();
+      const expires = new Date(
+        Date.now() + 1000 * 60 * 60 * 24 * 14
+      ).toISOString();
+
       const r4 = await sb.from("plate_setup_tokens").insert({
         token,
         plate_id: plate.id,
-        email: email ?? null,
+        email,
         expires_at: expires,
       });
-      if (r4.error) throw new Error(`plate_setup_tokens insert failed: ${r4.error.message}`);
 
+      if (r4.error) throw new Error(r4.error.message);
+
+      // Send email
       if (email) {
         const setupUrl = `${baseUrl}/setup/${token}`;
+
         await sendEmail(
           email,
           "Carascan: set up your plate",
           `<p>Thanks for your Carascan purchase.</p>
-           <p>Set up your plate page and emergency contacts here:</p>
+           <p>Set up your plate here:</p>
            <p><a href="${setupUrl}">${setupUrl}</a></p>
-           <p>Public plate link (QR points here): <a href="${plateUrl}">${plateUrl}</a></p>`
+           <p>Your public plate link:</p>
+           <p><a href="${plateUrl}">${plateUrl}</a></p>`
         );
       }
     } catch (e: any) {
       console.error("Webhook failed:", e);
-      return NextResponse.json({ error: e.message ?? "Webhook failed" }, { status: 500 });
+      return NextResponse.json(
+        { error: e.message ?? "Webhook failed" },
+        { status: 500 }
+      );
     }
   }
 
