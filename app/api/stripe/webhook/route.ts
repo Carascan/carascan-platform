@@ -104,17 +104,23 @@ export async function POST(req: Request) {
 
       // Insert design
       const r2 = await sb.from("plate_designs").insert({
-        plate_id: plate.id,
-        text_line_1: "Caravan",
-        text_line_2: null,
-        logo_url: null,
-        qr_url: qrUrl,
-        proof_approved: false,
-        plate_width_mm: 60,
-        plate_height_mm: 90,
-        qr_size_mm: 40,
-        hole_diameter_mm: 4.2,
-      });
+  plate_id: plate.id,
+
+  // no text lines anymore
+  text_line_1: null,
+  text_line_2: null,
+
+  logo_url: null,
+  qr_url: pub.publicUrl,
+  proof_approved: false,
+
+  // correct physical plate dimensions
+  plate_width_mm: 90,
+  plate_height_mm: 90,
+  qr_size_mm: 50,
+
+  hole_diameter_mm: 4.2
+});
       if (r2.error) throw new Error(`plate_designs insert failed: ${r2.error.message}`);
 
       // Insert order
