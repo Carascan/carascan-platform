@@ -110,7 +110,7 @@ export async function POST(req: Request) {
   text_line_1: null,
   text_line_2: null,
 
-  logo_url: null,
+  logo_url: process.env.PLATE_LOGO_SVG_URL ?? null,
   qr_url: pub.publicUrl,
   proof_approved: false,
 
