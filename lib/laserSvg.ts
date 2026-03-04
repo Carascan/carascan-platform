@@ -1,7 +1,13 @@
 // lib/laserSvg.ts
 
 function esc(s: string) {
-  return (s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c] as string));
+  return (s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[c] as string));
 }
 
 export function buildPlateSvg(params: {
@@ -21,9 +27,9 @@ export function buildPlateSvg(params: {
   // content
   identifier: string;         // e.g. "CSN-0000123"
 
-  // optional logo (if you have a data URL or want to leave it blank)
-  // If you already have the logo as SVG in LightBurn, you can leave this null
+  // optional text placeholder (use "" if engraving logo separately in LightBurn)
   logoText?: string;          // e.g. "CARASCAN"
+  includeCrosshair?: boolean; // default true
 }) {
   const W = params.plateWidthMm;
   const H = params.plateHeightMm;
@@ -39,47 +45,51 @@ export function buildPlateSvg(params: {
     { cx: W - inset, cy: H - inset },
   ];
 
-  // QR: centred horizontally, positioned to leave room for top logo and bottom ID
-  // You asked QR = 55mm, keep it dominant but inside safe zone.
-  const qrS = params.qrSizeMm;
-  const qrX = (W - qrS) / 2;
-
-  // These Y values keep everything inside the 5mm inset zone and avoid holes.
-  // Logo band at top, ID band at bottom.
-  const logoCenterX = W / 2;
-  const logoBaselineY = 13;     // visual position (adjust later if you want)
-  const qrY = 20;               // puts QR at y=20..75 when qrS=55
-  const idCenterX = W / 2;
-  const idBaselineY = 84;       // sits above bottom edge, between bottom holes
-
+  // Content
   const identifier = esc(params.identifier);
   const titleSlug = esc(params.slug);
   const logoText = esc(params.logoText ?? "CARASCAN");
 
-  // Optional: center crosshair (useful for jig alignment in LightBurn)
-  const crosshair = `
+  // QR sizing & placement
+  // IMPORTANT: Must clear bottom hole centres at y=H-inset (85).
+  // Keep QR bottom well above ~83 to avoid overlap with circles and engraving.
+  const qrS = params.qrSizeMm;
+  const qrX = (W - qrS) / 2;
+  const qrY = 15; // QR occupies y=15..70 when qrS=55 (clears bottom holes at y=85)
+
+  // Logo placement (above QR)
+  const logoCenterX = W / 2;
+  const logoBaselineY = 11; // top band, stays away from top holes at y=5
+
+  // Identifier placement (between bottom holes)
+  const idCenterX = W / 2;
+  const idBaselineY = 80; // readable and safely above bottom edge/holes
+
+  // Optional center crosshair (useful for jig alignment)
+  const includeCrosshair = params.includeCrosshair ?? true;
+  const crosshair = includeCrosshair ? `
   <g id="CENTER_CROSSHAIR" stroke="black" stroke-width="0.1" fill="none">
-    <line x1="${W/2}" y1="${H/2 - 3}" x2="${W/2}" y2="${H/2 + 3}" />
-    <line x1="${W/2 - 3}" y1="${H/2}" x2="${W/2 + 3}" y2="${H/2}" />
-  </g>`;
+    <line x1="${W / 2}" y1="${H / 2 - 3}" x2="${W / 2}" y2="${H / 2 + 3}" />
+    <line x1="${W / 2 - 3}" y1="${H / 2}" x2="${W / 2 + 3}" y2="${H / 2}" />
+  </g>` : "";
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${W}mm" height="${H}mm" viewBox="0 0 ${W} ${H}">
   <title>Carascan Plate ${titleSlug}</title>
 
-  <!-- OUTLINE (R3 corners) -->
+  <!-- OUTLINE -->
   <g id="OUTLINE_R${R}" fill="none" stroke="black" stroke-width="0.1">
     <rect x="0.05" y="0.05" width="${W - 0.1}" height="${H - 0.1}" rx="${R}" ry="${R}" />
   </g>
 
   <!-- HOLE MARKS (Ø${holeD}) -->
   <g id="HOLE_MARKS_D${holeD}" fill="none" stroke="black" stroke-width="0.1">
-    ${holes.map(h => `<circle cx="${h.cx}" cy="${h.cy}" r="${holeD/2}" />`).join("\n    ")}
+    ${holes.map(h => `<circle cx="${h.cx}" cy="${h.cy}" r="${holeD / 2}" />`).join("\n    ")}
   </g>
 
   ${crosshair}
 
-  <!-- LOGO (placeholder text). If you engrave the SVG logo separately in LightBurn, set logoText to "" -->
+  <!-- LOGO (text placeholder) -->
   ${logoText ? `
   <g id="LOGO_TEXT" fill="black">
     <text x="${logoCenterX}" y="${logoBaselineY}"
