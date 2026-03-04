@@ -1,79 +1,72 @@
 // lib/laserSvg.ts
 
 function esc(s: string) {
-  return (s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c] as string));
+  return (s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string)
+  );
 }
 
 /**
- * Takes a raw SVG string and tries to extract:
- * - viewBox width/height
- * - inner content (everything inside the <svg> ... </svg>)
- *
- * If parsing fails, returns null and we just omit the logo.
+ * Extracts inner SVG content + viewBox (if any) so we can embed/scale it.
+ * This keeps the final plate SVG fully self-contained (good for LightBurn copy/paste nesting).
  */
-function parseSvg(svgText: string): { inner: string; vbW: number; vbH: number } | null {
-  if (!svgText) return null;
+function parseSvgFragment(svgText: string): { inner: string; viewBox: { w: number; h: number } | null } {
+  const text = (svgText ?? "").trim();
+  if (!text) return { inner: "", viewBox: null };
 
-  const svgMatch = svgText.match(/<svg\b[^>]*>([\s\S]*?)<\/svg>/i);
-  if (!svgMatch) return null;
-
-  const inner = svgMatch[1];
+  // Grab outer <svg ...>...</svg>
+  const svgMatch = text.match(/<svg\b[^>]*>([\s\S]*?)<\/svg>/i);
+  const inner = svgMatch ? svgMatch[1] : text;
 
   // Try viewBox first
-  const viewBoxMatch = svgText.match(/viewBox\s*=\s*"([^"]+)"/i);
-  if (viewBoxMatch) {
-    const parts = viewBoxMatch[1].trim().split(/\s+/).map(Number);
-    if (parts.length === 4 && parts.every((n) => Number.isFinite(n))) {
-      const vbW = parts[2];
-      const vbH = parts[3];
-      if (vbW > 0 && vbH > 0) return { inner, vbW, vbH };
-    }
+  const vbMatch = text.match(/viewBox\s*=\s*["']([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)["']/i);
+  if (vbMatch) {
+    const w = Number(vbMatch[3]);
+    const h = Number(vbMatch[4]);
+    if (isFinite(w) && isFinite(h) && w > 0 && h > 0) return { inner, viewBox: { w, h } };
   }
 
-  // Fallback to width/height attributes (may include units)
-  const wMatch = svgText.match(/width\s*=\s*"([^"]+)"/i);
-  const hMatch = svgText.match(/height\s*=\s*"([^"]+)"/i);
+  // Fallback: width/height (can be "84", "84mm", etc.)
+  const wMatch = text.match(/\bwidth\s*=\s*["']([\d.]+)(mm)?["']/i);
+  const hMatch = text.match(/\bheight\s*=\s*["']([\d.]+)(mm)?["']/i);
+  const w = wMatch ? Number(wMatch[1]) : NaN;
+  const h = hMatch ? Number(hMatch[1]) : NaN;
+  if (isFinite(w) && isFinite(h) && w > 0 && h > 0) return { inner, viewBox: { w, h } };
 
-  const toNum = (v?: string) => {
-    if (!v) return NaN;
-    const n = Number(String(v).replace(/[a-z%]/gi, ""));
-    return Number.isFinite(n) ? n : NaN;
-  };
-
-  const w = toNum(wMatch?.[1]);
-  const h = toNum(hMatch?.[1]);
-  if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) {
-    return { inner, vbW: w, vbH: h };
-  }
-
-  return null;
+  return { inner, viewBox: null };
 }
 
 export function buildPlateSvg(params: {
   slug: string;
-  qrDataUrl: string; // PNG data URL embedded into SVG
 
-  // plate
-  plateWidthMm: number;     // 90
-  plateHeightMm: number;    // 90
-  cornerRadiusMm?: number;  // 3
-  marginInsetMm?: number;   // 5
-  holeDiameterMm: number;   // 4.2
+  // Embedded PNG data URL for QR
+  qrDataUrl: string;
 
-  // geometry (centres + sizes)
-  logoCenterX: number;      // 45
-  logoCenterY: number;      // 16
-  logoWidthMm: number;      // 84
-  logoHeightMm: number;     // 9.2
-  qrCenterX: number;        // 45
-  qrCenterY: number;        // 51
-  qrSizeMm: number;         // 50
-  idCenterX: number;        // 45
-  idCenterY: number;        // 82
-  idFontSizeMm: number;     // 4.2
+  // Plate geometry
+  plateWidthMm: number; // 90
+  plateHeightMm: number; // 90
+  cornerRadiusMm?: number; // 3
+  marginInsetMm?: number; // 5
+  holeDiameterMm: number; // 4.2
 
-  identifier: string;       // "CSN-XXXX"
-  logoSvgText?: string;     // raw SVG text to embed
+  // Layout (Option B centres + sizes)
+  logoCenterX: number; // 45
+  logoCenterY: number; // 16
+  logoWidthMm: number; // 84
+  logoHeightMm: number; // 9.2
+  logoSvgText?: string; // SVG text fetched from Supabase
+
+  qrCenterX: number; // 45
+  qrCenterY: number; // 51
+  qrSizeMm: number; // 50
+
+  idCenterX: number; // 45
+  idCenterY: number; // 82
+  idFontSizeMm: number; // 4.2
+  identifier: string; // e.g. CSN-XXXX
+
+  // Optional alignment aid
+  includeCrosshair?: boolean; // default true
 }) {
   const W = params.plateWidthMm;
   const H = params.plateHeightMm;
@@ -83,80 +76,89 @@ export function buildPlateSvg(params: {
 
   // Hole centres at inset corners
   const holes = [
-    { cx: inset,     cy: inset     },
-    { cx: W - inset, cy: inset     },
-    { cx: inset,     cy: H - inset },
+    { cx: inset, cy: inset },
+    { cx: W - inset, cy: inset },
+    { cx: inset, cy: H - inset },
     { cx: W - inset, cy: H - inset },
   ];
 
-  // LOGO box (top-left for <g> placement)
-  const logoX = params.logoCenterX - params.logoWidthMm / 2;
-  const logoY = params.logoCenterY - params.logoHeightMm / 2;
-
-  // QR box
-  const qrX = params.qrCenterX - params.qrSizeMm / 2;
-  const qrY = params.qrCenterY - params.qrSizeMm / 2;
-
-  // Identifier (text baseline: SVG uses baseline, not centre)
-  // We'll approximate by nudging baseline down a little.
-  const idBaselineY = params.idCenterY + (params.idFontSizeMm * 0.35);
-
-  const identifier = esc(params.identifier);
-  const titleSlug = esc(params.slug);
-
-  // Embed logo SVG if we can parse it
-  let logoBlock = "";
-  const parsed = params.logoSvgText ? parseSvg(params.logoSvgText) : null;
-  if (parsed) {
-    // scale parsed viewBox -> requested logo size in mm
-    const sx = params.logoWidthMm / parsed.vbW;
-    const sy = params.logoHeightMm / parsed.vbH;
-
-    // IMPORTANT: wrap in its own <g>, keep everything black
-    // (LightBurn likes simple paths; if the logo has fills/strokes it will keep them)
-    logoBlock = `
-  <g id="LOGO_SVG" transform="translate(${logoX} ${logoY}) scale(${sx} ${sy})">
-    ${parsed.inner}
-  </g>`;
-  }
-
-  // Optional centre crosshair (helpful for jigs)
-  const crosshair = `
+  // Optional crosshair at centre (useful for jigs)
+  const crosshair =
+    params.includeCrosshair ?? true
+      ? `
   <g id="CENTER_CROSSHAIR" stroke="black" stroke-width="0.1" fill="none">
     <line x1="${W / 2}" y1="${H / 2 - 3}" x2="${W / 2}" y2="${H / 2 + 3}" />
     <line x1="${W / 2 - 3}" y1="${H / 2}" x2="${W / 2 + 3}" y2="${H / 2}" />
+  </g>`
+      : "";
+
+  // Logo embed: scale logo SVG fragment into a box (logoWidthMm x logoHeightMm) centred at (logoCenterX, logoCenterY)
+  let logoBlock = "";
+  const logoSvgText = (params.logoSvgText ?? "").trim();
+  if (logoSvgText) {
+    const { inner, viewBox } = parseSvgFragment(logoSvgText);
+
+    // If no viewBox info, we still embed but without scaling precision
+    const srcW = viewBox?.w ?? params.logoWidthMm;
+    const srcH = viewBox?.h ?? params.logoHeightMm;
+
+    const targetW = params.logoWidthMm;
+    const targetH = params.logoHeightMm;
+
+    const scaleX = targetW / srcW;
+    const scaleY = targetH / srcH;
+
+    // Place top-left of target box, then scale the source into it.
+    const x0 = params.logoCenterX - targetW / 2;
+    const y0 = params.logoCenterY - targetH / 2;
+
+    // Important: wrap in <g> so LightBurn keeps it vector
+    logoBlock = `
+  <g id="LOGO_SVG" fill="none" stroke="black" stroke-width="0.1"
+     transform="translate(${x0}, ${y0}) scale(${scaleX}, ${scaleY})">
+    ${inner}
   </g>`;
+  }
+
+  // QR: convert centre -> top-left for <image>
+  const qrS = params.qrSizeMm;
+  const qrX = params.qrCenterX - qrS / 2;
+  const qrY = params.qrCenterY - qrS / 2;
+
+  // Identifier text (centre-aligned)
+  const identifier = esc(params.identifier);
+  const titleSlug = esc(params.slug);
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"
-     width="${W}mm" height="${H}mm"
-     viewBox="0 0 ${W} ${H}">
+     width="${W}mm" height="${H}mm" viewBox="0 0 ${W} ${H}">
   <title>Carascan Plate ${titleSlug}</title>
 
-  <!-- OUTLINE -->
+  <!-- OUTLINE (R corners) -->
   <g id="OUTLINE" fill="none" stroke="black" stroke-width="0.1">
     <rect x="0.05" y="0.05" width="${W - 0.1}" height="${H - 0.1}" rx="${R}" ry="${R}" />
   </g>
 
-  <!-- HOLES -->
+  <!-- HOLE MARKS (Ø${holeD}) -->
   <g id="HOLES" fill="none" stroke="black" stroke-width="0.1">
-    ${holes.map(h => `<circle cx="${h.cx}" cy="${h.cy}" r="${holeD / 2}" />`).join("\n    ")}
+    ${holes.map((h) => `<circle cx="${h.cx}" cy="${h.cy}" r="${holeD / 2}" />`).join("\n    ")}
   </g>
 
   ${crosshair}
 
   ${logoBlock}
 
-  <!-- QR (embedded PNG data URL) -->
-  <g id="QR">
-    <image x="${qrX}" y="${qrY}" width="${params.qrSizeMm}" height="${params.qrSizeMm}" href="${params.qrDataUrl}" />
+  <!-- QR (embedded raster PNG data URL) -->
+  <g id="QR_RASTER">
+    <image x="${qrX}" y="${qrY}" width="${qrS}" height="${qrS}" href="${params.qrDataUrl}" />
   </g>
 
   <!-- IDENTIFIER -->
   <g id="IDENTIFIER" fill="black">
-    <text x="${params.idCenterX}" y="${idBaselineY}"
+    <text x="${params.idCenterX}" y="${params.idCenterY}"
           font-size="${params.idFontSizeMm}"
           text-anchor="middle"
+          dominant-baseline="middle"
           font-family="Arial, sans-serif">${identifier}</text>
   </g>
 

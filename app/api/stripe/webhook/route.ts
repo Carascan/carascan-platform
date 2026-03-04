@@ -69,7 +69,7 @@ export async function POST(req: Request) {
           contact_enabled: true,
           emergency_enabled: true,
           preferred_contact_channel: "email",
-          sku: "CARASCAN_60x90",
+          sku: "CARASCAN_90x90",
         })
         .select("*")
         .single();
@@ -106,11 +106,30 @@ export async function POST(req: Request) {
 const r2 = await sb.from("plate_designs").insert({
   plate_id: plate.id,
 
-  // no text lines anymore
+const r2 = await sb.from("plate_designs").insert({
+  plate_id: plate.id,
+
+  // no text lines
   text_line_1: null,
   text_line_2: null,
 
+  // store logo url (we fetch+embed it later for the laser SVG)
+  logo_url: "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg",
+
+  qr_url: qrUrl,
+  proof_approved: false,
+
+  // physical plate dims
+  plate_width_mm: 90,
+  plate_height_mm: 90,
+  qr_size_mm: 50,
+  hole_diameter_mm: 4.2,
+});
+
+if (r2.error) throw new Error(`plate_designs insert failed: ${r2.error.message}`);
+  // must be an actual SVG URL (not .afdesign)
   logo_url: process.env.PLATE_LOGO_SVG_URL ?? null,
+
   qr_url: qrUrl,
   proof_approved: false,
 
@@ -118,12 +137,11 @@ const r2 = await sb.from("plate_designs").insert({
   plate_width_mm: 90,
   plate_height_mm: 90,
 
-  // locked QR size (set to 55 if that’s your final)
+  // your QR is 50x50
   qr_size_mm: 50,
 
   hole_diameter_mm: 4.2,
 });
-
 if (r2.error) throw new Error(`plate_designs insert failed: ${r2.error.message}`);
 
   // no text lines anymore
