@@ -20,21 +20,12 @@ function randToken(len = 48) {
 }
 
 export async function POST(req: Request) {
-  // ✅ Proves which deployment + whether headers/env exist
-  console.log("WEBHOOK HIT", {
-    ts: new Date().toISOString(),
-    hasSig: !!headers().get("stripe-signature"),
-    hasSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
-    vercelEnv: process.env.VERCEL_ENV,
-  });
-
   const stripe = stripeClient();
   const sb = supabaseAdmin();
 
   const sig = headers().get("stripe-signature");
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  // NOTE: If you hit this URL manually, you'll always fail hasSig.
   if (!sig || !secret) {
     return NextResponse.json({ error: "Missing webhook config" }, { status: 400 });
   }
@@ -51,27 +42,20 @@ export async function POST(req: Request) {
     );
   }
 
-  // Always ACK other events
+  // ACK anything that's not the paid checkout event
   if (event.type !== "checkout.session.completed") {
-    console.log("WEBHOOK EVENT (ignored)", { type: event.type });
     return NextResponse.json({ received: true });
   }
 
   try {
     const session = event.data.object as any;
-    console.log("checkout.session.completed", { sessionId: session.id });
 
     const email = session.customer_details?.email ?? null;
 
     // Generate unique slug
     let slug = randSlug(10);
     for (let i = 0; i < 5; i++) {
-      const { data, error } = await sb
-        .from("plates")
-        .select("id")
-        .eq("slug", slug)
-        .maybeSingle();
-
+      const { data, error } = await sb.from("plates").select("id").eq("slug", slug).maybeSingle();
       if (error) throw new Error(`slug check failed: ${error.message}`);
       if (!data) break;
       slug = randSlug(10);
@@ -119,61 +103,27 @@ export async function POST(req: Request) {
     });
     if (r1.error) throw new Error(`plate_profiles insert failed: ${r1.error.message}`);
 
- // ✅ Insert design (ONLY ONCE)
-const r2 = await sb.from("plate_designs").insert({
-  plate_id: plate.id,
+    // Insert design (ONLY ONCE) — NOTE: text_line_1/2 must be NOT NULL ("" is fine)
+    const r2 = await sb.from("plate_designs").insert({
+      plate_id: plate.id,
 
-  // ⚠️ these columns are NOT NULL in your DB, so use empty strings
-  text_line_1: "",
-  text_line_2: "",
+      text_line_1: "",
+      text_line_2: "",
 
-  // logo SVG URL (must be an .svg)
-  logo_url:
-    process.env.PLATE_LOGO_SVG_URL ??
-    "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg",
+      logo_url:
+        process.env.PLATE_LOGO_SVG_URL ??
+        "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg",
 
-  // QR public URL from storage
-  qr_url: qrUrl,
+      qr_url: qrUrl,
+      proof_approved: false,
 
-  proof_approved: false,
+      plate_width_mm: 90,
+      plate_height_mm: 90,
+      qr_size_mm: 50,
 
-  // physical plate dims
-  plate_width_mm: 90,
-  plate_height_mm: 90,
-
-  // QR size
-  qr_size_mm: 50,
-
-  hole_diameter_mm: 4.2,
-});
-if (r2.error) throw new Error(`plate_designs insert failed: ${r2.error.message}`);
-  // database requires NOT NULL so use empty strings
-  text_line_1: "",
-  text_line_2: "",
-
-  // logo SVG hosted in Supabase
-  logo_url:
-    process.env.PLATE_LOGO_SVG_URL ??
-    "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg",
-
-  // QR image stored earlier in storage bucket
-  qr_url: qrUrl,
-
-  proof_approved: false,
-
-  // physical plate dimensions
-  plate_width_mm: 90,
-  plate_height_mm: 90,
-
-  // QR size
-  qr_size_mm: 50,
-
-  hole_diameter_mm: 4.2
-});
-
-if (r2.error) {
-  throw new Error(`plate_designs insert failed: ${r2.error.message}`);
-}
+      hole_diameter_mm: 4.2,
+    });
+    if (r2.error) throw new Error(`plate_designs insert failed: ${r2.error.message}`);
 
     // Insert order
     const addr = session.customer_details?.address ?? null;
@@ -205,7 +155,7 @@ if (r2.error) {
     });
     if (r4.error) throw new Error(`plate_setup_tokens insert failed: ${r4.error.message}`);
 
-    // Send email
+    // Email buyer
     if (email) {
       const setupUrl = `${baseUrl}/setup/${token}`;
       await sendEmail(
@@ -219,7 +169,6 @@ if (r2.error) {
       );
     }
 
-    console.log("WEBHOOK SUCCESS", { slug, plateId: plate.id });
     return NextResponse.json({ received: true });
   } catch (e: any) {
     console.error("Webhook failed:", e);
