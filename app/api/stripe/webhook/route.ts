@@ -119,22 +119,61 @@ export async function POST(req: Request) {
     });
     if (r1.error) throw new Error(`plate_profiles insert failed: ${r1.error.message}`);
 
-    // Insert design
-    const r2 = await sb.from("plate_designs").insert({
-      plate_id: plate.id,
-      text_line_1: null,
-      text_line_2: null,
-      logo_url:
-        process.env.PLATE_LOGO_SVG_URL ??
-        "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg",
-      qr_url: qrUrl,
-      proof_approved: false,
-      plate_width_mm: 90,
-      plate_height_mm: 90,
-      qr_size_mm: 50,
-      hole_diameter_mm: 4.2,
-    });
-    if (r2.error) throw new Error(`plate_designs insert failed: ${r2.error.message}`);
+ // ✅ Insert design (ONLY ONCE)
+const r2 = await sb.from("plate_designs").insert({
+  plate_id: plate.id,
+
+  // ⚠️ these columns are NOT NULL in your DB, so use empty strings
+  text_line_1: "",
+  text_line_2: "",
+
+  // logo SVG URL (must be an .svg)
+  logo_url:
+    process.env.PLATE_LOGO_SVG_URL ??
+    "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg",
+
+  // QR public URL from storage
+  qr_url: qrUrl,
+
+  proof_approved: false,
+
+  // physical plate dims
+  plate_width_mm: 90,
+  plate_height_mm: 90,
+
+  // QR size
+  qr_size_mm: 50,
+
+  hole_diameter_mm: 4.2,
+});
+if (r2.error) throw new Error(`plate_designs insert failed: ${r2.error.message}`);
+  // database requires NOT NULL so use empty strings
+  text_line_1: "",
+  text_line_2: "",
+
+  // logo SVG hosted in Supabase
+  logo_url:
+    process.env.PLATE_LOGO_SVG_URL ??
+    "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg",
+
+  // QR image stored earlier in storage bucket
+  qr_url: qrUrl,
+
+  proof_approved: false,
+
+  // physical plate dimensions
+  plate_width_mm: 90,
+  plate_height_mm: 90,
+
+  // QR size
+  qr_size_mm: 50,
+
+  hole_diameter_mm: 4.2
+});
+
+if (r2.error) {
+  throw new Error(`plate_designs insert failed: ${r2.error.message}`);
+}
 
     // Insert order
     const addr = session.customer_details?.address ?? null;
