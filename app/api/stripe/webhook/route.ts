@@ -1,3 +1,4 @@
+// app/api/stripe/webhook/route.ts
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { stripeClient } from "@/lib/stripe";
@@ -20,6 +21,8 @@ function randToken(len = 48) {
 }
 
 export async function POST(req: Request) {
+  console.log("CARASCAN_WEBHOOK_DEPLOY", new Date().toISOString());
+
   const stripe = stripeClient();
   const sb = supabaseAdmin();
 
@@ -31,24 +34,25 @@ export async function POST(req: Request) {
   }
 
   const rawBody = await req.text();
-  let event: any;
 
+  let event: any;
   try {
     event = stripe.webhooks.constructEvent(rawBody, sig, secret);
   } catch (err: any) {
     return NextResponse.json(
-      { error: `Webhook signature failed: ${err.message}` },
+      { error: `Webhook signature failed: ${err?.message ?? "unknown"}` },
       { status: 400 }
     );
   }
 
-  // ACK anything that's not the paid checkout event
+  // Always ACK other events so Stripe doesn't keep retrying
   if (event.type !== "checkout.session.completed") {
     return NextResponse.json({ received: true });
   }
 
   try {
     const session = event.data.object as any;
+    console.log("checkout.session.completed", { sessionId: session.id });
 
     const email = session.customer_details?.email ?? null;
 
@@ -77,7 +81,8 @@ export async function POST(req: Request) {
 
     if (plateErr || !plate) throw new Error(plateErr?.message ?? "Plate insert failed");
 
-    const baseUrl = process.env.APP_BASE_URL!;
+    const baseUrl = process.env.APP_BASE_URL;
+    if (!baseUrl) throw new Error("Missing APP_BASE_URL");
     const plateUrl = `${baseUrl}/p/${slug}`;
 
     // Generate QR and upload to storage
@@ -90,30 +95,32 @@ export async function POST(req: Request) {
     });
     if (upload.error) throw new Error(`qr upload failed: ${upload.error.message}`);
 
+    // Public URL for stored QR
     const { data: publicData } = sb.storage.from("qr").getPublicUrl(filePath);
     const qrUrl = publicData?.publicUrl;
     if (!qrUrl) throw new Error("qr public url missing");
 
-    // Insert profile
-    const r1 = await sb.from("plate_profiles").insert({
+    // Insert profile (keep NOT NULL safe)
+    const { error: profileErr } = await sb.from("plate_profiles").insert({
       plate_id: plate.id,
-      caravan_name: "Caravan",
+      caravan_name: "", // no caravan text anymore
       bio: null,
       owner_photo_url: null,
     });
-    if (r1.error) throw new Error(`plate_profiles insert failed: ${r1.error.message}`);
+    if (profileErr) throw new Error(`plate_profiles insert failed: ${profileErr.message}`);
 
-    // Insert design (ONLY ONCE) — NOTE: text_line_1/2 must be NOT NULL ("" is fine)
-    const r2 = await sb.from("plate_designs").insert({
+    // Insert design (ONLY ONCE) — NOTE text_line_1/2 must be NOT NULL ("")
+    const logoUrl =
+      process.env.PLATE_LOGO_SVG_URL ??
+      "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
+
+    const { error: designErr } = await sb.from("plate_designs").insert({
       plate_id: plate.id,
 
       text_line_1: "",
       text_line_2: "",
 
-      logo_url:
-        process.env.PLATE_LOGO_SVG_URL ??
-        "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg",
-
+      logo_url: logoUrl,
       qr_url: qrUrl,
       proof_approved: false,
 
@@ -123,17 +130,19 @@ export async function POST(req: Request) {
 
       hole_diameter_mm: 4.2,
     });
-    if (r2.error) throw new Error(`plate_designs insert failed: ${r2.error.message}`);
+    if (designErr) throw new Error(`plate_designs insert failed: ${designErr.message}`);
 
     // Insert order
     const addr = session.customer_details?.address ?? null;
-    const r3 = await sb.from("orders").insert({
+
+    const { error: orderErr } = await sb.from("orders").insert({
       plate_id: plate.id,
       status: "paid",
       stripe_checkout_session_id: session.id,
-      stripe_payment_intent_id: session.payment_intent,
-      amount_total_cents: session.amount_total,
-      currency: session.currency,
+      stripe_payment_intent_id: session.payment_intent ?? null,
+      amount_total_cents: session.amount_total ?? null,
+      currency: session.currency ?? null,
+
       shipping_name: session.customer_details?.name ?? null,
       shipping_line1: addr?.line1 ?? null,
       shipping_line2: addr?.line2 ?? null,
@@ -142,18 +151,19 @@ export async function POST(req: Request) {
       shipping_postcode: addr?.postal_code ?? null,
       shipping_country: addr?.country ?? null,
     });
-    if (r3.error) throw new Error(`orders insert failed: ${r3.error.message}`);
+    if (orderErr) throw new Error(`orders insert failed: ${orderErr.message}`);
 
     // Setup token
     const token = randToken(48);
     const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString();
-    const r4 = await sb.from("plate_setup_tokens").insert({
+
+    const { error: tokenErr } = await sb.from("plate_setup_tokens").insert({
       token,
       plate_id: plate.id,
       email,
       expires_at: expires,
     });
-    if (r4.error) throw new Error(`plate_setup_tokens insert failed: ${r4.error.message}`);
+    if (tokenErr) throw new Error(`plate_setup_tokens insert failed: ${tokenErr.message}`);
 
     // Email buyer
     if (email) {
@@ -172,6 +182,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true });
   } catch (e: any) {
     console.error("Webhook failed:", e);
-    return NextResponse.json({ error: e.message ?? "Webhook failed" }, { status: 500 });
+    return NextResponse.json({ error: e?.message ?? "Webhook failed" }, { status: 500 });
   }
 }
