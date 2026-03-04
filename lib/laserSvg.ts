@@ -69,9 +69,24 @@ export function buildPlateSvg(params: {
   // Plate 90x90, inset 5mm, QR 55mm centred.
   // Logo sits above QR in the top band.
   // Identifier sits between bottom holes along bottom band.
-  const qrS = params.qrSizeMm;
-  const qrX = (W - qrS) / 2;
-  const qrY = 22; // puts QR around mid, leaving top band for logo and bottom band for ID
+// =============================
+// LOCKED PLATE GEOMETRY
+// =============================
+
+// LOGO (centre 45,16 size 84x9.2)
+const logoW = 84;
+const logoH = 9.2;
+const logoX = 45 - logoW / 2;
+const logoY = 16 - logoH / 2;
+
+// QR (centre 45,51 size 50x50)
+const qrS = 50;
+const qrX = 45 - qrS / 2;
+const qrY = 51 - qrS / 2;
+
+// IDENTIFIER (centre 45,82)
+const idCenterX = 45;
+const idBaselineY = 82;
 
   // Logo target size (your current): 55mm wide x 6mm high
   const logoW = 55;
