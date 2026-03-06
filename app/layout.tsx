@@ -1,32 +1,102 @@
-import "./globals.css";
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
+
+const LOGO_URL =
+  "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
 export const metadata: Metadata = {
   title: "Carascan",
-  description: "QR plates for caravans with masked contact + emergency alerts."
+  description: "Smart QR plates for caravans and vehicles",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   return (
     <html lang="en">
-      <body>
-        <div className="container">
-          <header style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
-            <div>
-              <div style={{fontWeight:800, fontSize:20}}>Carascan</div>
-              <small>QR plates for caravans</small>
-            </div>
-            <nav style={{display:"flex", gap:10, alignItems:"center"}}>
-              <a href="/buy">Buy</a>
-              <a href="/admin/orders">Admin</a>
+      <body
+        style={{
+          margin: 0,
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+          background: "#f7f7f8",
+          color: "#111827",
+        }}
+      >
+        <header
+          style={{
+            background: "#ffffff",
+            borderBottom: "1px solid #e5e7eb",
+            position: "sticky",
+            top: 0,
+            zIndex: 20,
+          }}
+        >
+          <div
+            style={{
+              maxWidth: 1100,
+              margin: "0 auto",
+              padding: "16px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+            }}
+          >
+            <a
+              href="/"
+              style={{
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+              }}
+            >
+              <img
+                src={LOGO_URL}
+                alt="Carascan"
+                style={{
+                  height: 32,
+                  width: "auto",
+                  display: "block",
+                }}
+              />
+            </a>
+
+            <nav
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <a
+                href="/buy"
+                style={{
+                  display: "inline-block",
+                  textDecoration: "none",
+                  borderRadius: 10,
+                  padding: "10px 16px",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  background: "#111827",
+                  color: "#ffffff",
+                }}
+              >
+                Buy Plate
+              </a>
             </nav>
-          </header>
-          <hr />
+          </div>
+        </header>
+
+        <div
+          style={{
+            maxWidth: 1100,
+            margin: "0 auto",
+          }}
+        >
           {children}
-          <hr />
-          <footer>
-            <small>© {new Date().getFullYear()} Carascan. Messages are relayed without revealing owner details.</small>
-          </footer>
         </div>
       </body>
     </html>
