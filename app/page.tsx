@@ -1,6 +1,3 @@
-const LOGO_URL =
-"https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
-
 export default function Home() {
 return (
 <main
@@ -16,23 +13,23 @@ maxWidth: 760,
 margin: "0 auto",
 }}
 >
+<div
+style={{
+background: "#ffffff",
+border: "1px solid #e5e7eb",
+borderRadius: 18,
+padding: 28,
+boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+}}
+>
+<h1 style={{ marginTop: 0 }}>Carascan</h1>
 
-
-    <div
-      style={{
-        background: "#ffffff",
-        border: "1px solid #e5e7eb",
-        borderRadius: 18,
-        padding: 28,
-        boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
-      }}
-    >
-      
-
+```
       <p style={{ color: "#374151", lineHeight: 1.6 }}>
-        Laser-engraved QR plates for caravans. If there is an emergency and someone is concerned 
-        they can scan the code on your caravan and notify your emergency contacts. 
-        No private information is available and you have the choice to respond. 
+        Laser-engraved QR plates for caravans. If there is an emergency and
+        someone is concerned they can scan the code on your caravan and
+        notify your emergency contacts. No private information is available
+        and you have the choice to respond.
       </p>
 
       <div
@@ -73,6 +70,7 @@ margin: "0 auto",
     </div>
   </div>
 </main>
+```
 
 );
 }
