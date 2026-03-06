@@ -16,17 +16,7 @@ maxWidth: 760,
 margin: "0 auto",
 }}
 >
-<img
-src={LOGO_URL}
-alt="Carascan"
-style={{
-width: "100%",
-maxWidth: 320,
-height: "auto",
-display: "block",
-marginBottom: 28,
-}}
-/>
+
 
     <div
       style={{
@@ -37,12 +27,12 @@ marginBottom: 28,
         boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
       }}
     >
-      <h1 style={{ marginTop: 0 }}>Carascan</h1>
+      
 
       <p style={{ color: "#374151", lineHeight: 1.6 }}>
-        Laser-engraved QR plates for caravans. Scanners can send a message
-        to the owner without seeing their details. Emergency alerts can
-        notify multiple contacts via SMS and email.
+        Laser-engraved QR plates for caravans. If there is an emergency and someone is concerned 
+        they can scan the code on your caravan and notify your emergency contacts. 
+        No private information is available and you have the choice to respond. 
       </p>
 
       <div
