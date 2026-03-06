@@ -3,74 +3,181 @@ return (
 <main
 style={{
 minHeight: "100vh",
-padding: "32px 20px",
+padding: "48px 20px",
 background: "#f7f7f8",
 }}
 >
 <div
 style={{
-maxWidth: 760,
+maxWidth: 1000,
 margin: "0 auto",
 }}
 >
+{/* HERO */}
+<section
+style={{
+textAlign: "center",
+marginBottom: 50,
+}}
+>
+<h1
+style={{
+fontSize: 44,
+marginBottom: 16,
+lineHeight: 1.2,
+}}
+>
+Smart QR plates for caravans
+
+
+
+      <p
+        style={{
+          fontSize: 18,
+          color: "#4b5563",
+          maxWidth: 640,
+          margin: "0 auto 28px",
+          lineHeight: 1.6,
+        }}
+      >
+        If someone is concerned about your caravan, they can scan your
+        Carascan plate and send a secure message or emergency alert to your
+        contacts — without seeing any private information.
+      </p>
+
+      <a
+        href="/buy"
+        style={{
+          display: "inline-block",
+          textDecoration: "none",
+          borderRadius: 12,
+          padding: "16px 28px",
+          fontSize: 18,
+          fontWeight: 600,
+          background: "#111827",
+          color: "#ffffff",
+        }}
+      >
+        Buy a Carascan Plate
+      </a>
+    </section>
+
+    {/* VISUAL FLOW */}
+    <section
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(200px,1fr))",
+        gap: 20,
+        marginBottom: 40,
+      }}
+    >
+      <FlowCard
+        icon="🚐"
+        title="Caravan"
+        text="Your caravan has a Carascan QR plate attached."
+      />
+
+      <FlowCard
+        icon="📱"
+        title="QR Scan"
+        text="Someone scans the plate with their phone."
+      />
+
+      <FlowCard
+        icon="📩"
+        title="Secure Message"
+        text="A secure message is sent to you without revealing your details."
+      />
+
+      <FlowCard
+        icon="🚨"
+        title="Emergency Alert"
+        text="Emergency contacts are notified instantly if needed."
+      />
+    </section>
+
+    {/* HOW IT WORKS */}
+    <div
+      style={{
+        background: "#ffffff",
+        border: "1px solid #e5e7eb",
+        borderRadius: 18,
+        padding: 28,
+        boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+      }}
+    >
+      <h2 style={{ marginTop: 0 }}>How it works</h2>
+
+      <ol
+        style={{
+          lineHeight: 1.8,
+          fontSize: 16,
+          color: "#374151",
+        }}
+      >
+        <li>Buy your laser-engraved Carascan plate</li>
+        <li>Set up your secure contact page</li>
+        <li>Emergency contacts receive alerts if someone scans your plate</li>
+      </ol>
+
+      <p
+        style={{
+          marginTop: 16,
+          color: "#6b7280",
+          fontSize: 14,
+        }}
+      >
+        No personal details are publicly visible. Messages are relayed
+        securely through the Carascan system.
+      </p>
+    </div>
+  </div>
+</main>
+
+);
+}
+
+function FlowCard({
+icon,
+title,
+text,
+}: {
+icon: string;
+title: string;
+text: string;
+}) {
+return (
 <div
 style={{
 background: "#ffffff",
 border: "1px solid #e5e7eb",
-borderRadius: 18,
-padding: 28,
-boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+borderRadius: 14,
+padding: 22,
+textAlign: "center",
+boxShadow: "0 6px 18px rgba(0,0,0,0.05)",
 }}
 >
-<h1 style={{ marginTop: 0 }}>Carascan</h1>
+<div style={{ fontSize: 40, marginBottom: 10 }}>{icon}
 
-```
-      <p style={{ color: "#374151", lineHeight: 1.6 }}>
-        Laser-engraved QR plates for caravans. If there is an emergency and
-        someone is concerned they can scan the code on your caravan and
-        notify your emergency contacts. No private information is available
-        and you have the choice to respond.
-      </p>
+  <h3
+    style={{
+      margin: "6px 0 8px",
+      fontSize: 18,
+    }}
+  >
+    {title}
+  </h3>
 
-      <div
-        style={{
-          background: "#f9fafb",
-          border: "1px solid #e5e7eb",
-          borderRadius: 14,
-          padding: 20,
-          marginTop: 20,
-        }}
-      >
-        <h3 style={{ marginTop: 0 }}>How it works</h3>
-
-        <ol style={{ lineHeight: 1.7 }}>
-          <li>Buy online</li>
-          <li>Set up your plate page</li>
-          <li>We generate the QR engraving pack for LightBurn</li>
-        </ol>
-
-        <a
-          href="/buy"
-          style={{
-            display: "inline-block",
-            marginTop: 10,
-            textDecoration: "none",
-            border: 0,
-            borderRadius: 12,
-            padding: "14px 20px",
-            fontSize: 16,
-            fontWeight: 600,
-            background: "#111827",
-            color: "#ffffff",
-          }}
-        >
-          Buy a plate
-        </a>
-      </div>
-    </div>
-  </div>
-</main>
-```
+  <p
+    style={{
+      fontSize: 14,
+      color: "#4b5563",
+      margin: 0,
+    }}
+  >
+    {text}
+  </p>
+</div>
 
 );
 }
