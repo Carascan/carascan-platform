@@ -2,132 +2,535 @@
 
 import { useEffect, useState } from "react";
 
-type Contact = { id?: string; name: string; relationship?: string; phone?: string; email?: string; enabled: boolean };
+type Contact = {
+  id?: string;
+  name: string;
+  relationship?: string;
+  phone?: string;
+  email?: string;
+  enabled: boolean;
+};
+
+const LOGO_URL =
+  "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
 export default function SetupClient({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
   const [plateId, setPlateId] = useState<string | null>(null);
-  const [caravanName, setCaravanName] = useState("");
+
   const [bio, setBio] = useState("");
-  const [text1, setText1] = useState("");
-  const [text2, setText2] = useState("");
+  const [ownerPhotoUrl, setOwnerPhotoUrl] = useState("");
+
   const [contactEnabled, setContactEnabled] = useState(true);
   const [emergencyEnabled, setEmergencyEnabled] = useState(true);
-  const [preferredChannel, setPreferredChannel] = useState<"email"|"sms">("email");
-  const [contacts, setContacts] = useState<Contact[]>([{ name:"", relationship:"", phone:"", email:"", enabled:true }]);
-  const [message, setMessage] = useState<string>("");
+  const [preferredChannel, setPreferredChannel] = useState<"email" | "sms" | "both">("email");
+
+  const [contacts, setContacts] = useState<Contact[]>([
+    { name: "", relationship: "", phone: "", email: "", enabled: true },
+  ]);
+
+  const [message, setMessage] = useState("");
+
+  const maxContacts = 3;
 
   useEffect(() => {
     (async () => {
-      const r = await fetch(`/api/setup/get?token=${encodeURIComponent(token)}`, { cache: "no-store" });
-      const j = await r.json();
-      if (!r.ok) { setMessage(j?.error ?? "Invalid or expired setup link."); setLoading(false); return; }
-      setPlateId(j.plateId);
-      setCaravanName(j.profile?.caravan_name ?? "");
-      setBio(j.profile?.bio ?? "");
-      setText1(j.design?.text_line_1 ?? (j.profile?.caravan_name ?? ""));
-      setText2(j.design?.text_line_2 ?? "");
-      setContactEnabled(j.plate?.contact_enabled ?? true);
-      setEmergencyEnabled(j.plate?.emergency_enabled ?? true);
-      setPreferredChannel(j.plate?.preferred_contact_channel ?? "email");
-      setContacts((j.contacts?.length ? j.contacts : [{ name:"", relationship:"", phone:"", email:"", enabled:true }]).map((c:any)=>({
-        id: c.id, name: c.name ?? "", relationship: c.relationship ?? "", phone: c.phone ?? "", email: c.email ?? "", enabled: !!c.enabled
-      })));
-      setLoading(false);
+      try {
+        const r = await fetch(`/api/setup/get?token=${encodeURIComponent(token)}`, {
+          cache: "no-store",
+        });
+        const j = await r.json();
+
+        if (!r.ok) {
+          setMessage(j?.error ?? "Invalid or expired setup link.");
+          setLoading(false);
+          return;
+        }
+
+        setPlateId(j.plateId);
+        setBio(j.profile?.bio ?? "");
+        setOwnerPhotoUrl(j.profile?.owner_photo_url ?? "");
+        setContactEnabled(j.plate?.contact_enabled ?? true);
+        setEmergencyEnabled(j.plate?.emergency_enabled ?? true);
+        setPreferredChannel(
+          (j.plate?.preferred_contact_channel ?? "email") as "email" | "sms" | "both"
+        );
+
+        const incomingContacts = j.contacts?.length
+          ? j.contacts
+          : [{ name: "", relationship: "", phone: "", email: "", enabled: true }];
+
+        setContacts(
+          incomingContacts.map((c: any) => ({
+            id: c.id,
+            name: c.name ?? "",
+            relationship: c.relationship ?? "",
+            phone: c.phone ?? "",
+            email: c.email ?? "",
+            enabled: !!c.enabled,
+          }))
+        );
+      } catch {
+        setMessage("Failed to load setup details.");
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [token]);
 
-  const addContact = () => setContacts([...contacts, { name:"", relationship:"", phone:"", email:"", enabled:true }]);
+  const updateContact = (idx: number, patch: Partial<Contact>) => {
+    setContacts((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)));
+  };
+
+  const removeContact = (idx: number) => {
+    setContacts((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const addContact = () => {
+    if (contacts.length >= maxContacts) {
+      setMessage("Maximum of 3 contacts on the standard setup. Upgrade to unlock up to 10 contacts.");
+      return;
+    }
+
+    setContacts((prev) => [
+      ...prev,
+      { name: "", relationship: "", phone: "", email: "", enabled: true },
+    ]);
+  };
+
+  const goToUpgradeCheckout = () => {
+    window.location.href = "/buy?upgrade=contacts10";
+  };
 
   const save = async () => {
     setMessage("");
-    const r = await fetch("/api/setup/save", {
-      method:"POST",
-      headers: { "content-type":"application/json" },
-      body: JSON.stringify({
-        token, caravanName, bio, text1: text1 || caravanName, text2, contactEnabled, emergencyEnabled, preferredChannel, contacts
-      })
-    });
-    const j = await r.json();
-    if (!r.ok) { setMessage(j?.error ?? "Save failed."); return; }
-    setMessage("Saved. Your plate is now ready for engraving.");
+
+    const payload = {
+      token,
+      caravanName: "",
+      text1: "",
+      text2: "",
+      bio,
+      ownerPhotoUrl,
+      contactEnabled,
+      emergencyEnabled,
+      preferredChannel,
+      contacts,
+    };
+
+    try {
+      const r = await fetch("/api/setup/save", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const j = await r.json();
+
+      if (!r.ok) {
+        setMessage(j?.error ?? "Save failed.");
+        return;
+      }
+
+      setMessage("Saved. Your plate is now ready.");
+    } catch {
+      setMessage("Save failed.");
+    }
   };
 
-  if (loading) return <main><p>Loading…</p></main>;
+  if (loading) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          padding: "32px 20px",
+          background: "#f7f7f8",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <img
+            src={LOGO_URL}
+            alt="Carascan"
+            style={{ width: "100%", maxWidth: 320, marginBottom: 24 }}
+          />
+          <p>Loading…</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <main>
-      <h1>Set up your Carascan plate</h1>
-      {message && <div className="card"><b>{message}</b></div>}
-      {!plateId ? (
-        <div className="card">Setup link invalid or expired.</div>
-      ) : (
-        <>
-          <div className="card">
-            <h3>Public page</h3>
-            <label>Caravan name (required)</label>
-            <input value={caravanName} onChange={(e)=>setCaravanName(e.target.value)} placeholder="e.g., The Wandering Wombat" />
-            <label>Bio (optional)</label>
-            <textarea value={bio} onChange={(e)=>setBio(e.target.value)} rows={4} maxLength={300} />
+    <main
+      style={{
+        minHeight: "100vh",
+        padding: "32px 20px",
+        background: "#f7f7f8",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 860,
+          margin: "0 auto",
+        }}
+      >
+        <div
+          style={{
+            background: "#ffffff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 18,
+            padding: 28,
+            boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+            marginBottom: 20,
+          }}
+        >
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <img
+              src={LOGO_URL}
+              alt="Carascan"
+              style={{
+                width: "100%",
+                maxWidth: 340,
+                height: "auto",
+                display: "block",
+                margin: "0 auto 18px",
+              }}
+            />
+
+            <h1 style={{ margin: "0 0 10px", fontSize: 32 }}>Set up your Carascan plate</h1>
+            <p style={{ margin: 0, color: "#4b5563" }}>
+              Configure your contact options and emergency contacts.
+            </p>
           </div>
 
-          <div className="card">
-            <h3>Plate engraving text</h3>
-            <label>Text line 1 (required)</label>
-            <input value={text1} onChange={(e)=>setText1(e.target.value)} placeholder="Defaults to caravan name" />
-            <label>Text line 2 (optional)</label>
-            <input value={text2} onChange={(e)=>setText2(e.target.value)} placeholder="Optional smaller line" />
-          </div>
+          {message && (
+            <div
+              style={{
+                marginBottom: 20,
+                padding: "14px 16px",
+                borderRadius: 12,
+                background: "#f9fafb",
+                border: "1px solid #e5e7eb",
+                color: "#111827",
+              }}
+            >
+              <strong>{message}</strong>
+            </div>
+          )}
 
-          <div className="card">
-            <h3>Buttons</h3>
-            <label><input type="checkbox" checked={contactEnabled} onChange={(e)=>setContactEnabled(e.target.checked)} /> Enable Contact button</label>
-            <label><input type="checkbox" checked={emergencyEnabled} onChange={(e)=>setEmergencyEnabled(e.target.checked)} /> Enable Emergency button</label>
-            <label>Owner receives Contact alerts via</label>
-            <select value={preferredChannel} onChange={(e)=>setPreferredChannel(e.target.value as any)}>
-              <option value="email">Email</option>
-              <option value="sms">SMS</option>
-            </select>
-          </div>
+          {!plateId ? (
+            <div
+              style={{
+                padding: 18,
+                border: "1px solid #e5e7eb",
+                borderRadius: 12,
+                background: "#f9fafb",
+              }}
+            >
+              Setup link invalid or expired.
+            </div>
+          ) : (
+            <>
+              <section
+                style={{
+                  background: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 14,
+                  padding: 20,
+                  marginBottom: 18,
+                }}
+              >
+                <h3 style={{ marginTop: 0 }}>Profile</h3>
 
-          <div className="card">
-            <h3>Emergency contacts</h3>
-            <small>Emergency sends BOTH SMS + Email (when provided) to each enabled contact.</small>
-            {contacts.map((c, idx) => (
-              <div key={idx} style={{borderTop: idx? "1px solid #e5e7eb":"0", paddingTop: idx?12:0, marginTop: idx?12:0}}>
-                <label>Name (required)</label>
-                <input value={c.name} onChange={(e)=>{ const n=[...contacts]; n[idx]={...n[idx], name:e.target.value}; setContacts(n); }} />
-                <div className="grid grid2">
+                <label style={{ display: "block", marginBottom: 6, fontWeight: 600 }}>
+                  Profile photo URL (optional)
+                </label>
+                <input
+                  value={ownerPhotoUrl}
+                  onChange={(e) => setOwnerPhotoUrl(e.target.value)}
+                  placeholder="https://..."
+                  style={inputStyle}
+                />
+
+                <label
+                  style={{
+                    display: "block",
+                    marginTop: 14,
+                    marginBottom: 6,
+                    fontWeight: 600,
+                  }}
+                >
+                  Bio (optional)
+                </label>
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  rows={4}
+                  maxLength={300}
+                  style={{ ...inputStyle, resize: "vertical", minHeight: 110 }}
+                />
+              </section>
+
+              <section
+                style={{
+                  background: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 14,
+                  padding: 20,
+                  marginBottom: 18,
+                }}
+              >
+                <h3 style={{ marginTop: 0 }}>Contact options</h3>
+
+                <label style={checkboxLabelStyle}>
+                  <input
+                    type="checkbox"
+                    checked={contactEnabled}
+                    onChange={(e) => setContactEnabled(e.target.checked)}
+                  />
+                  Enable Contact button
+                </label>
+
+                <label style={checkboxLabelStyle}>
+                  <input
+                    type="checkbox"
+                    checked={emergencyEnabled}
+                    onChange={(e) => setEmergencyEnabled(e.target.checked)}
+                  />
+                  Enable Emergency button
+                </label>
+
+                <label
+                  style={{
+                    display: "block",
+                    marginTop: 14,
+                    marginBottom: 6,
+                    fontWeight: 600,
+                  }}
+                >
+                  Owner receives Contact alerts via
+                </label>
+                <select
+                  value={preferredChannel}
+                  onChange={(e) =>
+                    setPreferredChannel(e.target.value as "email" | "sms" | "both")
+                  }
+                  style={inputStyle}
+                >
+                  <option value="email">Email</option>
+                  <option value="sms">SMS</option>
+                  <option value="both">Both</option>
+                </select>
+              </section>
+
+              <section
+                style={{
+                  background: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 14,
+                  padding: 20,
+                  marginBottom: 18,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 16,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    marginBottom: 10,
+                  }}
+                >
                   <div>
-                    <label>Relationship</label>
-                    <input value={c.relationship ?? ""} onChange={(e)=>{ const n=[...contacts]; n[idx]={...n[idx], relationship:e.target.value}; setContacts(n); }} />
+                    <h3 style={{ margin: 0 }}>Emergency contacts</h3>
+                    <small style={{ color: "#6b7280" }}>
+                      Maximum 3 contacts included. Upgrade to unlock up to 10 contacts.
+                    </small>
                   </div>
-                  <div>
-                    <label>Enabled</label>
-                    <select value={c.enabled ? "yes":"no"} onChange={(e)=>{ const n=[...contacts]; n[idx]={...n[idx], enabled: e.target.value==="yes"}; setContacts(n); }}>
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
-                  </div>
+
+                  <button
+                    type="button"
+                    onClick={goToUpgradeCheckout}
+                    style={secondaryButtonStyle}
+                  >
+                    Upgrade to 10 contacts
+                  </button>
                 </div>
-                <div className="grid grid2">
-                  <div>
-                    <label>Phone (for SMS)</label>
-                    <input value={c.phone ?? ""} onChange={(e)=>{ const n=[...contacts]; n[idx]={...n[idx], phone:e.target.value}; setContacts(n); }} placeholder="+61..." />
-                  </div>
-                  <div>
-                    <label>Email</label>
-                    <input value={c.email ?? ""} onChange={(e)=>{ const n=[...contacts]; n[idx]={...n[idx], email:e.target.value}; setContacts(n); }} />
-                  </div>
-                </div>
-              </div>
-            ))}
-            <button className="btn secondary" onClick={addContact} type="button">+ Add another contact</button>
-          </div>
 
-          <button className="btn" onClick={save} type="button">Save setup</button>
-        </>
-      )}
+                {contacts.map((c, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      borderTop: idx ? "1px solid #e5e7eb" : "0",
+                      paddingTop: idx ? 16 : 0,
+                      marginTop: idx ? 16 : 0,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 10,
+                        gap: 10,
+                      }}
+                    >
+                      <strong>Contact {idx + 1}</strong>
+                      {contacts.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeContact(idx)}
+                          style={linkButtonStyle}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+
+                    <label style={labelStyle}>Name</label>
+                    <input
+                      value={c.name}
+                      onChange={(e) => updateContact(idx, { name: e.target.value })}
+                      style={inputStyle}
+                    />
+
+                    <div style={grid2Style}>
+                      <div>
+                        <label style={labelStyle}>Relationship</label>
+                        <input
+                          value={c.relationship ?? ""}
+                          onChange={(e) =>
+                            updateContact(idx, { relationship: e.target.value })
+                          }
+                          style={inputStyle}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={labelStyle}>Enabled</label>
+                        <select
+                          value={c.enabled ? "yes" : "no"}
+                          onChange={(e) =>
+                            updateContact(idx, { enabled: e.target.value === "yes" })
+                          }
+                          style={inputStyle}
+                        >
+                          <option value="yes">Yes</option>
+                          <option value="no">No</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={grid2Style}>
+                      <div>
+                        <label style={labelStyle}>Phone (for SMS)</label>
+                        <input
+                          value={c.phone ?? ""}
+                          onChange={(e) => updateContact(idx, { phone: e.target.value })}
+                          placeholder="+61..."
+                          style={inputStyle}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={labelStyle}>Email</label>
+                        <input
+                          value={c.email ?? ""}
+                          onChange={(e) => updateContact(idx, { email: e.target.value })}
+                          style={inputStyle}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <div style={{ marginTop: 16, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={addContact}
+                    disabled={contacts.length >= maxContacts}
+                    style={{
+                      ...secondaryButtonStyle,
+                      opacity: contacts.length >= maxContacts ? 0.5 : 1,
+                      cursor: contacts.length >= maxContacts ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    + Add another contact
+                  </button>
+                </div>
+              </section>
+
+              <button type="button" onClick={save} style={primaryButtonStyle}>
+                Save setup
+              </button>
+            </>
+          )}
+        </div>
+      </div>
     </main>
   );
 }
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  border: "1px solid #d1d5db",
+  borderRadius: 10,
+  padding: "12px 14px",
+  fontSize: 15,
+  background: "#ffffff",
+  boxSizing: "border-box",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  marginBottom: 6,
+  marginTop: 10,
+  fontWeight: 600,
+};
+
+const checkboxLabelStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  marginBottom: 10,
+};
+
+const grid2Style: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: 14,
+};
+
+const primaryButtonStyle: React.CSSProperties = {
+  width: "100%",
+  border: 0,
+  borderRadius: 12,
+  padding: "16px 20px",
+  fontSize: 17,
+  fontWeight: 600,
+  cursor: "pointer",
+  background: "#111827",
+  color: "#ffffff",
+};
+
+const secondaryButtonStyle: React.CSSProperties = {
+  border: "1px solid #d1d5db",
+  borderRadius: 10,
+  padding: "10px 14px",
+  fontSize: 14,
+  fontWeight: 600,
+  cursor: "pointer",
+  background: "#ffffff",
+  color: "#111827",
+};
+
+const linkButtonStyle: React.CSSProperties = {
+  border: 0,
+  background: "transparent",
+  color: "#b91c1c",
+  cursor: "pointer",
+  padding: 0,
+  fontWeight: 600,
+};

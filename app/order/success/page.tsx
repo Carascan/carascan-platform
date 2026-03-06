@@ -1,11 +1,74 @@
 export default function Success() {
   return (
-    <main>
-      <h1>Order confirmed</h1>
-      <div className="card">
-        <p>Thanks — your order is confirmed.</p>
-        <p>We’ve emailed you a secure setup link to configure your plate page and emergency contacts.</p>
-        <p><small>If you don’t see it, check spam/junk.</small></p>
+    <main
+      style={{
+        minHeight: "100vh",
+        display: "grid",
+        placeItems: "center",
+        padding: "32px 20px",
+        background: "#f7f7f8",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 720,
+          background: "#ffffff",
+          border: "1px solid #e5e7eb",
+          borderRadius: 18,
+          padding: 32,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+          textAlign: "center",
+        }}
+      >
+        <img
+          src="https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg"
+          alt="Carascan"
+          style={{
+            width: "100%",
+            maxWidth: 320,
+            marginBottom: 24,
+          }}
+        />
+
+        <h1
+          style={{
+            fontSize: 32,
+            marginBottom: 18,
+          }}
+        >
+          Order confirmed
+        </h1>
+
+        <p
+          style={{
+            fontSize: 16,
+            marginBottom: 10,
+            color: "#374151",
+          }}
+        >
+          Time to hit the road! Your order is confirmed.
+        </p>
+
+        <p
+          style={{
+            fontSize: 16,
+            marginBottom: 10,
+            color: "#374151",
+          }}
+        >
+          We’ve emailed you a secure setup link to configure your plate page and
+          emergency contacts.
+        </p>
+
+        <p
+          style={{
+            fontSize: 14,
+            color: "#6b7280",
+          }}
+        >
+          If you don’t see the email, check your spam or junk folder.
+        </p>
       </div>
     </main>
   );
