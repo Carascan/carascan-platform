@@ -21,15 +21,7 @@ export default function Success() {
           textAlign: "center",
         }}
       >
-        <img
-          src="https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg"
-          alt="Carascan"
-          style={{
-            width: "100%",
-            maxWidth: 320,
-            marginBottom: 24,
-          }}
-        />
+      
 
         <h1
           style={{
