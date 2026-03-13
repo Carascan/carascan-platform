@@ -31,6 +31,7 @@ export default function ContactClient({
   const [status, setStatus] = useState("");
   const [sending, setSending] = useState(false);
   const [emergencyConfirm, setEmergencyConfirm] = useState(false);
+  const [sentTime, setSentTime] = useState<string | null>(null);
 
   async function getLocation(): Promise<LocationPayload> {
     if (!navigator.geolocation) return null;
@@ -55,6 +56,8 @@ export default function ContactClient({
   const switchMode = (nextMode: Mode) => {
     setMode(nextMode);
     setStatus("");
+    setSentTime(null);
+
     if (nextMode !== "emergency") {
       setEmergencyConfirm(false);
     }
@@ -108,10 +111,14 @@ export default function ContactClient({
         return;
       }
 
+      const now = new Date().toLocaleTimeString();
+
+      setSentTime(now);
+
       setStatus(
         mode === "contact"
-          ? "Sent. The owner has been notified."
-          : "Emergency alert sent."
+          ? "Message sent to the owner."
+          : `Emergency alert sent at ${now}.`
       );
 
       setMsg("");
@@ -144,6 +151,15 @@ export default function ContactClient({
         </div>
       )}
 
+      {mode === "emergency" && sentTime && (
+        <div className="card" style={{ background: "#fff7ed" }}>
+          <b>Emergency alert sent at {sentTime}</b>
+          <div style={{ marginTop: 6 }}>
+            If the situation escalates contact emergency services immediately.
+          </div>
+        </div>
+      )}
+
       <div className="card">
         <div className="grid grid2" style={{ marginBottom: 12 }}>
           {allowContactOwner && (
@@ -170,16 +186,40 @@ export default function ContactClient({
         </div>
 
         {mode === "emergency" && (
-          <div className="card" style={{ marginBottom: 12 }}>
+          <div
+            className="card"
+            style={{
+              marginBottom: 14,
+              background: emergencyConfirm ? "#fff7ed" : "#f9fafb",
+            }}
+          >
             <b>
               {emergencyConfirm
                 ? "Confirm emergency alert"
                 : "Emergency alerts notify the owner and emergency contacts."}
             </b>
+
             <div style={{ marginTop: 6 }}>
               {emergencyConfirm
-                ? "Press again to send the emergency alert."
+                ? "Press the emergency button again to send the alert."
                 : "Use this only for urgent situations."}
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <a
+                href="tel:000"
+                style={{
+                  display: "inline-block",
+                  background: "#dc2626",
+                  color: "#fff",
+                  padding: "10px 16px",
+                  borderRadius: 6,
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Call Emergency Services (000)
+              </a>
             </div>
           </div>
         )}
@@ -219,6 +259,12 @@ export default function ContactClient({
             : "Continue emergency alert"}
         </button>
       </div>
+
+      <small>
+        {mode === "contact"
+          ? "Owner contact details are never shown publicly."
+          : "Emergency alerts are sent to the owner and enabled emergency contacts."}
+      </small>
     </main>
   );
 }
