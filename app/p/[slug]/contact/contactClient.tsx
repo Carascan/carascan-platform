@@ -111,7 +111,7 @@ export default function ContactClient({
       setStatus(
         mode === "contact"
           ? "Sent. The owner has been notified."
-          : "Emergency alert sent to the selected contacts."
+          : "Emergency alert sent."
       );
 
       setMsg("");
@@ -145,50 +145,41 @@ export default function ContactClient({
       )}
 
       <div className="card">
-        {(allowContactOwner || allowEmergency) && (
-          <div className="grid grid2" style={{ marginBottom: 12 }}>
-            {allowContactOwner && (
-              <button
-                type="button"
-                className={`btn ${mode === "contact" ? "active" : ""}`}
-                onClick={() => switchMode("contact")}
-                disabled={sending}
-              >
-                Contact owner
-              </button>
-            )}
+        <div className="grid grid2" style={{ marginBottom: 12 }}>
+          {allowContactOwner && (
+            <button
+              type="button"
+              className="btn"
+              onClick={() => switchMode("contact")}
+              disabled={sending}
+            >
+              Contact owner
+            </button>
+          )}
 
-            {allowEmergency && (
-              <button
-                type="button"
-                className={`btn ${mode === "emergency" ? "active" : ""}`}
-                onClick={() => switchMode("emergency")}
-                disabled={sending}
-              >
-                Emergency
-              </button>
-            )}
-          </div>
-        )}
+          {allowEmergency && (
+            <button
+              type="button"
+              className="btn"
+              onClick={() => switchMode("emergency")}
+              disabled={sending}
+            >
+              Emergency
+            </button>
+          )}
+        </div>
 
         {mode === "emergency" && (
-          <div
-            className="card"
-            style={{
-              marginBottom: 14,
-              background: emergencyConfirm ? "#fff7ed" : "#f9fafb",
-              border: "1px solid #e5e7eb",
-            }}
-          >
+          <div className="card" style={{ marginBottom: 12 }}>
             <b>
               {emergencyConfirm
                 ? "Confirm emergency alert"
-                : "Emergency alerts notify the owner and enabled emergency contacts."}
+                : "Emergency alerts notify the owner and emergency contacts."}
             </b>
-            <div style={{ marginTop: 8 }}>
+            <div style={{ marginTop: 6 }}>
               {emergencyConfirm
-                ? "Press the emergency button again to send the alert now."
-                : "Use this only for urgent situations involving the caravan or occupants."}
+                ? "Press again to send the emergency alert."
+                : "Use this only for urgent situations."}
             </div>
           </div>
         )}
@@ -201,6 +192,7 @@ export default function ContactClient({
             <label>Your phone (optional)</label>
             <input value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
+
           <div>
             <label>Your email (optional)</label>
             <input value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -210,13 +202,14 @@ export default function ContactClient({
         <label>
           {mode === "contact" ? "Message to owner" : "Emergency details"}
         </label>
+
         <textarea
+          rows={5}
           value={msg}
           onChange={(e) => setMsg(e.target.value)}
-          rows={5}
         />
 
-        <button className="btn" type="button" onClick={send} disabled={sending}>
+        <button className="btn" onClick={send} disabled={sending}>
           {sending
             ? "Sending..."
             : mode === "contact"
@@ -226,12 +219,6 @@ export default function ContactClient({
             : "Continue emergency alert"}
         </button>
       </div>
-
-      <small>
-        {mode === "contact"
-          ? "No owner contact details are shown. This relays a message to the owner only."
-          : "This sends an emergency alert to the owner's selected contact methods and enabled emergency contacts."}
-      </small>
     </main>
   );
 }

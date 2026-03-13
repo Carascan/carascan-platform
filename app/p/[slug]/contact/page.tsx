@@ -1,4 +1,4 @@
-import ContactClient from "./contact/contactClient";
+import ContactClient from "./contactClient";
 
 export default async function ContactPage({
   params,
