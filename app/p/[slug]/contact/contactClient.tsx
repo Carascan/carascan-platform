@@ -8,7 +8,7 @@ type ContactClientProps = {
   allowEmergency: boolean;
 };
 
-type Mode = "contact" | "emergency";
+type Mode = "contact" | "emergency" | "location_only";
 
 type LocationPayload = {
   lat: number;
@@ -31,6 +31,7 @@ export default function ContactClient({
   const [status, setStatus] = useState("");
   const [sending, setSending] = useState(false);
   const [emergencyConfirm, setEmergencyConfirm] = useState(false);
+  const [locationOnlyConfirm, setLocationOnlyConfirm] = useState(false);
   const [sentTime, setSentTime] = useState<string | null>(null);
 
   async function getLocation(): Promise<LocationPayload> {
@@ -40,6 +41,7 @@ export default function ContactClient({
       const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           timeout: 5000,
+          enableHighAccuracy: true,
         })
       );
 
@@ -57,16 +59,14 @@ export default function ContactClient({
     setMode(nextMode);
     setStatus("");
     setSentTime(null);
-
-    if (nextMode !== "emergency") {
-      setEmergencyConfirm(false);
-    }
+    setEmergencyConfirm(false);
+    setLocationOnlyConfirm(false);
   };
 
   const send = async () => {
     setStatus("");
 
-    if (!msg.trim()) {
+    if (mode === "contact" && !msg.trim()) {
       setStatus("Please enter a message.");
       return;
     }
@@ -86,10 +86,20 @@ export default function ContactClient({
       return;
     }
 
+    if (mode === "location_only" && !locationOnlyConfirm) {
+      setLocationOnlyConfirm(true);
+      return;
+    }
+
     try {
       setSending(true);
 
       const location = await getLocation();
+
+      if (mode === "location_only" && !location) {
+        setStatus("Location access is required for location reporting.");
+        return;
+      }
 
       const r = await fetch(`/api/plates/${encodeURIComponent(slug)}/contact`, {
         method: "POST",
@@ -99,7 +109,10 @@ export default function ContactClient({
           reporter_name: name.trim() || null,
           reporter_phone: phone.trim() || null,
           reporter_email: email.trim() || null,
-          message: msg.trim(),
+          message:
+            mode === "location_only"
+              ? "Location reported"
+              : msg.trim(),
           location,
         }),
       });
@@ -112,17 +125,19 @@ export default function ContactClient({
       }
 
       const now = new Date().toLocaleTimeString();
-
       setSentTime(now);
 
-      setStatus(
-        mode === "contact"
-          ? "Message sent to the owner."
-          : `Emergency alert sent at ${now}.`
-      );
+      if (mode === "contact") {
+        setStatus("Message sent to the owner.");
+      } else if (mode === "emergency") {
+        setStatus(`Emergency alert sent at ${now}.`);
+      } else {
+        setStatus(`Location reported at ${now}.`);
+      }
 
       setMsg("");
       setEmergencyConfirm(false);
+      setLocationOnlyConfirm(false);
     } catch {
       setStatus("Failed.");
     } finally {
@@ -143,7 +158,13 @@ export default function ContactClient({
 
   return (
     <main>
-      <h1>{mode === "contact" ? "Contact owner" : "Emergency alert"}</h1>
+      <h1>
+        {mode === "contact"
+          ? "Contact owner"
+          : mode === "emergency"
+          ? "Emergency alert"
+          : "Report location"}
+      </h1>
 
       {status && (
         <div className="card">
@@ -151,11 +172,17 @@ export default function ContactClient({
         </div>
       )}
 
-      {mode === "emergency" && sentTime && (
+      {(mode === "emergency" || mode === "location_only") && sentTime && (
         <div className="card" style={{ background: "#fff7ed" }}>
-          <b>Emergency alert sent at {sentTime}</b>
+          <b>
+            {mode === "emergency"
+              ? `Emergency alert sent at ${sentTime}`
+              : `Location reported at ${sentTime}`}
+          </b>
           <div style={{ marginTop: 6 }}>
-            If the situation escalates contact emergency services immediately.
+            {mode === "emergency"
+              ? "If the situation escalates contact emergency services immediately."
+              : "The owner and enabled contacts have been notified with the latest location."}
           </div>
         </div>
       )}
@@ -183,6 +210,15 @@ export default function ContactClient({
               Emergency
             </button>
           )}
+
+          <button
+            type="button"
+            className="btn"
+            onClick={() => switchMode("location_only")}
+            disabled={sending}
+          >
+            Report location
+          </button>
         </div>
 
         {mode === "emergency" && (
@@ -224,6 +260,28 @@ export default function ContactClient({
           </div>
         )}
 
+        {mode === "location_only" && (
+          <div
+            className="card"
+            style={{
+              marginBottom: 14,
+              background: locationOnlyConfirm ? "#eff6ff" : "#f9fafb",
+            }}
+          >
+            <b>
+              {locationOnlyConfirm
+                ? "Confirm location report"
+                : "Report this item's current location to the owner."}
+            </b>
+
+            <div style={{ marginTop: 6 }}>
+              {locationOnlyConfirm
+                ? "Press again to send the location report now."
+                : "Best suited to vehicles, plant, stickers, trailers, and asset recovery."}
+            </div>
+          </div>
+        )}
+
         <label>Your name (optional)</label>
         <input value={name} onChange={(e) => setName(e.target.value)} />
 
@@ -239,31 +297,41 @@ export default function ContactClient({
           </div>
         </div>
 
-        <label>
-          {mode === "contact" ? "Message to owner" : "Emergency details"}
-        </label>
+        {mode !== "location_only" && (
+          <>
+            <label>
+              {mode === "contact" ? "Message to owner" : "Emergency details"}
+            </label>
 
-        <textarea
-          rows={5}
-          value={msg}
-          onChange={(e) => setMsg(e.target.value)}
-        />
+            <textarea
+              rows={5}
+              value={msg}
+              onChange={(e) => setMsg(e.target.value)}
+            />
+          </>
+        )}
 
         <button className="btn" onClick={send} disabled={sending}>
           {sending
             ? "Sending..."
             : mode === "contact"
             ? "Send"
-            : emergencyConfirm
-            ? "Send emergency alert now"
-            : "Continue emergency alert"}
+            : mode === "emergency"
+            ? emergencyConfirm
+              ? "Send emergency alert now"
+              : "Continue emergency alert"
+            : locationOnlyConfirm
+            ? "Send location report now"
+            : "Continue location report"}
         </button>
       </div>
 
       <small>
         {mode === "contact"
           ? "Owner contact details are never shown publicly."
-          : "Emergency alerts are sent to the owner and enabled emergency contacts."}
+          : mode === "emergency"
+          ? "Emergency alerts are sent to the owner and enabled emergency contacts."
+          : "Location reporting sends the current GPS position to the owner and enabled contacts."}
       </small>
     </main>
   );

@@ -5,7 +5,7 @@ import { sendSms } from "@/lib/notifySms";
 import { z } from "zod";
 
 const BodySchema = z.object({
-  type: z.enum(["contact", "emergency"]),
+  type: z.enum(["contact", "emergency", "location_only"]),
   reporter_name: z.string().optional().nullable(),
   reporter_phone: z.string().optional().nullable(),
   reporter_email: z.string().optional().nullable(),
@@ -68,14 +68,17 @@ export async function POST(
     return NextResponse.json({ error: "Contact is disabled" }, { status: 403 });
   }
 
-  if (parsed.data.type === "emergency" && !plate.emergency_enabled) {
+  if (
+    (parsed.data.type === "emergency" ||
+      parsed.data.type === "location_only") &&
+    !plate.emergency_enabled
+  ) {
     return NextResponse.json(
-      { error: "Emergency alerts are disabled" },
+      { error: "Emergency/location alerts are disabled" },
       { status: 403 }
     );
   }
 
-  // 1) Basic IP abuse protection
   const ipWindowStart = new Date(
     Date.now() - IP_WINDOW_MINUTES * 60 * 1000
   ).toISOString();
@@ -103,7 +106,6 @@ export async function POST(
     );
   }
 
-  // 2) Emergency cooldown per plate
   if (parsed.data.type === "emergency") {
     const cooldownStart = new Date(
       Date.now() - EMERGENCY_COOLDOWN_SECONDS * 1000
@@ -178,9 +180,14 @@ export async function POST(
   const subject =
     parsed.data.type === "emergency"
       ? `Carascan EMERGENCY: ${profile?.caravan_name ?? "Caravan"}`
+      : parsed.data.type === "location_only"
+      ? `Carascan location report: ${profile?.caravan_name ?? "Caravan"}`
       : `Carascan contact: ${profile?.caravan_name ?? "Caravan"}`;
 
-  const msg = parsed.data.message;
+  const msg =
+    parsed.data.type === "location_only"
+      ? "Location reported"
+      : parsed.data.message;
 
   const reporter = [
     parsed.data.reporter_name,
@@ -266,7 +273,10 @@ ${locationText ? `<p>${locationText}</p>` : ""}`;
     await sendEmailSafe(ownerEmail);
   }
 
-  if (parsed.data.type === "emergency") {
+  if (
+    parsed.data.type === "emergency" ||
+    parsed.data.type === "location_only"
+  ) {
     const { data: emergencyContacts } = await sb
       .from("emergency_contacts")
       .select("name, phone, email, enabled")
