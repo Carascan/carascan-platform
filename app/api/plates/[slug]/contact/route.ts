@@ -85,6 +85,8 @@ export async function POST(
     );
   }
 
+  const alertId = alert.id;
+
   const { data: tokenRow } = await sb
     .from("plate_setup_tokens")
     .select("email")
@@ -140,7 +142,7 @@ ${locationText ? `<p>${locationText}</p>` : ""}`;
     error_message?: string | null
   ) {
     await sb.from("alert_deliveries").insert({
-      alert_id: alert.id,
+      alert_id: alertId,
       channel,
       recipient,
       status,
