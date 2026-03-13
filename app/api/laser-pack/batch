@@ -1,0 +1,81 @@
+import { NextResponse } from "next/server";
+import JSZip from "jszip";
+import { supabaseAdmin } from "@/lib/supabaseServer";
+import { makeQrPngDataUrl } from "@/lib/qr";
+import { buildPlateSvg } from "@/lib/laserSvg";
+
+export async function GET() {
+const sb = supabaseAdmin();
+
+const { data: plates, error } = await sb
+.from("plates")
+.select("id, slug")
+.order("created_at", { ascending: false })
+.limit(200);
+
+if (error || !plates) {
+return NextResponse.json({ error: "Plate fetch failed" }, { status: 500 });
+}
+
+const baseUrl = process.env.APP_BASE_URL;
+if (!baseUrl) {
+return NextResponse.json({ error: "APP_BASE_URL missing" }, { status: 500 });
+}
+
+const zip = new JSZip();
+
+for (const plate of plates) {
+const plateUrl = `${baseUrl}/p/${plate.slug}`;
+const qrDataUrl = await makeQrPngDataUrl(plateUrl);
+
+```
+const slugUpper = plate.slug.toUpperCase();
+const identifier = slugUpper.startsWith("CSN-")
+  ? slugUpper
+  : `CSN-${slugUpper}`;
+
+const svg = buildPlateSvg({
+  slug: plate.slug,
+  qrDataUrl,
+
+  plateWidthMm: 90,
+  plateHeightMm: 90,
+  cornerRadiusMm: 3,
+  marginInsetMm: 5,
+  holeDiameterMm: 4.2,
+
+  logoCenterX: 45,
+  logoCenterY: 16,
+  logoWidthMm: 84,
+  logoHeightMm: 9.2,
+  logoSvgText: "",
+
+  qrCenterX: 45,
+  qrCenterY: 51,
+  qrSizeMm: 50,
+
+  idCenterX: 45,
+  idCenterY: 82,
+  idFontSizeMm: 4.2,
+  identifier,
+
+  includeCrosshair: true,
+});
+
+const fileName = `CARASCAN_${plate.slug}_90x90.svg`;
+
+zip.file(fileName, svg);
+```
+
+}
+
+const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
+
+return new NextResponse(zipBuffer, {
+status: 200,
+headers: {
+"content-type": "application/zip",
+"content-disposition": `attachment; filename="carascan_batch_plates.zip"`,
+},
+});
+}

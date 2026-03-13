@@ -16,14 +16,17 @@ const LOGO_URL =
 
 export default function SetupClient({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [plateId, setPlateId] = useState<string | null>(null);
 
+  const [caravanName, setCaravanName] = useState("");
   const [bio, setBio] = useState("");
-  const [ownerPhotoUrl, setOwnerPhotoUrl] = useState("");
 
   const [contactEnabled, setContactEnabled] = useState(true);
   const [emergencyEnabled, setEmergencyEnabled] = useState(true);
-  const [preferredChannel, setPreferredChannel] = useState<"email" | "sms" | "both">("email");
+  const [preferredChannel, setPreferredChannel] = useState<"email" | "sms">(
+    "email"
+  );
 
   const [contacts, setContacts] = useState<Contact[]>([
     { name: "", relationship: "", phone: "", email: "", enabled: true },
@@ -48,17 +51,18 @@ export default function SetupClient({ token }: { token: string }) {
         }
 
         setPlateId(j.plateId);
+        setCaravanName(j.profile?.caravan_name ?? "");
         setBio(j.profile?.bio ?? "");
-        setOwnerPhotoUrl(j.profile?.owner_photo_url ?? "");
         setContactEnabled(j.plate?.contact_enabled ?? true);
         setEmergencyEnabled(j.plate?.emergency_enabled ?? true);
         setPreferredChannel(
-          (j.plate?.preferred_contact_channel ?? "email") as "email" | "sms" | "both"
+          (j.plate?.preferred_contact_channel ?? "email") as "email" | "sms"
         );
 
-        const incomingContacts = j.contacts?.length
-          ? j.contacts
-          : [{ name: "", relationship: "", phone: "", email: "", enabled: true }];
+        const incomingContacts =
+          j.contacts?.length > 0
+            ? j.contacts
+            : [{ name: "", relationship: "", phone: "", email: "", enabled: true }];
 
         setContacts(
           incomingContacts.map((c: any) => ({
@@ -83,7 +87,12 @@ export default function SetupClient({ token }: { token: string }) {
   };
 
   const removeContact = (idx: number) => {
-    setContacts((prev) => prev.filter((_, i) => i !== idx));
+    setContacts((prev) => {
+      const next = prev.filter((_, i) => i !== idx);
+      return next.length
+        ? next
+        : [{ name: "", relationship: "", phone: "", email: "", enabled: true }];
+    });
   };
 
   const addContact = () => {
@@ -105,13 +114,19 @@ export default function SetupClient({ token }: { token: string }) {
   const save = async () => {
     setMessage("");
 
+    if (!caravanName.trim()) {
+      setMessage("Please enter a caravan name.");
+      return;
+    }
+
+    setSaving(true);
+
     const payload = {
       token,
-      caravanName: "",
-      text1: "",
+      caravanName: caravanName.trim(),
+      text1: caravanName.trim(),
       text2: "",
-      bio,
-      ownerPhotoUrl,
+      bio: bio.trim() || null,
       contactEnabled,
       emergencyEnabled,
       preferredChannel,
@@ -135,6 +150,8 @@ export default function SetupClient({ token }: { token: string }) {
       setMessage("Saved. Your plate is now ready.");
     } catch {
       setMessage("Save failed.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -198,7 +215,9 @@ export default function SetupClient({ token }: { token: string }) {
               }}
             />
 
-            <h1 style={{ margin: "0 0 10px", fontSize: 32 }}>Set up your Carascan plate</h1>
+            <h1 style={{ margin: "0 0 10px", fontSize: 32 }}>
+              Set up your Carascan plate
+            </h1>
             <p style={{ margin: 0, color: "#4b5563" }}>
               Configure your contact options and emergency contacts.
             </p>
@@ -244,12 +263,12 @@ export default function SetupClient({ token }: { token: string }) {
                 <h3 style={{ marginTop: 0 }}>Profile</h3>
 
                 <label style={{ display: "block", marginBottom: 6, fontWeight: 600 }}>
-                  Profile photo URL (optional)
+                  Caravan name
                 </label>
                 <input
-                  value={ownerPhotoUrl}
-                  onChange={(e) => setOwnerPhotoUrl(e.target.value)}
-                  placeholder="https://..."
+                  value={caravanName}
+                  onChange={(e) => setCaravanName(e.target.value)}
+                  placeholder="Your caravan name"
                   style={inputStyle}
                 />
 
@@ -314,13 +333,12 @@ export default function SetupClient({ token }: { token: string }) {
                 <select
                   value={preferredChannel}
                   onChange={(e) =>
-                    setPreferredChannel(e.target.value as "email" | "sms" | "both")
+                    setPreferredChannel(e.target.value as "email" | "sms")
                   }
                   style={inputStyle}
                 >
                   <option value="email">Email</option>
                   <option value="sms">SMS</option>
-                  <option value="both">Both</option>
                 </select>
               </section>
 
@@ -462,8 +480,17 @@ export default function SetupClient({ token }: { token: string }) {
                 </div>
               </section>
 
-              <button type="button" onClick={save} style={primaryButtonStyle}>
-                Save setup
+              <button
+                type="button"
+                onClick={save}
+                disabled={saving}
+                style={{
+                  ...primaryButtonStyle,
+                  opacity: saving ? 0.7 : 1,
+                  cursor: saving ? "wait" : "pointer",
+                }}
+              >
+                {saving ? "Saving..." : "Save setup"}
               </button>
             </>
           )}
@@ -510,7 +537,6 @@ const primaryButtonStyle: React.CSSProperties = {
   padding: "16px 20px",
   fontSize: 17,
   fontWeight: 600,
-  cursor: "pointer",
   background: "#111827",
   color: "#ffffff",
 };
