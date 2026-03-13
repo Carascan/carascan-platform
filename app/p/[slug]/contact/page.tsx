@@ -1,28 +1,46 @@
-import ContactClient from "./contactClient";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import ContactClient from "./contact/contactClient";
 
 export default async function ContactPage({
-params,
+  params,
 }: {
-params: { slug: string };
+  params: { slug: string };
 }) {
-const sb = supabaseAdmin();
+  const baseUrl = process.env.APP_BASE_URL;
 
-const { data: plate } = await sb
-.from("plates")
-.select("id, contact_enabled, emergency_enabled, status")
-.eq("slug", params.slug)
-.maybeSingle();
+  if (!baseUrl) {
+    return (
+      <main>
+        <h1>Configuration error</h1>
+        <div className="card">
+          <b>APP_BASE_URL is missing.</b>
+        </div>
+      </main>
+    );
+  }
 
-if (!plate || plate.status === "disabled") {
-return ( <main> <h1>Plate not found</h1> <div className="card"> <b>This plate is not available.</b> </div> </main>
-);
-}
+  const res = await fetch(
+    `${baseUrl}/api/plates/${encodeURIComponent(params.slug)}`,
+    { cache: "no-store" }
+  );
 
-return ( <ContactClient
-   slug={params.slug}
-   allowContactOwner={!!plate.contact_enabled}
-   allowEmergency={!!plate.emergency_enabled}
- />
-);
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok || !data) {
+    return (
+      <main>
+        <h1>Plate not found</h1>
+        <div className="card">
+          <b>{data?.error ?? "This plate is not available."}</b>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <ContactClient
+      slug={data.slug}
+      allowContactOwner={!!data.allowContactOwner}
+      allowEmergency={!!data.allowEmergency}
+    />
+  );
 }
