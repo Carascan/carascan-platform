@@ -20,12 +20,31 @@ const BodySchema = z.object({
     .nullable(),
 });
 
+const EMERGENCY_COOLDOWN_SECONDS = 60;
+const IP_WINDOW_MINUTES = 10;
+const MAX_ALERTS_PER_IP_IN_WINDOW = 5;
+
+function getClientIp(req: Request) {
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0].trim();
+  }
+
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) {
+    return realIp.trim();
+  }
+
+  return "unknown";
+}
+
 export async function POST(
   req: Request,
   { params }: { params: { slug: string } }
 ) {
   const sb = supabaseAdmin();
 
+  const clientIp = getClientIp(req);
   const body = await req.json().catch(() => null);
   const parsed = BodySchema.safeParse(body);
 
@@ -56,6 +75,64 @@ export async function POST(
     );
   }
 
+  // 1) Basic IP abuse protection
+  const ipWindowStart = new Date(
+    Date.now() - IP_WINDOW_MINUTES * 60 * 1000
+  ).toISOString();
+
+  const { count: recentIpCount, error: ipCountError } = await sb
+    .from("alerts")
+    .select("*", { count: "exact", head: true })
+    .gte("created_at", ipWindowStart)
+    .eq("source_ip", clientIp);
+
+  if (ipCountError) {
+    return NextResponse.json(
+      { error: `IP rate limit check failed: ${ipCountError.message}` },
+      { status: 500 }
+    );
+  }
+
+  if ((recentIpCount ?? 0) >= MAX_ALERTS_PER_IP_IN_WINDOW) {
+    return NextResponse.json(
+      {
+        error:
+          "Too many alerts have been sent from this connection recently. Please wait and try again.",
+      },
+      { status: 429 }
+    );
+  }
+
+  // 2) Emergency cooldown per plate
+  if (parsed.data.type === "emergency") {
+    const cooldownStart = new Date(
+      Date.now() - EMERGENCY_COOLDOWN_SECONDS * 1000
+    ).toISOString();
+
+    const { count: recentEmergencyCount, error: emergencyCountError } = await sb
+      .from("alerts")
+      .select("*", { count: "exact", head: true })
+      .eq("plate_id", plate.id)
+      .eq("type", "emergency")
+      .gte("created_at", cooldownStart);
+
+    if (emergencyCountError) {
+      return NextResponse.json(
+        { error: `Emergency cooldown check failed: ${emergencyCountError.message}` },
+        { status: 500 }
+      );
+    }
+
+    if ((recentEmergencyCount ?? 0) > 0) {
+      return NextResponse.json(
+        {
+          error: `An emergency alert was already sent recently. Please wait ${EMERGENCY_COOLDOWN_SECONDS} seconds before sending another.`,
+        },
+        { status: 429 }
+      );
+    }
+  }
+
   const { data: profile } = await sb
     .from("plate_profiles")
     .select("caravan_name")
@@ -74,6 +151,7 @@ export async function POST(
       location_lat: parsed.data.location?.lat ?? null,
       location_lng: parsed.data.location?.lng ?? null,
       location_accuracy: parsed.data.location?.accuracy ?? null,
+      source_ip: clientIp,
     })
     .select("id")
     .single();
