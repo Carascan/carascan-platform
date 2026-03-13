@@ -24,9 +24,7 @@ export default function SetupClient({ token }: { token: string }) {
 
   const [contactEnabled, setContactEnabled] = useState(true);
   const [emergencyEnabled, setEmergencyEnabled] = useState(true);
-  const [preferredChannel, setPreferredChannel] = useState<"email" | "sms">(
-    "email"
-  );
+  const [preferredChannel, setPreferredChannel] = useState<"email" | "sms" | "both">("email");
 
   const [contacts, setContacts] = useState<Contact[]>([
     { name: "", relationship: "", phone: "", email: "", enabled: true },
@@ -331,15 +329,16 @@ export default function SetupClient({ token }: { token: string }) {
                   Owner receives Contact alerts via
                 </label>
                 <select
-                  value={preferredChannel}
-                  onChange={(e) =>
-                    setPreferredChannel(e.target.value as "email" | "sms")
-                  }
-                  style={inputStyle}
-                >
-                  <option value="email">Email</option>
-                  <option value="sms">SMS</option>
-                </select>
+  value={preferredChannel}
+  onChange={(e) =>
+    setPreferredChannel(e.target.value as "email" | "sms" | "both")
+  }
+  style={inputStyle}
+>
+  <option value="email">Email</option>
+  <option value="sms">SMS</option>
+  <option value="both">Both</option>
+</select>
               </section>
 
               <section

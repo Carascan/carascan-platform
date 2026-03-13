@@ -19,7 +19,7 @@ const BodySchema = z.object({
   text2: z.string().optional().nullable(),
   contactEnabled: z.boolean(),
   emergencyEnabled: z.boolean(),
-  preferredChannel: z.enum(["email", "sms"]),
+  preferredChannel: z.enum(["email", "sms", "both"]),
   contacts: z.array(ContactSchema).max(10),
 });
 

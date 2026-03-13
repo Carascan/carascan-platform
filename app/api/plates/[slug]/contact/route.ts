@@ -118,7 +118,22 @@ export async function POST(
     reporter ? " | " + reporter : ""
   }`;
 
-  if (plate.preferred_contact_channel === "sms") {
+  const emailHtml = `<p><b>${profile?.caravan_name ?? "Caravan"}</b></p>
+    <p>${reporter ? "From: " + reporter : "From: (not provided)"}</p>
+    <p>${msg}</p>
+    ${locationText ? `<p>${locationText}</p>` : ""}`;
+
+  const sendEmailAllowed =
+    plate.preferred_contact_channel === "email" ||
+    plate.preferred_contact_channel === "both";
+
+  const sendSmsAllowed =
+    plate.preferred_contact_channel === "sms" ||
+    plate.preferred_contact_channel === "both";
+
+  let sentSomething = false;
+
+  if (sendSmsAllowed) {
     const { data: ownerProfile } = await sb
       .from("user_profiles")
       .select("phone")
@@ -138,19 +153,12 @@ export async function POST(
         sent_at: new Date().toISOString(),
       });
 
-      return NextResponse.json({ ok: true });
+      sentSomething = true;
     }
   }
 
-  if (ownerEmail) {
-    await sendEmail(
-      ownerEmail,
-      subject,
-      `<p><b>${profile?.caravan_name ?? "Caravan"}</b></p>
-       <p>${reporter ? "From: " + reporter : "From: (not provided)"}</p>
-       <p>${msg}</p>
-       ${locationText ? `<p>${locationText}</p>` : ""}`
-    );
+  if (sendEmailAllowed && ownerEmail) {
+    await sendEmail(ownerEmail, subject, emailHtml);
 
     await sb.from("alert_deliveries").insert({
       alert_id: alert.id,
@@ -160,6 +168,10 @@ export async function POST(
       sent_at: new Date().toISOString(),
     });
 
+    sentSomething = true;
+  }
+
+  if (sentSomething) {
     return NextResponse.json({ ok: true });
   }
 
