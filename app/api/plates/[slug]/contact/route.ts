@@ -93,7 +93,7 @@ export async function POST(
     .limit(1)
     .maybeSingle();
 
-  const ownerEmail = tokenRow?.email;
+  const ownerEmail = tokenRow?.email ?? null;
 
   const subject =
     parsed.data.type === "emergency"
@@ -116,12 +116,12 @@ export async function POST(
 
   const smsMessage = `Carascan ${parsed.data.type}: ${msg}${
     reporter ? " | " + reporter : ""
-  }`;
+  }${locationText ? " | " + locationText : ""}`;
 
   const emailHtml = `<p><b>${profile?.caravan_name ?? "Caravan"}</b></p>
-    <p>${reporter ? "From: " + reporter : "From: (not provided)"}</p>
-    <p>${msg}</p>
-    ${locationText ? `<p>${locationText}</p>` : ""}`;
+<p>${reporter ? "From: " + reporter : "From: (not provided)"}</p>
+<p>${msg}</p>
+${locationText ? `<p>${locationText}</p>` : ""}`;
 
   const sendEmailAllowed =
     plate.preferred_contact_channel === "email" ||
@@ -133,7 +133,43 @@ export async function POST(
 
   let sentSomething = false;
 
-  if (sendSmsAllowed) {
+  async function logDelivery(
+    channel: "sms" | "email",
+    recipient: string,
+    status: "sent" | "failed",
+    error_message?: string | null
+  ) {
+    await sb.from("alert_deliveries").insert({
+      alert_id: alert.id,
+      channel,
+      recipient,
+      status,
+      error_message: error_message ?? null,
+      sent_at: new Date().toISOString(),
+    });
+  }
+
+  async function sendSmsSafe(phone: string) {
+    try {
+      await sendSms(phone, smsMessage);
+      await logDelivery("sms", phone, "sent");
+      sentSomething = true;
+    } catch (e: any) {
+      await logDelivery("sms", phone, "failed", e?.message ?? "SMS failed");
+    }
+  }
+
+  async function sendEmailSafe(email: string) {
+    try {
+      await sendEmail(email, subject, emailHtml);
+      await logDelivery("email", email, "sent");
+      sentSomething = true;
+    } catch (e: any) {
+      await logDelivery("email", email, "failed", e?.message ?? "Email failed");
+    }
+  }
+
+  if (sendSmsAllowed && plate.owner_user_id) {
     const { data: ownerProfile } = await sb
       .from("user_profiles")
       .select("phone")
@@ -141,34 +177,30 @@ export async function POST(
       .maybeSingle();
 
     const ownerPhone = ownerProfile?.phone;
-
     if (ownerPhone) {
-      await sendSms(ownerPhone, smsMessage);
-
-      await sb.from("alert_deliveries").insert({
-        alert_id: alert.id,
-        channel: "sms",
-        recipient: ownerPhone,
-        status: "sent",
-        sent_at: new Date().toISOString(),
-      });
-
-      sentSomething = true;
+      await sendSmsSafe(ownerPhone);
     }
   }
 
   if (sendEmailAllowed && ownerEmail) {
-    await sendEmail(ownerEmail, subject, emailHtml);
+    await sendEmailSafe(ownerEmail);
+  }
 
-    await sb.from("alert_deliveries").insert({
-      alert_id: alert.id,
-      channel: "email",
-      recipient: ownerEmail,
-      status: "sent",
-      sent_at: new Date().toISOString(),
-    });
+  if (parsed.data.type === "emergency") {
+    const { data: emergencyContacts } = await sb
+      .from("emergency_contacts")
+      .select("name, phone, email, enabled")
+      .eq("plate_id", plate.id)
+      .eq("enabled", true);
 
-    sentSomething = true;
+    for (const contact of emergencyContacts ?? []) {
+      if (contact.phone) {
+        await sendSmsSafe(contact.phone);
+      }
+      if (contact.email) {
+        await sendEmailSafe(contact.email);
+      }
+    }
   }
 
   if (sentSomething) {
@@ -177,6 +209,6 @@ export async function POST(
 
   return NextResponse.json({
     ok: true,
-    note: "Owner routing not configured yet.",
+    note: "No delivery destination was configured.",
   });
 }
