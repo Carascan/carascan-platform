@@ -30,6 +30,7 @@ export default function ContactClient({
   const [msg, setMsg] = useState("");
   const [status, setStatus] = useState("");
   const [sending, setSending] = useState(false);
+  const [emergencyConfirm, setEmergencyConfirm] = useState(false);
 
   async function getLocation(): Promise<LocationPayload> {
     if (!navigator.geolocation) return null;
@@ -51,6 +52,14 @@ export default function ContactClient({
     }
   }
 
+  const switchMode = (nextMode: Mode) => {
+    setMode(nextMode);
+    setStatus("");
+    if (nextMode !== "emergency") {
+      setEmergencyConfirm(false);
+    }
+  };
+
   const send = async () => {
     setStatus("");
 
@@ -66,6 +75,11 @@ export default function ContactClient({
 
     if (mode === "emergency" && !allowEmergency) {
       setStatus("Emergency alerts are not enabled for this plate.");
+      return;
+    }
+
+    if (mode === "emergency" && !emergencyConfirm) {
+      setEmergencyConfirm(true);
       return;
     }
 
@@ -97,10 +111,11 @@ export default function ContactClient({
       setStatus(
         mode === "contact"
           ? "Sent. The owner has been notified."
-          : "Emergency alert sent."
+          : "Emergency alert sent to the selected contacts."
       );
 
       setMsg("");
+      setEmergencyConfirm(false);
     } catch {
       setStatus("Failed.");
     } finally {
@@ -136,7 +151,7 @@ export default function ContactClient({
               <button
                 type="button"
                 className={`btn ${mode === "contact" ? "active" : ""}`}
-                onClick={() => setMode("contact")}
+                onClick={() => switchMode("contact")}
                 disabled={sending}
               >
                 Contact owner
@@ -147,12 +162,34 @@ export default function ContactClient({
               <button
                 type="button"
                 className={`btn ${mode === "emergency" ? "active" : ""}`}
-                onClick={() => setMode("emergency")}
+                onClick={() => switchMode("emergency")}
                 disabled={sending}
               >
                 Emergency
               </button>
             )}
+          </div>
+        )}
+
+        {mode === "emergency" && (
+          <div
+            className="card"
+            style={{
+              marginBottom: 14,
+              background: emergencyConfirm ? "#fff7ed" : "#f9fafb",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <b>
+              {emergencyConfirm
+                ? "Confirm emergency alert"
+                : "Emergency alerts notify the owner and enabled emergency contacts."}
+            </b>
+            <div style={{ marginTop: 8 }}>
+              {emergencyConfirm
+                ? "Press the emergency button again to send the alert now."
+                : "Use this only for urgent situations involving the caravan or occupants."}
+            </div>
           </div>
         )}
 
@@ -184,14 +221,16 @@ export default function ContactClient({
             ? "Sending..."
             : mode === "contact"
             ? "Send"
-            : "Send emergency alert"}
+            : emergencyConfirm
+            ? "Send emergency alert now"
+            : "Continue emergency alert"}
         </button>
       </div>
 
       <small>
         {mode === "contact"
           ? "No owner contact details are shown. This relays a message to the owner only."
-          : "This sends an emergency alert according to the owner's selected notification settings."}
+          : "This sends an emergency alert to the owner's selected contact methods and enabled emergency contacts."}
       </small>
     </main>
   );
