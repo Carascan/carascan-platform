@@ -40,8 +40,9 @@ export default function ContactClient({
     try {
       const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject, {
-          timeout: 5000,
+          timeout: 10000,
           enableHighAccuracy: true,
+          maximumAge: 0,
         })
       );
 
@@ -109,10 +110,7 @@ export default function ContactClient({
           reporter_name: name.trim() || null,
           reporter_phone: phone.trim() || null,
           reporter_email: email.trim() || null,
-          message:
-            mode === "location_only"
-              ? "Location reported"
-              : msg.trim(),
+          message: mode === "location_only" ? "Location reported" : msg.trim(),
           location,
         }),
       });
@@ -128,11 +126,29 @@ export default function ContactClient({
       setSentTime(now);
 
       if (mode === "contact") {
-        setStatus("Message sent to the owner.");
+        setStatus(
+          "Location reported at " +
+            now +
+            " - email sent to owner and ICE contacts. Location reported at " +
+            now +
+            " - SMS sent to owner and ICE contacts."
+        );
       } else if (mode === "emergency") {
-        setStatus(`Emergency alert sent at ${now}.`);
+        setStatus(
+          "Location reported at " +
+            now +
+            " - email sent to owner and ICE contacts. Location reported at " +
+            now +
+            " - SMS sent to owner and ICE contacts."
+        );
       } else {
-        setStatus(`Location reported at ${now}.`);
+        setStatus(
+          "Location reported at " +
+            now +
+            " - email sent to owner and ICE contacts. Location reported at " +
+            now +
+            " - SMS sent to owner and ICE contacts."
+        );
       }
 
       setMsg("");
@@ -325,6 +341,22 @@ export default function ContactClient({
             : "Continue location report"}
         </button>
       </div>
+
+      {status && (
+        <div
+          className="card"
+          style={{
+            marginTop: 16,
+            background: "#f9fafb",
+            border: "1px solid #e5e7eb",
+          }}
+        >
+          <b>Thank you for your report.</b>
+          <div style={{ marginTop: 6 }}>
+            We hope being part of this community keeps us all safe on the road.
+          </div>
+        </div>
+      )}
 
       <small>
         {mode === "contact"
