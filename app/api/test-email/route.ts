@@ -4,7 +4,7 @@ import { sendEmail } from "@/lib/notifyEmail";
 export async function GET() {
   try {
     await sendEmail(
-      "YOUR_EMAIL@HERE.com",
+      "nathan@conolanprojects.com.au",
       "Carascan Email Test",
       "<p>Email integration is working.</p>"
     );
