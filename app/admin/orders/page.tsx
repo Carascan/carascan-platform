@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import AdminHeader from "@/components/AdminHeader";
 
 type OrderRow = {
   id: string;
@@ -140,11 +141,10 @@ export default function AdminOrdersPage() {
             marginBottom: 20,
           }}
         >
-          <h1 style={{ marginTop: 0 }}>Carascan admin dashboard</h1>
-          <p style={{ color: "#4b5563" }}>
-            Search orders, inspect plate status, resend setup links, and open the
-            customer plate page.
-          </p>
+          <AdminHeader
+            title="Carascan admin dashboard"
+            subtitle="Search orders, inspect plate status, resend setup links, and open the customer plate page."
+          />
 
           <div
             style={{
@@ -255,12 +255,7 @@ export default function AdminOrdersPage() {
           ))}
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gap: 16,
-          }}
-        >
+        <div style={{ display: "grid", gap: 16 }}>
           {rows.map((row) => {
             const publicUrl = row.plate?.slug
               ? `/p/${encodeURIComponent(row.plate.slug)}`
@@ -286,42 +281,19 @@ export default function AdminOrdersPage() {
                   }}
                 >
                   <div style={{ display: "grid", gap: 8 }}>
-                    <div>
-                      <strong>Identifier:</strong>{" "}
-                      {row.plate?.identifier ?? "—"}
-                    </div>
-                    <div>
-                      <strong>Plate ID:</strong> {row.plate?.id ?? "—"}
-                    </div>
-                    <div>
-                      <strong>Slug:</strong> {row.plate?.slug ?? "—"}
-                    </div>
-                    <div>
-                      <strong>Order status:</strong> {row.status ?? "—"}
-                    </div>
-                    <div>
-                      <strong>Plate status:</strong> {row.plate?.status ?? "—"}
-                    </div>
-                    <div>
-                      <strong>Shipping name:</strong> {row.shipping_name ?? "—"}
-                    </div>
-                    <div>
-                      <strong>Amount:</strong>{" "}
-                      {formatMoney(row.amount_total_cents, row.currency) || "—"}
-                    </div>
-                    <div>
-                      <strong>Stripe session:</strong>{" "}
-                      {row.stripe_checkout_session_id ?? "—"}
-                    </div>
-                    <div>
-                      <strong>Created:</strong> {row.created_at ?? "—"}
-                    </div>
+                    <div><strong>Identifier:</strong> {row.plate?.identifier ?? "—"}</div>
+                    <div><strong>Plate ID:</strong> {row.plate?.id ?? "—"}</div>
+                    <div><strong>Slug:</strong> {row.plate?.slug ?? "—"}</div>
+                    <div><strong>Order status:</strong> {row.status ?? "—"}</div>
+                    <div><strong>Plate status:</strong> {row.plate?.status ?? "—"}</div>
+                    <div><strong>Shipping name:</strong> {row.shipping_name ?? "—"}</div>
+                    <div><strong>Amount:</strong> {formatMoney(row.amount_total_cents, row.currency) || "—"}</div>
+                    <div><strong>Stripe session:</strong> {row.stripe_checkout_session_id ?? "—"}</div>
+                    <div><strong>Created:</strong> {row.created_at ?? "—"}</div>
                   </div>
 
                   <div style={{ display: "grid", gap: 8 }}>
-                    <div>
-                      <strong>Ship to</strong>
-                    </div>
+                    <div><strong>Ship to</strong></div>
                     <div>{row.shipping_line1 ?? ""}</div>
                     {row.shipping_line2 ? <div>{row.shipping_line2}</div> : null}
                     <div>

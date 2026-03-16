@@ -1,17 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import AdminHeader from "@/components/AdminHeader";
 
-export default function ResendSetupLinkAdminPage() {
-  const [plateId, setPlateId] = useState("");
-  const [email, setEmail] = useState("");
+export default function ResendSetupPage() {
   const [adminSecret, setAdminSecret] = useState("");
+  const [plateId, setPlateId] = useState("");
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState("");
+  const [message, setMessage] = useState("");
 
-  async function submit() {
+  async function resend() {
+    if (!plateId.trim()) {
+      setMessage("Please enter a plate ID.");
+      return;
+    }
+
     setBusy(true);
-    setResult("");
+    setMessage("");
 
     try {
       const r = await fetch("/api/admin/resend-setup-link", {
@@ -20,24 +25,21 @@ export default function ResendSetupLinkAdminPage() {
           "content-type": "application/json",
           "x-admin-secret": adminSecret,
         },
-        body: JSON.stringify({
-          plateId: plateId.trim(),
-          email: email.trim() || undefined,
-        }),
+        body: JSON.stringify({ plateId: plateId.trim() }),
       });
 
       const j = await r.json();
 
       if (!r.ok) {
-        setResult(j?.error ?? "Request failed.");
+        setMessage(j?.error ?? "Failed to resend setup link.");
         return;
       }
 
-      setResult(
-        `Setup link resent successfully.\nIdentifier: ${j.identifier ?? ""}\nEmail: ${j.email ?? ""}`,
+      setMessage(
+        `Setup link resent to ${j.email ?? "customer"} (identifier ${j.identifier ?? ""}).`,
       );
     } catch {
-      setResult("Request failed.");
+      setMessage("Failed to resend setup link.");
     } finally {
       setBusy(false);
     }
@@ -47,36 +49,48 @@ export default function ResendSetupLinkAdminPage() {
     <main
       style={{
         minHeight: "100vh",
+        padding: "48px 20px",
         background: "#f7f7f8",
-        padding: "40px 20px",
       }}
     >
-      <div
-        style={{
-          maxWidth: 680,
-          margin: "0 auto",
-          background: "#fff",
-          border: "1px solid #e5e7eb",
-          borderRadius: 16,
-          padding: 24,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
-        }}
-      >
-        <h1 style={{ marginTop: 0 }}>Admin: Resend setup link</h1>
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
+        <div
+          style={{
+            background: "#ffffff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 18,
+            padding: 28,
+            boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+          }}
+        >
+          <AdminHeader
+            title="Resend setup link"
+            subtitle="Manually resend the customer setup link using a plate ID."
+          />
 
-        <p style={{ color: "#4b5563" }}>
-          Send a fresh Carascan setup link for an existing plate.
-        </p>
+          {message && (
+            <div
+              style={{
+                marginBottom: 18,
+                padding: "14px 16px",
+                borderRadius: 12,
+                background: "#f9fafb",
+                border: "1px solid #e5e7eb",
+              }}
+            >
+              <strong>{message}</strong>
+            </div>
+          )}
 
-        <div style={{ display: "grid", gap: 14 }}>
-          <div>
+          <div style={{ marginBottom: 16 }}>
             <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
               Plate ID
             </label>
+
             <input
               value={plateId}
               onChange={(e) => setPlateId(e.target.value)}
-              placeholder="e776699b-3dce-4dab-9916-3600b207e039"
+              placeholder="Enter plate UUID"
               style={{
                 width: "100%",
                 padding: 10,
@@ -86,27 +100,11 @@ export default function ResendSetupLinkAdminPage() {
             />
           </div>
 
-          <div>
-            <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
-              Override email (optional)
-            </label>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="customer@example.com"
-              style={{
-                width: "100%",
-                padding: 10,
-                borderRadius: 8,
-                border: "1px solid #d1d5db",
-              }}
-            />
-          </div>
-
-          <div>
+          <div style={{ marginBottom: 20 }}>
             <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
               Admin secret
             </label>
+
             <input
               type="password"
               value={adminSecret}
@@ -123,36 +121,23 @@ export default function ResendSetupLinkAdminPage() {
 
           <button
             type="button"
-            onClick={submit}
-            disabled={busy || !plateId.trim() || !adminSecret.trim()}
+            onClick={resend}
+            disabled={busy || !adminSecret.trim()}
             style={{
+              width: "100%",
               border: 0,
-              borderRadius: 10,
-              padding: "14px 16px",
-              fontWeight: 700,
+              borderRadius: 12,
+              padding: "16px 20px",
+              fontSize: 17,
+              fontWeight: 600,
               background: "#111827",
-              color: "#fff",
+              color: "#ffffff",
               cursor: busy ? "default" : "pointer",
-              opacity: busy ? 0.7 : 1,
+              opacity: busy || !adminSecret.trim() ? 0.7 : 1,
             }}
           >
             {busy ? "Sending..." : "Resend setup link"}
           </button>
-
-          {result && (
-            <pre
-              style={{
-                margin: 0,
-                whiteSpace: "pre-wrap",
-                background: "#f9fafb",
-                border: "1px solid #e5e7eb",
-                borderRadius: 12,
-                padding: 14,
-              }}
-            >
-              {result}
-            </pre>
-          )}
         </div>
       </div>
     </main>
