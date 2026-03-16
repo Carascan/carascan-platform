@@ -21,7 +21,6 @@ export default function SetupClient({ token }: { token: string }) {
   const [plateId, setPlateId] = useState<string | null>(null);
   const [identifier, setIdentifier] = useState<string>("");
 
-  const [caravanName, setCaravanName] = useState("");
   const [bio, setBio] = useState("");
 
   const [contactEnabled, setContactEnabled] = useState(true);
@@ -61,7 +60,6 @@ export default function SetupClient({ token }: { token: string }) {
         setPlateId(j.plateId ?? null);
         setIdentifier(j.plate?.identifier ?? "");
 
-        setCaravanName(j.profile?.caravan_name ?? "");
         setBio(j.profile?.bio ?? "");
         setContactEnabled(j.plate?.contact_enabled ?? true);
         setEmergencyEnabled(j.plate?.emergency_enabled ?? true);
@@ -145,11 +143,6 @@ export default function SetupClient({ token }: { token: string }) {
   const save = async () => {
     setMessage("");
 
-    if (!caravanName.trim()) {
-      setMessage("Please enter a caravan name.");
-      return;
-    }
-
     const cleanedContacts = contacts
       .map((c) => ({
         ...c,
@@ -164,8 +157,8 @@ export default function SetupClient({ token }: { token: string }) {
 
     const payload = {
       token,
-      caravanName: caravanName.trim(),
-      text1: caravanName.trim(),
+      caravanName: null,
+      text1: "",
       text2: "",
       bio: bio.trim() || null,
       contactEnabled,
@@ -290,51 +283,6 @@ export default function SetupClient({ token }: { token: string }) {
               marginBottom: 18,
             }}
           >
-            <h3 style={{ marginTop: 0 }}>Caravan details</h3>
-
-            <label style={{ display: "block", fontWeight: 600, marginBottom: 8 }}>
-              Caravan name
-            </label>
-            <input
-              value={caravanName}
-              onChange={(e) => setCaravanName(e.target.value)}
-              placeholder="Enter caravan name"
-              style={{
-                width: "100%",
-                padding: 10,
-                borderRadius: 8,
-                border: "1px solid #d1d5db",
-                marginBottom: 14,
-              }}
-            />
-
-            <label style={{ display: "block", fontWeight: 600, marginBottom: 8 }}>
-              Optional bio
-            </label>
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              rows={4}
-              placeholder="Add optional notes or details"
-              style={{
-                width: "100%",
-                padding: 10,
-                borderRadius: 8,
-                border: "1px solid #d1d5db",
-                resize: "vertical",
-              }}
-            />
-          </section>
-
-          <section
-            style={{
-              background: "#f9fafb",
-              border: "1px solid #e5e7eb",
-              borderRadius: 14,
-              padding: 20,
-              marginBottom: 18,
-            }}
-          >
             <h3 style={{ marginTop: 0 }}>Contact options</h3>
 
             <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -382,6 +330,32 @@ export default function SetupClient({ token }: { token: string }) {
               <option value="sms">SMS</option>
               <option value="both">Both</option>
             </select>
+          </section>
+
+          <section
+            style={{
+              background: "#f9fafb",
+              border: "1px solid #e5e7eb",
+              borderRadius: 14,
+              padding: 20,
+              marginBottom: 18,
+            }}
+          >
+            <h3 style={{ marginTop: 0 }}>Optional notes</h3>
+
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              rows={4}
+              placeholder="Add optional notes or details"
+              style={{
+                width: "100%",
+                padding: 10,
+                borderRadius: 8,
+                border: "1px solid #d1d5db",
+                resize: "vertical",
+              }}
+            />
           </section>
 
           <section

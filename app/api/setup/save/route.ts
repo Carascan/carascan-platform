@@ -12,7 +12,7 @@ type IncomingContact = {
 
 type SavePayload = {
   token?: string;
-  caravanName?: string;
+  caravanName?: string | null;
   text1?: string;
   text2?: string;
   bio?: string | null;
@@ -41,8 +41,8 @@ export async function POST(req: Request) {
   }
 
   const token = cleanString(body.token);
-  const caravanName = cleanString(body.caravanName);
-  const text1 = cleanString(body.text1) || caravanName;
+  const caravanName = cleanNullableString(body.caravanName);
+  const text1 = cleanString(body.text1);
   const text2 = cleanString(body.text2);
   const bio = cleanNullableString(body.bio);
   const contactEnabled = body.contactEnabled !== false;
@@ -54,13 +54,6 @@ export async function POST(req: Request) {
 
   if (!token) {
     return NextResponse.json({ error: "Missing token" }, { status: 400 });
-  }
-
-  if (!caravanName) {
-    return NextResponse.json(
-      { error: "Caravan name is required" },
-      { status: 400 },
-    );
   }
 
   const sb = supabaseAdmin();
@@ -80,7 +73,10 @@ export async function POST(req: Request) {
   }
 
   if (tokenRow.used_at) {
-    return NextResponse.json({ error: "This setup link has already been used" }, { status: 410 });
+    return NextResponse.json(
+      { error: "This setup link has already been used" },
+      { status: 410 },
+    );
   }
 
   if (new Date(tokenRow.expires_at).getTime() < Date.now()) {
@@ -154,7 +150,7 @@ export async function POST(req: Request) {
   const { error: designUpdateError } = await sb
     .from("plate_designs")
     .update({
-      text_line_1: text1,
+      text_line_1: text1 || "",
       text_line_2: text2 || "",
       proof_approved: true,
     })

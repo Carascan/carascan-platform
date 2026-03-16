@@ -26,7 +26,10 @@ export async function GET(req: Request) {
   }
 
   if (tokenRow.used_at) {
-    return NextResponse.json({ error: "This setup link has already been used" }, { status: 410 });
+    return NextResponse.json(
+      { error: "This setup link has already been used" },
+      { status: 410 },
+    );
   }
 
   if (new Date(tokenRow.expires_at).getTime() < Date.now()) {
