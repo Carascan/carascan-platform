@@ -5,9 +5,11 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Only protect admin routes
-  if (!pathname.startsWith("/admin")) return NextResponse.next();
+  if (!pathname.startsWith("/admin")) {
+    return NextResponse.next();
+  }
 
-  const adminToken = process.env.ADMIN_TOKEN;
+  const adminToken = process.env.ADMIN_ACTION_SECRET;
 
   // If token isn't configured, never allow admin routes
   if (!adminToken) {
@@ -17,13 +19,16 @@ export function middleware(request: NextRequest) {
   const urlToken = request.nextUrl.searchParams.get("token");
   const cookieToken = request.cookies.get("admin_token")?.value;
 
-  // If URL token matches, set cookie and allow access
+  // First-time access via URL token
   if (urlToken && urlToken === adminToken) {
-    const response = NextResponse.next();
+    const cleanUrl = request.nextUrl.clone();
+    cleanUrl.searchParams.delete("token");
+
+    const response = NextResponse.redirect(cleanUrl);
 
     response.cookies.set("admin_token", adminToken, {
       httpOnly: true,
-      secure: true,        // requires https (Vercel is https)
+      secure: true,
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 30, // 30 days
@@ -32,7 +37,7 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  // If cookie token matches, allow access
+  // Existing authenticated cookie
   if (cookieToken === adminToken) {
     return NextResponse.next();
   }
@@ -41,7 +46,6 @@ export function middleware(request: NextRequest) {
   return NextResponse.redirect(new URL("/", request.url));
 }
 
-// Run middleware only for admin routes
 export const config = {
   matcher: ["/admin/:path*"],
 };
