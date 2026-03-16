@@ -1,101 +1,64 @@
-import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabaseServer";
-import { makeQrPngDataUrl } from "@/lib/qr";
-import { buildPlateSvg } from "@/lib/laserSvg";
+import { NextRequest, NextResponse } from "next/server";
+import { buildPlateAssets } from "@/lib/buildPlateAssets";
+import { buildManufacturingEmailPayload } from "@/lib/buildManufacturingEmailPayload";
+import { sendManufacturingEmail } from "@/lib/sendManufacturingEmail";
+
+// Replace with real DB lookup
+async function getMockPlate(plateId: string) {
+  return {
+    id: plateId,
+    identifier: "CSN-000234",
+    slug: "abc123xyz",
+    mountingHoles: true,
+    logoSvgMarkup: "",
+    customer: {
+      name: "Test Customer",
+      email: "customer@example.com",
+      phone: "",
+    },
+  };
+}
 
 export async function GET(
-  _req: Request,
-  { params }: { params: { plateId: string } }
+  _req: NextRequest,
+  context: { params: Promise<{ plateId: string }> },
 ) {
-  const sb = supabaseAdmin();
-  const plateId = params.plateId;
-
-  if (!plateId) {
-    return NextResponse.json({ error: "Missing plate id" }, { status: 400 });
-  }
-
-  const { data: plate } = await sb
-    .from("plates")
-    .select("id, slug")
-    .eq("id", plateId)
-    .maybeSingle();
-
-  if (!plate) {
-    return NextResponse.json({ error: "Plate not found" }, { status: 404 });
-  }
-
-  const { data: design } = await sb
-    .from("plate_designs")
-    .select("logo_url")
-    .eq("plate_id", plateId)
-    .maybeSingle();
-
-  if (!design) {
-    return NextResponse.json({ error: "Design missing" }, { status: 404 });
-  }
-
-  const baseUrl = process.env.APP_BASE_URL;
-  if (!baseUrl) {
-    return NextResponse.json({ error: "APP_BASE_URL missing" }, { status: 500 });
-  }
-
-  const plateUrl = `${baseUrl}/p/${plate.slug}`;
-  const qrDataUrl = await makeQrPngDataUrl(plateUrl);
-
-  const fallbackLogoUrl =
-    "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
-
-  const logoUrl = design.logo_url || fallbackLogoUrl;
-
-  let logoSvgText = "";
   try {
-    const res = await fetch(logoUrl, { cache: "no-store" });
-    if (res.ok) {
-      logoSvgText = await res.text();
+    const { plateId } = await context.params;
+    const plate = await getMockPlate(plateId);
+
+    if (!plate) {
+      return NextResponse.json({ error: "Plate not found" }, { status: 404 });
     }
-  } catch {
-    logoSvgText = "";
+
+    const assets = await buildPlateAssets({
+      identifier: plate.identifier,
+      slug: plate.slug,
+      mountingHoles: plate.mountingHoles,
+      logoSvgMarkup: plate.logoSvgMarkup,
+    });
+
+    const emailPayload = buildManufacturingEmailPayload(assets, {
+      name: plate.customer?.name,
+      email: plate.customer?.email,
+      phone: plate.customer?.phone,
+    });
+
+    const emailResult = await sendManufacturingEmail(emailPayload);
+
+    return NextResponse.json({
+      ok: true,
+      identifier: assets.identifier,
+      slug: assets.slug,
+      plateUrl: assets.plateUrl,
+      metadata: assets.metadata,
+      email: emailResult,
+    });
+  } catch (error) {
+    console.error("Failed to generate laser pack", error);
+    return NextResponse.json(
+      { error: "Failed to generate laser pack" },
+      { status: 500 },
+    );
   }
-
-  const slugUpper = String(plate.slug).toUpperCase();
-  const identifier = slugUpper.startsWith("CSN-")
-    ? slugUpper
-    : `CSN-${slugUpper}`;
-
-  const svg = buildPlateSvg({
-    slug: plate.slug,
-    qrDataUrl,
-
-    plateWidthMm: 90,
-    plateHeightMm: 90,
-    cornerRadiusMm: 3,
-    marginInsetMm: 5,
-    holeDiameterMm: 4.2,
-
-    logoCenterX: 45,
-    logoCenterY: 16,
-    logoWidthMm: 84,
-    logoHeightMm: 9.2,
-    logoSvgText,
-
-    qrCenterX: 45,
-    qrCenterY: 51,
-    qrSizeMm: 50,
-
-    idCenterX: 45,
-    idCenterY: 82,
-    idFontSizeMm: 4.2,
-    identifier,
-
-    includeCrosshair: true,
-  });
-
-  return new NextResponse(svg, {
-    status: 200,
-    headers: {
-      "content-type": "image/svg+xml; charset=utf-8",
-      "content-disposition": `attachment; filename="CARASCAN_${plate.slug}_90x90.svg"`,
-      "cache-control": "no-store",
-    },
-  });
 }

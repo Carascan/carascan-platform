@@ -1,68 +1,86 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { z } from "zod";
 
-const ContactSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(1),
-  relationship: z.string().optional().nullable(),
-  phone: z.string().optional().nullable(),
-  email: z.string().optional().nullable(),
-  enabled: z.boolean(),
-});
+type IncomingContact = {
+  id?: string;
+  name?: string;
+  relationship?: string;
+  phone?: string;
+  email?: string;
+  enabled?: boolean;
+};
 
-const BodySchema = z.object({
-  token: z.string().min(10),
-  caravanName: z.string().min(1).max(120),
-  bio: z.string().max(300).optional().nullable(),
-  text1: z.string().min(1).max(120),
-  text2: z.string().optional().nullable(),
-  contactEnabled: z.boolean(),
-  emergencyEnabled: z.boolean(),
-  preferredChannel: z.enum(["email", "sms", "both"]),
-  contacts: z.array(ContactSchema).max(10),
-});
+type SavePayload = {
+  token?: string;
+  caravanName?: string;
+  text1?: string;
+  text2?: string;
+  bio?: string | null;
+  contactEnabled?: boolean;
+  emergencyEnabled?: boolean;
+  preferredChannel?: "email" | "sms" | "both";
+  contacts?: IncomingContact[];
+};
+
+function cleanString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function cleanNullableString(value: unknown): string | null {
+  const s = cleanString(value);
+  return s ? s : null;
+}
 
 export async function POST(req: Request) {
-  const sb = supabaseAdmin();
+  let body: SavePayload;
 
-  const body = await req.json().catch(() => null);
-  const parsed = BodySchema.safeParse(body);
+  try {
+    body = (await req.json()) as SavePayload;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
 
-  if (!parsed.success) {
+  const token = cleanString(body.token);
+  const caravanName = cleanString(body.caravanName);
+  const text1 = cleanString(body.text1) || caravanName;
+  const text2 = cleanString(body.text2);
+  const bio = cleanNullableString(body.bio);
+  const contactEnabled = body.contactEnabled !== false;
+  const emergencyEnabled = body.emergencyEnabled !== false;
+  const preferredChannel =
+    body.preferredChannel === "sms" || body.preferredChannel === "both"
+      ? body.preferredChannel
+      : "email";
+
+  if (!token) {
+    return NextResponse.json({ error: "Missing token" }, { status: 400 });
+  }
+
+  if (!caravanName) {
     return NextResponse.json(
-      { error: "Invalid payload", details: parsed.error.flatten() },
-      { status: 400 }
+      { error: "Caravan name is required" },
+      { status: 400 },
     );
   }
 
-  const {
-    token,
-    caravanName,
-    bio,
-    text1,
-    text2,
-    contactEnabled,
-    emergencyEnabled,
-    preferredChannel,
-    contacts,
-  } = parsed.data;
+  const sb = supabaseAdmin();
 
   const { data: tokenRow, error: tokenError } = await sb
     .from("plate_setup_tokens")
-    .select("plate_id, expires_at")
+    .select("plate_id, expires_at, email, used_at, revoked_at")
     .eq("token", token)
     .maybeSingle();
 
-  if (tokenError) {
-    return NextResponse.json(
-      { error: tokenError.message },
-      { status: 500 }
-    );
+  if (tokenError || !tokenRow) {
+    return NextResponse.json({ error: "Invalid token" }, { status: 404 });
   }
 
-  if (!tokenRow) {
-    return NextResponse.json({ error: "Invalid token" }, { status: 404 });
+  if (tokenRow.revoked_at) {
+    return NextResponse.json({ error: "Token has been revoked" }, { status: 410 });
+  }
+
+  if (tokenRow.used_at) {
+    return NextResponse.json({ error: "This setup link has already been used" }, { status: 410 });
   }
 
   if (new Date(tokenRow.expires_at).getTime() < Date.now()) {
@@ -71,26 +89,52 @@ export async function POST(req: Request) {
 
   const plateId = tokenRow.plate_id;
 
-  const cleanedContacts = contacts
-    .map((c) => ({
-      name: c.name.trim(),
-      relationship: c.relationship?.trim() || null,
-      phone: c.phone?.trim() || null,
-      email: c.email?.trim() || null,
-      enabled: c.enabled,
-    }))
-    .filter((c) => c.name.length > 0);
+  const cleanedContacts = Array.isArray(body.contacts)
+    ? body.contacts
+        .map((c) => ({
+          name: cleanString(c.name),
+          relationship: cleanNullableString(c.relationship),
+          phone: cleanNullableString(c.phone),
+          email: cleanNullableString(c.email),
+          enabled: c.enabled !== false,
+        }))
+        .filter((c) => c.name || c.phone || c.email)
+        .slice(0, 3)
+    : [];
 
-  const enabledContacts = cleanedContacts.filter((c) => c.enabled);
+  const { data: plateRow, error: plateError } = await sb
+    .from("plates")
+    .select("id, identifier")
+    .eq("id", plateId)
+    .maybeSingle();
 
-  if (enabledContacts.length > 10) {
+  if (plateError) {
     return NextResponse.json(
-      { error: "Too many enabled contacts" },
-      { status: 400 }
+      { error: `Plate lookup failed: ${plateError.message}` },
+      { status: 500 },
     );
   }
 
-  const { error: plateError } = await sb
+  if (!plateRow) {
+    return NextResponse.json({ error: "Plate not found" }, { status: 404 });
+  }
+
+  const { error: profileUpdateError } = await sb
+    .from("plate_profiles")
+    .update({
+      caravan_name: caravanName,
+      bio,
+    })
+    .eq("plate_id", plateId);
+
+  if (profileUpdateError) {
+    return NextResponse.json(
+      { error: `Profile update failed: ${profileUpdateError.message}` },
+      { status: 500 },
+    );
+  }
+
+  const { error: plateUpdateError } = await sb
     .from("plates")
     .update({
       contact_enabled: contactEnabled,
@@ -100,36 +144,26 @@ export async function POST(req: Request) {
     })
     .eq("id", plateId);
 
-  if (plateError) {
+  if (plateUpdateError) {
     return NextResponse.json(
-      { error: `Plate update failed: ${plateError.message}` },
-      { status: 500 }
+      { error: `Plate update failed: ${plateUpdateError.message}` },
+      { status: 500 },
     );
   }
 
-  const { error: profileError } = await sb.from("plate_profiles").upsert({
-    plate_id: plateId,
-    caravan_name: caravanName.trim(),
-    bio: bio?.trim() || null,
-  });
+  const { error: designUpdateError } = await sb
+    .from("plate_designs")
+    .update({
+      text_line_1: text1,
+      text_line_2: text2 || "",
+      proof_approved: true,
+    })
+    .eq("plate_id", plateId);
 
-  if (profileError) {
+  if (designUpdateError) {
     return NextResponse.json(
-      { error: `Profile update failed: ${profileError.message}` },
-      { status: 500 }
-    );
-  }
-
-  const { error: designError } = await sb.from("plate_designs").upsert({
-    plate_id: plateId,
-    text_line_1: text1.trim(),
-    text_line_2: text2?.trim() || "",
-  });
-
-  if (designError) {
-    return NextResponse.json(
-      { error: `Design update failed: ${designError.message}` },
-      { status: 500 }
+      { error: `Design update failed: ${designUpdateError.message}` },
+      { status: 500 },
     );
   }
 
@@ -141,12 +175,12 @@ export async function POST(req: Request) {
   if (deleteContactsError) {
     return NextResponse.json(
       { error: `Contact reset failed: ${deleteContactsError.message}` },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
   if (cleanedContacts.length > 0) {
-    const insertRows = cleanedContacts.map((c) => ({
+    const rows = cleanedContacts.map((c) => ({
       plate_id: plateId,
       name: c.name,
       relationship: c.relationship,
@@ -157,28 +191,35 @@ export async function POST(req: Request) {
 
     const { error: insertContactsError } = await sb
       .from("emergency_contacts")
-      .insert(insertRows);
+      .insert(rows);
 
     if (insertContactsError) {
       return NextResponse.json(
-        { error: `Contact insert failed: ${insertContactsError.message}` },
-        { status: 500 }
+        { error: `Contacts save failed: ${insertContactsError.message}` },
+        { status: 500 },
       );
     }
   }
 
-  const { error: orderError } = await sb
-    .from("orders")
-    .update({ status: "ready_to_engrave" })
-    .eq("plate_id", plateId)
-    .in("status", ["paid", "awaiting_profile"]);
+  const { error: tokenUsedError } = await sb
+    .from("plate_setup_tokens")
+    .update({
+      used_at: new Date().toISOString(),
+    })
+    .eq("token", token);
 
-  if (orderError) {
+  if (tokenUsedError) {
     return NextResponse.json(
-      { error: `Order update failed: ${orderError.message}` },
-      { status: 500 }
+      { error: `Token finalisation failed: ${tokenUsedError.message}` },
+      { status: 500 },
     );
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: true,
+    plateId,
+    identifier: plateRow.identifier ?? null,
+    status: "active",
+    savedContacts: cleanedContacts.length,
+  });
 }

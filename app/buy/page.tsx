@@ -69,9 +69,11 @@ export default function Buy() {
 
           <div style={{ color: "#374151", lineHeight: 1.7 }}>
             <div>• Unique QR coded Carascan plate</div>
-            <div>• 90 × 90 mm anodised aluminium plate with rivets</div>
-            <div>• Customer setup page after purchase</div>
-            <div>• 12 month contact maintenance subscription</div>
+            <div>• Customer selected mounting options riveted or adhesive</div>
+            <div>• 90 x 90mm Natural finish anodised aluminum plate </div>
+            <div>• Laser engraved for supreme quality</div>
+            <div>• Customer contact personalisation after purchase</div>
+            <div>• 12 month contact up to 3 x emergency contacts subscription</div>
           </div>
         </div>
 

@@ -17,7 +17,9 @@ const LOGO_URL =
 export default function SetupClient({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
   const [plateId, setPlateId] = useState<string | null>(null);
+  const [identifier, setIdentifier] = useState<string>("");
 
   const [caravanName, setCaravanName] = useState("");
   const [bio, setBio] = useState("");
@@ -36,22 +38,29 @@ export default function SetupClient({ token }: { token: string }) {
   const maxContacts = 3;
 
   useEffect(() => {
-    (async () => {
+    let active = true;
+
+    async function load() {
       try {
         const r = await fetch(
           `/api/setup/get?token=${encodeURIComponent(token)}`,
-          { cache: "no-store" }
+          { cache: "no-store" },
         );
 
         const j = await r.json();
 
         if (!r.ok) {
+          if (!active) return;
           setMessage(j?.error ?? "Invalid or expired setup link.");
           setLoading(false);
           return;
         }
 
-        setPlateId(j.plateId);
+        if (!active) return;
+
+        setPlateId(j.plateId ?? null);
+        setIdentifier(j.plate?.identifier ?? "");
+
         setCaravanName(j.profile?.caravan_name ?? "");
         setBio(j.profile?.bio ?? "");
         setContactEnabled(j.plate?.contact_enabled ?? true);
@@ -61,13 +70,21 @@ export default function SetupClient({ token }: { token: string }) {
           (j.plate?.preferred_contact_channel ?? "email") as
             | "email"
             | "sms"
-            | "both"
+            | "both",
         );
 
         const incomingContacts =
           j.contacts?.length > 0
             ? j.contacts
-            : [{ name: "", relationship: "", phone: "", email: "", enabled: true }];
+            : [
+                {
+                  name: "",
+                  relationship: "",
+                  phone: "",
+                  email: "",
+                  enabled: true,
+                },
+              ];
 
         setContacts(
           incomingContacts.map((c: any) => ({
@@ -76,15 +93,22 @@ export default function SetupClient({ token }: { token: string }) {
             relationship: c.relationship ?? "",
             phone: c.phone ?? "",
             email: c.email ?? "",
-            enabled: !!c.enabled,
-          }))
+            enabled: c.enabled !== false,
+          })),
         );
       } catch {
+        if (!active) return;
         setMessage("Failed to load setup details.");
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
-    })();
+    }
+
+    load();
+
+    return () => {
+      active = false;
+    };
   }, [token]);
 
   const updateContact = (idx: number, patch: Partial<Contact>) => {
@@ -103,7 +127,7 @@ export default function SetupClient({ token }: { token: string }) {
   const addContact = () => {
     if (contacts.length >= maxContacts) {
       setMessage(
-        "Maximum of 3 contacts on the standard setup. Upgrade to unlock up to 10 contacts."
+        "Maximum of 3 contacts on the standard setup. Upgrade to unlock up to 10 contacts.",
       );
       return;
     }
@@ -126,6 +150,16 @@ export default function SetupClient({ token }: { token: string }) {
       return;
     }
 
+    const cleanedContacts = contacts
+      .map((c) => ({
+        ...c,
+        name: c.name.trim(),
+        relationship: c.relationship?.trim() ?? "",
+        phone: c.phone?.trim() ?? "",
+        email: c.email?.trim() ?? "",
+      }))
+      .filter((c) => c.name || c.phone || c.email);
+
     setSaving(true);
 
     const payload = {
@@ -137,7 +171,7 @@ export default function SetupClient({ token }: { token: string }) {
       contactEnabled,
       emergencyEnabled,
       preferredChannel,
-      contacts,
+      contacts: cleanedContacts,
     };
 
     try {
@@ -154,7 +188,7 @@ export default function SetupClient({ token }: { token: string }) {
         return;
       }
 
-      setMessage("Saved. Your plate is now ready.");
+      setMessage("Saved. Your plate is now active.");
     } catch {
       setMessage("Save failed.");
     } finally {
@@ -186,7 +220,13 @@ export default function SetupClient({ token }: { token: string }) {
   }
 
   return (
-    <main style={{ minHeight: "100vh", padding: "32px 20px", background: "#f7f7f8" }}>
+    <main
+      style={{
+        minHeight: "100vh",
+        padding: "32px 20px",
+        background: "#f7f7f8",
+      }}
+    >
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
         <div
           style={{
@@ -218,6 +258,12 @@ export default function SetupClient({ token }: { token: string }) {
             <p style={{ margin: 0, color: "#4b5563" }}>
               Configure your contact options and emergency contacts.
             </p>
+
+            {identifier && (
+              <p style={{ margin: "12px 0 0", color: "#111827", fontWeight: 600 }}>
+                Plate reference: {identifier}
+              </p>
+            )}
           </div>
 
           {message && (
@@ -244,6 +290,51 @@ export default function SetupClient({ token }: { token: string }) {
               marginBottom: 18,
             }}
           >
+            <h3 style={{ marginTop: 0 }}>Caravan details</h3>
+
+            <label style={{ display: "block", fontWeight: 600, marginBottom: 8 }}>
+              Caravan name
+            </label>
+            <input
+              value={caravanName}
+              onChange={(e) => setCaravanName(e.target.value)}
+              placeholder="Enter caravan name"
+              style={{
+                width: "100%",
+                padding: 10,
+                borderRadius: 8,
+                border: "1px solid #d1d5db",
+                marginBottom: 14,
+              }}
+            />
+
+            <label style={{ display: "block", fontWeight: 600, marginBottom: 8 }}>
+              Optional bio
+            </label>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              rows={4}
+              placeholder="Add optional notes or details"
+              style={{
+                width: "100%",
+                padding: 10,
+                borderRadius: 8,
+                border: "1px solid #d1d5db",
+                resize: "vertical",
+              }}
+            />
+          </section>
+
+          <section
+            style={{
+              background: "#f9fafb",
+              border: "1px solid #e5e7eb",
+              borderRadius: 14,
+              padding: 20,
+              marginBottom: 18,
+            }}
+          >
             <h3 style={{ marginTop: 0 }}>Contact options</h3>
 
             <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -255,7 +346,14 @@ export default function SetupClient({ token }: { token: string }) {
               Enable Contact button
             </label>
 
-            <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginTop: 10,
+              }}
+            >
               <input
                 type="checkbox"
                 checked={emergencyEnabled}
@@ -273,7 +371,12 @@ export default function SetupClient({ token }: { token: string }) {
               onChange={(e) =>
                 setPreferredChannel(e.target.value as "email" | "sms" | "both")
               }
-              style={{ width: "100%", padding: 10, borderRadius: 8 }}
+              style={{
+                width: "100%",
+                padding: 10,
+                borderRadius: 8,
+                border: "1px solid #d1d5db",
+              }}
             >
               <option value="email">Email</option>
               <option value="sms">SMS</option>
@@ -281,10 +384,205 @@ export default function SetupClient({ token }: { token: string }) {
             </select>
           </section>
 
+          <section
+            style={{
+              background: "#f9fafb",
+              border: "1px solid #e5e7eb",
+              borderRadius: 14,
+              padding: 20,
+              marginBottom: 18,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 16,
+                alignItems: "center",
+                marginBottom: 14,
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Emergency contacts</h3>
+              <button
+                type="button"
+                onClick={addContact}
+                style={{
+                  border: 0,
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                  fontWeight: 600,
+                  background: "#e5e7eb",
+                  color: "#111827",
+                  cursor: "pointer",
+                }}
+              >
+                Add contact
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gap: 14 }}>
+              {contacts.map((contact, idx) => (
+                <div
+                  key={contact.id ?? idx}
+                  style={{
+                    background: "#ffffff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 12,
+                    padding: 16,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 12,
+                    }}
+                  >
+                    <div>
+                      <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
+                        Name
+                      </label>
+                      <input
+                        value={contact.name}
+                        onChange={(e) =>
+                          updateContact(idx, { name: e.target.value })
+                        }
+                        style={{
+                          width: "100%",
+                          padding: 10,
+                          borderRadius: 8,
+                          border: "1px solid #d1d5db",
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
+                        Relationship
+                      </label>
+                      <input
+                        value={contact.relationship ?? ""}
+                        onChange={(e) =>
+                          updateContact(idx, { relationship: e.target.value })
+                        }
+                        style={{
+                          width: "100%",
+                          padding: 10,
+                          borderRadius: 8,
+                          border: "1px solid #d1d5db",
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
+                        Phone
+                      </label>
+                      <input
+                        value={contact.phone ?? ""}
+                        onChange={(e) =>
+                          updateContact(idx, { phone: e.target.value })
+                        }
+                        style={{
+                          width: "100%",
+                          padding: 10,
+                          borderRadius: 8,
+                          border: "1px solid #d1d5db",
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
+                        Email
+                      </label>
+                      <input
+                        value={contact.email ?? ""}
+                        onChange={(e) =>
+                          updateContact(idx, { email: e.target.value })
+                        }
+                        style={{
+                          width: "100%",
+                          padding: 10,
+                          borderRadius: 8,
+                          border: "1px solid #d1d5db",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 12,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={contact.enabled}
+                        onChange={(e) =>
+                          updateContact(idx, { enabled: e.target.checked })
+                        }
+                      />
+                      Enabled
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => removeContact(idx)}
+                      style={{
+                        border: 0,
+                        borderRadius: 8,
+                        padding: "8px 12px",
+                        background: "#fee2e2",
+                        color: "#991b1b",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                padding: 14,
+                borderRadius: 12,
+                background: "#eff6ff",
+                border: "1px solid #bfdbfe",
+              }}
+            >
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>
+                Need more than 3 contacts?
+              </div>
+              <button
+                type="button"
+                onClick={goToUpgradeCheckout}
+                style={{
+                  border: 0,
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                  fontWeight: 600,
+                  background: "#111827",
+                  color: "#ffffff",
+                  cursor: "pointer",
+                }}
+              >
+                Upgrade to 10 contacts
+              </button>
+            </div>
+          </section>
+
           <button
             type="button"
             onClick={save}
-            disabled={saving}
+            disabled={saving || !plateId}
             style={{
               width: "100%",
               border: 0,
@@ -294,6 +592,8 @@ export default function SetupClient({ token }: { token: string }) {
               fontWeight: 600,
               background: "#111827",
               color: "#ffffff",
+              opacity: saving || !plateId ? 0.7 : 1,
+              cursor: saving || !plateId ? "default" : "pointer",
             }}
           >
             {saving ? "Saving..." : "Save setup"}

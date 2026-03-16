@@ -40,6 +40,7 @@ export default function Success() {
           }}
         >
           Time to hit the road! Your order is confirmed.
+          Thank you for contributing to the community and looking out for each other.
         </p>
 
         <p
