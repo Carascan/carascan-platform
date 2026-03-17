@@ -130,11 +130,20 @@ export default function SetupClient({ token }: SetupClientProps) {
         setBio(data.profile?.bio ?? "");
         setContactEnabled(Boolean(data.plate?.contact_enabled));
         setEmergencyEnabled(Boolean(data.plate?.emergency_enabled));
-        setPreferredChannel(data.plate?.preferred_contact_channel || "email");
 
-        const existing = Array.isArray(data.contacts) ? data.contacts.slice(0, 3) : [];
+        const incomingChannel = data.plate?.preferred_contact_channel || "email";
+        setPreferredChannel(
+          incomingChannel === "sms" || incomingChannel === "both"
+            ? incomingChannel
+            : "email"
+        );
+
+        const existing = Array.isArray(data.contacts)
+          ? data.contacts.slice(0, 3)
+          : [];
         const padded = [...existing];
         while (padded.length < 3) padded.push(blankContact());
+
         setContacts(
           padded.map((c) => ({
             name: c.name ?? "",
@@ -235,9 +244,12 @@ export default function SetupClient({ token }: SetupClientProps) {
   if (loadState.status === "loading") {
     return (
       <main style={styles.page}>
-        <div style={styles.card}>
-          <h1 style={styles.h1}>Carascan setup</h1>
-          <p>Loading your setup details...</p>
+        <div style={styles.wrapper}>
+          <Header />
+          <div style={styles.card}>
+            <h1 style={styles.h1}>Carascan setup</h1>
+            <p>Loading your setup details...</p>
+          </div>
         </div>
       </main>
     );
@@ -246,15 +258,18 @@ export default function SetupClient({ token }: SetupClientProps) {
   if (loadState.status === "error") {
     return (
       <main style={styles.page}>
-        <div style={styles.card}>
-          <h1 style={styles.h1}>Carascan setup</h1>
-          <p style={styles.error}>Failed to load setup</p>
-          <p>{loadState.error}</p>
-          {loadState.details !== undefined && (
-            <pre style={styles.pre}>
-              {JSON.stringify(loadState.details, null, 2)}
-            </pre>
-          )}
+        <div style={styles.wrapper}>
+          <Header />
+          <div style={styles.card}>
+            <h1 style={styles.h1}>Carascan setup</h1>
+            <p style={styles.error}>Failed to load setup</p>
+            <p>{loadState.error}</p>
+            {loadState.details !== undefined && (
+              <pre style={styles.pre}>
+                {JSON.stringify(loadState.details, null, 2)}
+              </pre>
+            )}
+          </div>
         </div>
       </main>
     );
@@ -265,6 +280,8 @@ export default function SetupClient({ token }: SetupClientProps) {
   return (
     <main style={styles.page}>
       <div style={styles.wrapper}>
+        <Header />
+
         <div style={styles.card}>
           <h1 style={styles.h1}>Complete your Carascan setup</h1>
           <p style={styles.muted}>
@@ -330,8 +347,8 @@ export default function SetupClient({ token }: SetupClientProps) {
               onChange={(e) => setPreferredChannel(e.target.value)}
             >
               <option value="email">Email</option>
-              <option value="phone">Phone</option>
               <option value="sms">SMS</option>
+              <option value="both">Both</option>
             </select>
           </label>
 
@@ -395,13 +412,26 @@ export default function SetupClient({ token }: SetupClientProps) {
             {saving ? "Saving..." : "Save setup"}
           </button>
         </form>
-
-        <div style={styles.card}>
-          <h2 style={styles.h2}>Loaded data</h2>
-          <pre style={styles.pre}>{JSON.stringify(data, null, 2)}</pre>
-        </div>
       </div>
     </main>
+  );
+}
+
+function Header() {
+  return (
+    <div style={styles.header}>
+      <a href="/" style={styles.logoWrap}>
+        <img
+          src="https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg"
+          alt="Carascan"
+          style={styles.logo}
+        />
+      </a>
+
+      <a href="/help" style={styles.helpButton}>
+        Need help?
+      </a>
+    </div>
   );
 }
 
@@ -417,6 +447,35 @@ const styles: Record<string, React.CSSProperties> = {
     margin: "0 auto",
     display: "grid",
     gap: 20,
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+    marginBottom: 4,
+  },
+  logoWrap: {
+    display: "inline-flex",
+    alignItems: "center",
+    textDecoration: "none",
+  },
+  logo: {
+    height: 32,
+    width: "auto",
+    display: "block",
+  },
+  helpButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "10px 16px",
+    borderRadius: 10,
+    textDecoration: "none",
+    fontWeight: 700,
+    fontSize: 14,
+    background: "#111827",
+    color: "#ffffff",
   },
   card: {
     background: "#fff",
@@ -483,6 +542,8 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
     fontWeight: 700,
     fontSize: 14,
+    background: "#111827",
+    color: "#fff",
   },
   error: {
     color: "#b00020",
