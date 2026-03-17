@@ -6,6 +6,5 @@ export default async function SetupPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-
   return <SetupClient token={token} />;
 }
