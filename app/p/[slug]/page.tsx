@@ -13,8 +13,17 @@ type PlateResponse = {
     emergency_enabled: boolean;
   };
   profile?: {
+    caravan_name?: string | null;
     bio?: string | null;
     owner_photo_url?: string | null;
+  } | null;
+  design?: {
+    qr_url?: string | null;
+    logo_url?: string | null;
+    plate_width_mm?: number | null;
+    plate_height_mm?: number | null;
+    qr_size_mm?: number | null;
+    hole_diameter_mm?: number | null;
   } | null;
 };
 
@@ -204,6 +213,10 @@ export default function PlatePage({
     );
   }
 
+  const caravanName = data.profile?.caravan_name?.trim() || "";
+  const bio = data.profile?.bio?.trim() || "";
+  const identifier = data.plate.identifier;
+
   return (
     <main style={styles.page}>
       <div style={styles.wrap}>
@@ -214,17 +227,28 @@ export default function PlatePage({
               alt="Carascan"
               style={{
                 width: "100%",
-                maxWidth: 340,
+                maxWidth: 260,
                 height: "auto",
                 display: "block",
                 margin: "0 auto 18px",
               }}
             />
 
-            <h1 style={styles.h1}>Carascan Plate</h1>
+            <div style={styles.platePreviewWrap}>
+              <PlatePreview
+                identifier={identifier}
+                qrUrl={data.design?.qr_url || ""}
+                logoUrl={data.design?.logo_url || LOGO_URL}
+              />
+            </div>
+
             <p style={styles.sub}>
-              Secure contact and emergency access for this plate.
+              Secure contact and emergency access for <strong>{identifier}</strong>
             </p>
+
+            {caravanName ? (
+              <p style={styles.caravanName}>{caravanName}</p>
+            ) : null}
           </div>
 
           {data.profile?.owner_photo_url ? (
@@ -243,16 +267,16 @@ export default function PlatePage({
             </div>
           ) : null}
 
-          {data.profile?.bio ? (
+          {bio ? (
             <div style={styles.bioBox}>
-              <p style={styles.bioText}>{data.profile.bio}</p>
+              <p style={styles.bioText}>{bio}</p>
             </div>
           ) : null}
 
           <div style={styles.actionBox}>
-            <h3 style={{ marginTop: 0, marginBottom: 14 }}>Actions</h3>
+            <h3 style={styles.actionsHeading}>Actions</h3>
 
-            <div style={styles.buttonGrid}>
+            <div style={styles.topButtonGrid}>
               {data.plate.contact_enabled ? (
                 <a href={`/p/${slug}/contact`} style={styles.primaryLink}>
                   Contact
@@ -268,14 +292,6 @@ export default function PlatePage({
               >
                 {showReportLocation ? "Hide Report Location" : "Report Location"}
               </button>
-
-              {data.plate.emergency_enabled ? (
-                <a href={`/p/${slug}/emergency`} style={styles.emergencyLink}>
-                  In Case of Emergency
-                </a>
-              ) : (
-                <div style={styles.disabledBox}>Emergency is disabled</div>
-              )}
             </div>
 
             {showReportLocation && (
@@ -314,7 +330,7 @@ export default function PlatePage({
                   />
                 </div>
 
-                <div style={styles.buttonGrid}>
+                <div style={styles.topButtonGrid}>
                   <button
                     type="button"
                     onClick={useMyLocation}
@@ -339,6 +355,18 @@ export default function PlatePage({
                 ) : null}
               </div>
             )}
+
+            {data.plate.emergency_enabled ? (
+              <div style={styles.emergencyWrap}>
+                <a href={`/p/${slug}/emergency`} style={styles.emergencyLink}>
+                  In Case of Emergency
+                </a>
+              </div>
+            ) : (
+              <div style={styles.emergencyWrap}>
+                <div style={styles.disabledBox}>Emergency is disabled</div>
+              </div>
+            )}
           </div>
 
           <p style={styles.footer}>
@@ -350,11 +378,36 @@ export default function PlatePage({
   );
 }
 
+function PlatePreview({
+  identifier,
+  qrUrl,
+  logoUrl,
+}: {
+  identifier: string;
+  qrUrl: string;
+  logoUrl: string;
+}) {
+  return (
+    <div style={styles.platePreview}>
+      <div style={styles.plateInner}>
+        <img src={logoUrl} alt="Plate logo" style={styles.plateLogo} />
+        {qrUrl ? (
+          <img src={qrUrl} alt="Plate QR" style={styles.plateQr} />
+        ) : (
+          <div style={styles.plateQrFallback}>QR</div>
+        )}
+        <div style={styles.plateIdentifier}>{identifier}</div>
+      </div>
+    </div>
+  );
+}
+
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
     padding: "32px 20px",
     background: "#f7f7f8",
+    fontFamily: "Arial, sans-serif",
   },
   wrap: {
     maxWidth: 760,
@@ -367,14 +420,82 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 28,
     boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
   },
-  h1: {
-    margin: "0 0 10px",
-    fontSize: 32,
+  platePreviewWrap: {
+    display: "flex",
+    justifyContent: "center",
+    margin: "0 auto 18px",
+  },
+  platePreview: {
+    width: 180,
+    height: 180,
+    background: "#ffffff",
+    border: "1px solid #111827",
+    borderRadius: 6,
+    padding: 6,
+    boxSizing: "border-box",
+  },
+  plateInner: {
+    position: "relative",
+    width: "100%",
+    height: "100%",
+    border: "1px solid #111827",
+    borderRadius: 4,
+    overflow: "hidden",
+    background: "#fff",
+  },
+  plateLogo: {
+    position: "absolute",
+    top: 16,
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: 112,
+    height: "auto",
+    objectFit: "contain",
+  },
+  plateQr: {
+    position: "absolute",
+    width: 100,
+    height: 100,
+    left: "50%",
+    top: 72,
+    transform: "translateX(-50%)",
+    objectFit: "cover",
+  },
+  plateQrFallback: {
+    position: "absolute",
+    width: 100,
+    height: 100,
+    left: "50%",
+    top: 72,
+    transform: "translateX(-50%)",
+    border: "1px solid #111827",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 16,
+    fontWeight: 700,
+  },
+  plateIdentifier: {
+    position: "absolute",
+    bottom: 10,
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: 8.5,
+    fontWeight: 700,
+    letterSpacing: 0.4,
+    color: "#111827",
+    whiteSpace: "nowrap",
   },
   sub: {
     margin: 0,
     color: "#4b5563",
     lineHeight: 1.6,
+  },
+  caravanName: {
+    margin: "10px 0 0 0",
+    color: "#111827",
+    fontSize: 22,
+    fontWeight: 700,
   },
   bioBox: {
     background: "#f9fafb",
@@ -396,7 +517,12 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 20,
     marginBottom: 16,
   },
-  buttonGrid: {
+  actionsHeading: {
+    marginTop: 0,
+    marginBottom: 14,
+    textAlign: "center",
+  },
+  topButtonGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
     gap: 14,
@@ -413,17 +539,23 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#111827",
     color: "#ffffff",
   },
+  emergencyWrap: {
+    display: "flex",
+    justifyContent: "center",
+    marginTop: 18,
+  },
   emergencyLink: {
-    display: "block",
+    display: "inline-block",
+    minWidth: 260,
     textAlign: "center",
     textDecoration: "none",
-    border: "1px solid #d1d5db",
+    border: 0,
     borderRadius: 12,
     padding: "16px 20px",
     fontSize: 16,
-    fontWeight: 600,
-    background: "#fff7ed",
-    color: "#9a3412",
+    fontWeight: 700,
+    background: "#dc2626",
+    color: "#ffffff",
   },
   disabledBox: {
     border: "1px solid #e5e7eb",
