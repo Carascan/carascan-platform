@@ -34,39 +34,46 @@ function formatMoney(cents?: number | null, currency?: string | null) {
 }
 
 export default function AdminOrdersPage() {
-  const [adminSecret, setAdminSecret] = useState("");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [message, setMessage] = useState("");
+  const [token, setToken] = useState("");
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    const token = url.searchParams.get("token") ?? "";
-    if (token) {
-      setAdminSecret(token);
+    const tokenFromUrl = url.searchParams.get("token") ?? "";
+    setToken(tokenFromUrl);
+
+    if (tokenFromUrl) {
+      void loadOrders(tokenFromUrl, "");
+    } else {
+      setMessage("Missing token.");
     }
   }, []);
 
-  async function loadOrders(secretOverride?: string) {
-    const secretToUse = secretOverride ?? adminSecret;
+  async function loadOrders(tokenOverride?: string, queryOverride?: string) {
+    const tokenToUse = tokenOverride ?? token;
+    const queryToUse = queryOverride ?? query;
+
+    if (!tokenToUse.trim()) {
+      setMessage("Missing token.");
+      setRows([]);
+      return;
+    }
 
     setBusy(true);
     setMessage("");
 
     try {
-      const url = `/api/admin/orders?q=${encodeURIComponent(
-        query.trim()
-      )}&token=${encodeURIComponent(secretToUse.trim())}`;
-
-      const r = await fetch(url, {
-        headers: secretToUse.trim()
-          ? {
-              "x-admin-secret": secretToUse,
-            }
-          : {},
-        cache: "no-store",
-      });
+      const r = await fetch(
+        `/api/admin/orders?q=${encodeURIComponent(
+          queryToUse.trim()
+        )}&token=${encodeURIComponent(tokenToUse.trim())}`,
+        {
+          cache: "no-store",
+        }
+      );
 
       const j = await r.json();
 
@@ -86,12 +93,6 @@ export default function AdminOrdersPage() {
     }
   }
 
-  useEffect(() => {
-    if (adminSecret.trim()) {
-      loadOrders(adminSecret);
-    }
-  }, [adminSecret]);
-
   async function resendSetupLink(plateId: string) {
     const ok = window.confirm("Resend setup link for this plate?");
     if (!ok) return;
@@ -101,7 +102,7 @@ export default function AdminOrdersPage() {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "x-admin-secret": adminSecret,
+          "x-admin-secret": token,
         },
         body: JSON.stringify({ plateId }),
       });
@@ -168,7 +169,7 @@ export default function AdminOrdersPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1.2fr 1fr auto",
+              gridTemplateColumns: "1fr auto",
               gap: 12,
               alignItems: "end",
             }}
@@ -190,28 +191,10 @@ export default function AdminOrdersPage() {
               />
             </div>
 
-            <div>
-              <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
-                Admin secret
-              </label>
-              <input
-                type="password"
-                value={adminSecret}
-                onChange={(e) => setAdminSecret(e.target.value)}
-                placeholder="Enter admin secret"
-                style={{
-                  width: "100%",
-                  padding: 10,
-                  borderRadius: 8,
-                  border: "1px solid #d1d5db",
-                }}
-              />
-            </div>
-
             <button
               type="button"
               onClick={() => loadOrders()}
-              disabled={busy || !adminSecret.trim()}
+              disabled={busy || !token.trim()}
               style={{
                 border: 0,
                 borderRadius: 10,
@@ -220,7 +203,7 @@ export default function AdminOrdersPage() {
                 background: "#111827",
                 color: "#fff",
                 cursor: busy ? "default" : "pointer",
-                opacity: busy || !adminSecret.trim() ? 0.7 : 1,
+                opacity: busy || !token.trim() ? 0.7 : 1,
               }}
             >
               {busy ? "Loading..." : "Load orders"}
