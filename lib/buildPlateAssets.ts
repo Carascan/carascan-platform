@@ -7,6 +7,7 @@ export type BuildPlateAssetsInput = {
   slug: string;
   mountingHoles: boolean;
   logoSvgMarkup?: string;
+  logoImageHref?: string;
 };
 
 export type BuildPlateAssetsResult = {
@@ -21,7 +22,7 @@ export type BuildPlateAssetsResult = {
 };
 
 export async function buildPlateAssets(
-  input: BuildPlateAssetsInput,
+  input: BuildPlateAssetsInput
 ): Promise<BuildPlateAssetsResult> {
   const plateUrl = buildPlateUrl(input.slug);
 
@@ -40,6 +41,7 @@ export async function buildPlateAssets(
     qrImageHref: qrDataUrl,
     mountingHoles: input.mountingHoles,
     logoSvgMarkup: input.logoSvgMarkup,
+    logoImageHref: input.logoImageHref,
   });
 
   return {
