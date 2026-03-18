@@ -20,10 +20,6 @@ type PlateResponse = {
   design?: {
     qr_url?: string | null;
     logo_url?: string | null;
-    plate_width_mm?: number | null;
-    plate_height_mm?: number | null;
-    qr_size_mm?: number | null;
-    hole_diameter_mm?: number | null;
   } | null;
 };
 
@@ -38,13 +34,23 @@ export default function PlatePage({
   const [loadError, setLoadError] = useState("");
 
   const [showReportLocation, setShowReportLocation] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [showEmergency, setShowEmergency] = useState(false);
+
+  const [reportBusy, setReportBusy] = useState(false);
   const [reportStatus, setReportStatus] = useState("");
+
+  const [emergencyBusy, setEmergencyBusy] = useState(false);
+  const [emergencyStatus, setEmergencyStatus] = useState("");
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
+
+  const [emergencyName, setEmergencyName] = useState("");
+  const [emergencyPhone, setEmergencyPhone] = useState("");
+  const [emergencyEmail, setEmergencyEmail] = useState("");
+  const [emergencyMessage, setEmergencyMessage] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -87,7 +93,7 @@ export default function PlatePage({
   async function sendManualReport() {
     if (!slug) return;
 
-    setBusy(true);
+    setReportBusy(true);
     setReportStatus("");
 
     try {
@@ -116,7 +122,7 @@ export default function PlatePage({
     } catch (err) {
       setReportStatus(err instanceof Error ? err.message : "Failed to send report.");
     } finally {
-      setBusy(false);
+      setReportBusy(false);
     }
   }
 
@@ -130,7 +136,7 @@ export default function PlatePage({
       return;
     }
 
-    setBusy(true);
+    setReportBusy(true);
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -178,11 +184,11 @@ export default function PlatePage({
             err instanceof Error ? err.message : "Failed to send location report."
           );
         } finally {
-          setBusy(false);
+          setReportBusy(false);
         }
       },
       (error) => {
-        setBusy(false);
+        setReportBusy(false);
         setReportStatus(error.message || "Unable to access your location.");
       },
       {
@@ -191,6 +197,44 @@ export default function PlatePage({
         maximumAge: 0,
       }
     );
+  }
+
+  async function sendEmergencyAlert() {
+    if (!slug) return;
+
+    setEmergencyBusy(true);
+    setEmergencyStatus("");
+
+    try {
+      const r = await fetch(
+        `/api/plates/${encodeURIComponent(slug)}/emergency`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            reporter_name: emergencyName,
+            reporter_phone: emergencyPhone,
+            reporter_email: emergencyEmail,
+            message: emergencyMessage,
+          }),
+        }
+      );
+
+      const j = await r.json().catch(() => null);
+
+      if (!r.ok) {
+        setEmergencyStatus(j?.error ?? "Failed to send emergency alert.");
+        return;
+      }
+
+      setEmergencyStatus("Emergency alert sent successfully.");
+    } catch (err) {
+      setEmergencyStatus(
+        err instanceof Error ? err.message : "Failed to send emergency alert."
+      );
+    } finally {
+      setEmergencyBusy(false);
+    }
   }
 
   if (loading) {
@@ -216,6 +260,8 @@ export default function PlatePage({
   const caravanName = data.profile?.caravan_name?.trim() || "";
   const bio = data.profile?.bio?.trim() || "";
   const identifier = data.plate.identifier;
+  const qrUrl = data.design?.qr_url || "";
+  const plateLogoUrl = data.design?.logo_url?.trim() || LOGO_URL;
 
   return (
     <main style={styles.page}>
@@ -227,7 +273,7 @@ export default function PlatePage({
               alt="Carascan"
               style={{
                 width: "100%",
-                maxWidth: 260,
+                maxWidth: 390,
                 height: "auto",
                 display: "block",
                 margin: "0 auto 18px",
@@ -237,8 +283,8 @@ export default function PlatePage({
             <div style={styles.platePreviewWrap}>
               <PlatePreview
                 identifier={identifier}
-                qrUrl={data.design?.qr_url || ""}
-                logoUrl={data.design?.logo_url || LOGO_URL}
+                qrUrl={qrUrl}
+                logoUrl={plateLogoUrl}
               />
             </div>
 
@@ -246,9 +292,7 @@ export default function PlatePage({
               Secure contact and emergency access for <strong>{identifier}</strong>
             </p>
 
-            {caravanName ? (
-              <p style={styles.caravanName}>{caravanName}</p>
-            ) : null}
+            {caravanName ? <p style={styles.caravanName}>{caravanName}</p> : null}
           </div>
 
           {data.profile?.owner_photo_url ? (
@@ -287,7 +331,10 @@ export default function PlatePage({
 
               <button
                 type="button"
-                onClick={() => setShowReportLocation((v) => !v)}
+                onClick={() => {
+                  setShowReportLocation((v) => !v);
+                  if (showEmergency) setShowEmergency(false);
+                }}
                 style={styles.secondaryButton}
               >
                 {showReportLocation ? "Hide Report Location" : "Report Location"}
@@ -334,19 +381,19 @@ export default function PlatePage({
                   <button
                     type="button"
                     onClick={useMyLocation}
-                    disabled={busy}
+                    disabled={reportBusy}
                     style={styles.primaryButton}
                   >
-                    {busy ? "Sending..." : "Use My Current Location"}
+                    {reportBusy ? "Sending..." : "Use My Current Location"}
                   </button>
 
                   <button
                     type="button"
                     onClick={sendManualReport}
-                    disabled={busy}
+                    disabled={reportBusy}
                     style={styles.secondaryButton}
                   >
-                    {busy ? "Sending..." : "Send Manual Report"}
+                    {reportBusy ? "Sending..." : "Send Manual Report"}
                   </button>
                 </div>
 
@@ -357,11 +404,72 @@ export default function PlatePage({
             )}
 
             {data.plate.emergency_enabled ? (
-              <div style={styles.emergencyWrap}>
-                <a href={`/p/${slug}/emergency`} style={styles.emergencyLink}>
-                  In Case of Emergency
-                </a>
-              </div>
+              <>
+                <div style={styles.emergencyWrap}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEmergency((v) => !v);
+                      if (showReportLocation) setShowReportLocation(false);
+                    }}
+                    style={styles.emergencyButton}
+                  >
+                    {showEmergency ? "Hide Emergency Panel" : "In Case of Emergency"}
+                  </button>
+                </div>
+
+                {showEmergency && (
+                  <div style={styles.reportPanel}>
+                    <h3 style={{ marginTop: 0 }}>Emergency Alert</h3>
+                    <p style={styles.sub}>
+                      Send an emergency alert to the owner and emergency contacts.
+                    </p>
+
+                    <div style={styles.fieldGrid}>
+                      <input
+                        value={emergencyName}
+                        onChange={(e) => setEmergencyName(e.target.value)}
+                        placeholder="Your name"
+                        style={styles.input}
+                      />
+                      <input
+                        value={emergencyPhone}
+                        onChange={(e) => setEmergencyPhone(e.target.value)}
+                        placeholder="Your phone"
+                        style={styles.input}
+                      />
+                      <input
+                        value={emergencyEmail}
+                        onChange={(e) => setEmergencyEmail(e.target.value)}
+                        placeholder="Your email"
+                        style={styles.input}
+                      />
+                      <textarea
+                        value={emergencyMessage}
+                        onChange={(e) => setEmergencyMessage(e.target.value)}
+                        placeholder="Describe the emergency"
+                        rows={5}
+                        style={styles.textarea}
+                      />
+                    </div>
+
+                    <div style={styles.emergencyWrap}>
+                      <button
+                        type="button"
+                        onClick={sendEmergencyAlert}
+                        disabled={emergencyBusy}
+                        style={styles.emergencyButton}
+                      >
+                        {emergencyBusy ? "Sending..." : "Send Emergency Alert"}
+                      </button>
+                    </div>
+
+                    {emergencyStatus ? (
+                      <div style={styles.statusBox}>{emergencyStatus}</div>
+                    ) : null}
+                  </div>
+                )}
+              </>
             ) : (
               <div style={styles.emergencyWrap}>
                 <div style={styles.disabledBox}>Emergency is disabled</div>
@@ -389,6 +497,7 @@ function PlatePreview({
 }) {
   return (
     <div style={styles.platePreview}>
+      <div style={styles.plateTexture} />
       <div style={styles.plateInner}>
         <img src={logoUrl} alt="Plate logo" style={styles.plateLogo} />
         {qrUrl ? (
@@ -426,29 +535,39 @@ const styles: Record<string, React.CSSProperties> = {
     margin: "0 auto 18px",
   },
   platePreview: {
+    position: "relative",
     width: 180,
     height: 180,
-    background: "#ffffff",
-    border: "1px solid #111827",
-    borderRadius: 6,
-    padding: 6,
+    borderRadius: 8,
+    overflow: "hidden",
     boxSizing: "border-box",
+    border: "1px solid #7b7b7b",
+    background:
+      "linear-gradient(145deg, #d9d9d9 0%, #c8c8c8 22%, #efefef 50%, #c2c2c2 78%, #dadada 100%)",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(0,0,0,0.08), 0 8px 20px rgba(0,0,0,0.12)",
+  },
+  plateTexture: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "repeating-linear-gradient(90deg, rgba(255,255,255,0.14) 0px, rgba(255,255,255,0.14) 1px, rgba(0,0,0,0.03) 2px, rgba(255,255,255,0.02) 4px)",
+    opacity: 0.55,
+    pointerEvents: "none",
   },
   plateInner: {
     position: "relative",
     width: "100%",
     height: "100%",
-    border: "1px solid #111827",
-    borderRadius: 4,
+    borderRadius: 6,
     overflow: "hidden",
-    background: "#fff",
   },
   plateLogo: {
     position: "absolute",
-    top: 16,
+    top: 14,
     left: "50%",
     transform: "translateX(-50%)",
-    width: 112,
+    width: 118,
     height: "auto",
     objectFit: "contain",
   },
@@ -457,16 +576,17 @@ const styles: Record<string, React.CSSProperties> = {
     width: 100,
     height: 100,
     left: "50%",
-    top: 72,
+    top: 58,
     transform: "translateX(-50%)",
     objectFit: "cover",
+    background: "#fff",
   },
   plateQrFallback: {
     position: "absolute",
     width: 100,
     height: 100,
     left: "50%",
-    top: 72,
+    top: 58,
     transform: "translateX(-50%)",
     border: "1px solid #111827",
     display: "flex",
@@ -474,6 +594,7 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     fontSize: 16,
     fontWeight: 700,
+    background: "#fff",
   },
   plateIdentifier: {
     position: "absolute",
@@ -482,7 +603,7 @@ const styles: Record<string, React.CSSProperties> = {
     transform: "translateX(-50%)",
     fontSize: 8.5,
     fontWeight: 700,
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
     color: "#111827",
     whiteSpace: "nowrap",
   },
@@ -544,18 +665,16 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     marginTop: 18,
   },
-  emergencyLink: {
-    display: "inline-block",
-    minWidth: 260,
-    textAlign: "center",
-    textDecoration: "none",
+  emergencyButton: {
     border: 0,
     borderRadius: 12,
     padding: "16px 20px",
+    minWidth: 280,
     fontSize: 16,
     fontWeight: 700,
     background: "#dc2626",
     color: "#ffffff",
+    cursor: "pointer",
   },
   disabledBox: {
     border: "1px solid #e5e7eb",
