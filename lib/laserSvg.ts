@@ -5,6 +5,7 @@ export type BuildPlateSvgInput = {
   qrImageHref: string;
   mountingHoles: boolean;
   logoSvgMarkup?: string;
+  logoImageHref?: string;
   includeCrosshair?: boolean;
 };
 
@@ -31,6 +32,7 @@ export function buildPlateSvg({
   qrImageHref,
   mountingHoles,
   logoSvgMarkup,
+  logoImageHref,
   includeCrosshair = false,
 }: BuildPlateSvgInput): string {
   const spec = getDefaultPlateSpec();
@@ -59,13 +61,25 @@ export function buildPlateSvg({
     ${holes
       .map(
         (h) =>
-          `<circle cx="${h.x}" cy="${h.y}" r="${spec.holeDiameterMm / 2}" />`,
+          `<circle cx="${h.x}" cy="${h.y}" r="${spec.holeDiameterMm / 2}" />`
       )
       .join("\n    ")}
   </g>`
     : "";
 
-  const logoMarkup = logoSvgMarkup
+  const logoMarkup = logoImageHref
+    ? `
+  <g id="LOGO_IMAGE">
+    <image
+      x="${logoX}"
+      y="${logoY}"
+      width="${logoWidth}"
+      height="${logoHeight}"
+      href="${esc(logoImageHref)}"
+      preserveAspectRatio="xMidYMid meet"
+    />
+  </g>`
+    : logoSvgMarkup
     ? `
   <g id="LOGO_SVG">
     <svg
@@ -74,7 +88,8 @@ export function buildPlateSvg({
       width="${logoWidth}"
       height="${logoHeight}"
       viewBox="0 0 84 9.2"
-      overflow="visible"
+      preserveAspectRatio="xMidYMid meet"
+      overflow="hidden"
     >
       ${logoSvgMarkup}
     </svg>
@@ -108,6 +123,24 @@ export function buildPlateSvg({
   height="${spec.heightMm}mm"
   viewBox="0 0 ${spec.widthMm} ${spec.heightMm}"
 >
+  <defs>
+    <linearGradient id="plateGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f7f7f7" />
+      <stop offset="45%" stop-color="#dfdfdf" />
+      <stop offset="100%" stop-color="#cfcfcf" />
+    </linearGradient>
+  </defs>
+
+  <rect
+    x="0"
+    y="0"
+    width="${spec.widthMm}"
+    height="${spec.heightMm}"
+    rx="${spec.cornerRadiusMm}"
+    ry="${spec.cornerRadiusMm}"
+    fill="url(#plateGradient)"
+  />
+
   <g id="OUTLINE" fill="none" stroke="black" stroke-width="0.3">
     <rect
       x="0.15"
