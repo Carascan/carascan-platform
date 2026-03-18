@@ -111,31 +111,24 @@ export function buildPlateSvg({
   <g id="LOGO_SVG"></g>`;
 
   const qrMarkup = qrSvgMarkup
-    ? `
+  ? `
   <g id="QR_VECTOR">
     <svg
       x="${qrX}"
       y="${qrY}"
       width="${qrSize}"
       height="${qrSize}"
-      viewBox="0 0 1 1"
       preserveAspectRatio="none"
       overflow="hidden"
     >
       ${qrSvgMarkup
         .replace(/<\?xml[\s\S]*?\?>/gi, "")
         .replace(/<!DOCTYPE[\s\S]*?>/gi, "")
-        .replace(/<svg[^>]*viewBox="0 0 ([^"]+)"[^>]*>/i, (_m, vb) => {
-          const parts = vb.trim().split(/\s+/);
-          const w = Number(parts[2] ?? parts[0] ?? 1);
-          const h = Number(parts[3] ?? parts[1] ?? 1);
-          return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" preserveAspectRatio="none">`;
-        })
         .replace(/<svg[^>]*>/i, "")
         .replace(/<\/svg>/i, "")}
     </svg>
   </g>`
-    : `
+  : `
   <g id="QR_RASTER">
     <image
       x="${qrX}"
