@@ -38,23 +38,47 @@ export function buildPlateSvg({
   const spec = getDefaultPlateSpec();
   const holes = getHoleCenters(spec);
 
+  // -----------------------------
+  // LOGO (fixed)
+  // -----------------------------
   const logoWidth = 84;
   const logoHeight = 9.2;
   const logoCenterX = 45;
   const logoCenterY = 16;
+
   const logoX = logoCenterX - logoWidth / 2;
   const logoY = logoCenterY - logoHeight / 2;
 
-  const qrSize = 50;
-  const qrCenterX = 45;
-  const qrCenterY = 51;
-  const qrX = qrCenterX - qrSize / 2;
-  const qrY = qrCenterY - qrSize / 2;
+  const logoBottom = logoY + logoHeight; // 20.6 mm
 
+  // -----------------------------
+  // IDENTIFIER (fixed)
+  // -----------------------------
   const textX = 45;
   const textY = 82;
   const textFontSize = 4.2;
 
+  // approximate text top
+  const identifierTop = textY - textFontSize / 2;
+
+  // -----------------------------
+  // QR POSITIONING (CONTROLLED)
+  // -----------------------------
+  const gapBelowLogo = 4.0;
+  const gapAboveIdentifier = 2.0;
+
+  const qrTop = logoBottom + gapBelowLogo;
+  const qrBottom = identifierTop - gapAboveIdentifier;
+
+  const qrSize = qrBottom - qrTop;
+
+  const qrCenterX = 45;
+  const qrX = qrCenterX - qrSize / 2;
+  const qrY = qrTop;
+
+  // -----------------------------
+  // HOLES
+  // -----------------------------
   const holeMarkup = mountingHoles
     ? `
   <g id="HOLES" fill="none" stroke="black" stroke-width="0.3">
@@ -67,6 +91,9 @@ export function buildPlateSvg({
   </g>`
     : "";
 
+  // -----------------------------
+  // LOGO RENDER
+  // -----------------------------
   const logoMarkup = logoImageHref
     ? `
   <g id="LOGO_IMAGE">
@@ -100,25 +127,14 @@ export function buildPlateSvg({
   const crosshairMarkup = includeCrosshair
     ? `
   <g id="CROSSHAIR" fill="none" stroke="red" stroke-width="0.2">
-    <line
-      x1="${spec.widthMm / 2}"
-      y1="0"
-      x2="${spec.widthMm / 2}"
-      y2="${spec.heightMm}"
-    />
-    <line
-      x1="0"
-      y1="${spec.heightMm / 2}"
-      x2="${spec.widthMm}"
-      y2="${spec.heightMm / 2}"
-    />
+    <line x1="${spec.widthMm / 2}" y1="0" x2="${spec.widthMm / 2}" y2="${spec.heightMm}" />
+    <line x1="0" y1="${spec.heightMm / 2}" x2="${spec.widthMm}" y2="${spec.heightMm / 2}" />
   </g>`
     : "";
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg
   xmlns="http://www.w3.org/2000/svg"
-  xmlns:xlink="http://www.w3.org/1999/xlink"
   width="${spec.widthMm}mm"
   height="${spec.heightMm}mm"
   viewBox="0 0 ${spec.widthMm} ${spec.heightMm}"
@@ -150,7 +166,11 @@ export function buildPlateSvg({
       rx="${spec.cornerRadiusMm}"
       ry="${spec.cornerRadiusMm}"
     />
-  </g>${holeMarkup}${logoMarkup}
+  </g>
+
+  ${holeMarkup}
+  ${logoMarkup}
+
   <g id="QR_RASTER">
     <image
       x="${qrX}"
@@ -171,7 +191,11 @@ export function buildPlateSvg({
       font-family="Arial, Helvetica, sans-serif"
       font-size="${textFontSize}"
       fill="black"
-    >${esc(identifier)}</text>
-  </g>${crosshairMarkup}
+    >
+      ${esc(identifier)}
+    </text>
+  </g>
+
+  ${crosshairMarkup}
 </svg>`;
 }
