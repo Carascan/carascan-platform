@@ -27,6 +27,8 @@ type OrderRow = {
   } | null;
 };
 
+const ADMIN_TOKEN_STORAGE_KEY = "carascan_admin_token";
+
 function formatMoney(cents?: number | null, currency?: string | null) {
   if (typeof cents !== "number") return "";
   const value = cents / 100;
@@ -44,20 +46,33 @@ export default function AdminOrdersPage() {
   const [busy, setBusy] = useState(false);
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [message, setMessage] = useState("");
+
   const [token, setToken] = useState("");
-  const [tokenReady, setTokenReady] = useState(false);
+  const [loginInput, setLoginInput] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [booted, setBooted] = useState(false);
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    const tokenFromUrl = url.searchParams.get("token") ?? "";
-    setToken(tokenFromUrl);
-    setTokenReady(true);
+    const tokenFromUrl = (url.searchParams.get("token") ?? "").trim();
+    const tokenFromStorage =
+      window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)?.trim() ?? "";
 
-    if (tokenFromUrl.trim()) {
-      void loadOrders(tokenFromUrl, "");
-    } else {
-      setMessage("Admin token missing from URL.");
+    const initialToken = tokenFromUrl || tokenFromStorage || "";
+
+    if (initialToken) {
+      setToken(initialToken);
+      setLoginInput(initialToken);
+      setIsAuthenticated(true);
+      window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, initialToken);
+
+      if (tokenFromUrl) {
+        url.searchParams.delete("token");
+        window.history.replaceState({}, "", url.toString());
+      }
     }
+
+    setBooted(true);
   }, []);
 
   async function loadOrders(tokenOverride?: string, digitsOverride?: string) {
@@ -66,7 +81,7 @@ export default function AdminOrdersPage() {
     const queryValue = normaliseIdentifierSearch(digitsToUse);
 
     if (!tokenToUse) {
-      setMessage("Admin token missing from URL.");
+      setMessage("Enter admin password.");
       setRows([]);
       return;
     }
@@ -76,10 +91,11 @@ export default function AdminOrdersPage() {
 
     try {
       const r = await fetch(
-        `/api/admin/orders?q=${encodeURIComponent(queryValue)}&token=${encodeURIComponent(
-          tokenToUse
-        )}`,
+        `/api/admin/orders?q=${encodeURIComponent(queryValue)}`,
         {
+          headers: {
+            "x-admin-secret": tokenToUse,
+          },
           cache: "no-store",
         }
       );
@@ -89,7 +105,7 @@ export default function AdminOrdersPage() {
       if (!r.ok) {
         setMessage(j?.error ?? "Failed to load orders.");
         setRows([]);
-        return;
+        return false;
       }
 
       const items = Array.isArray(j.items) ? j.items : [];
@@ -99,12 +115,45 @@ export default function AdminOrdersPage() {
           ? `Loaded ${items.length} order(s) for ${queryValue}.`
           : `Loaded ${items.length} order(s).`
       );
+
+      return true;
     } catch {
       setMessage("Failed to load orders.");
       setRows([]);
+      return false;
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleLogin() {
+    const candidate = loginInput.trim();
+    if (!candidate) {
+      setMessage("Enter admin password.");
+      return;
+    }
+
+    const ok = await loadOrders(candidate, "");
+    if (!ok) {
+      setIsAuthenticated(false);
+      setToken("");
+      window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+      return;
+    }
+
+    setToken(candidate);
+    setIsAuthenticated(true);
+    window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, candidate);
+  }
+
+  function handleLogout() {
+    setIsAuthenticated(false);
+    setToken("");
+    setLoginInput("");
+    setRows([]);
+    setMessage("");
+    setSearchDigits("");
+    window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
   }
 
   async function resendSetupLink(plateId: string) {
@@ -156,6 +205,119 @@ export default function AdminOrdersPage() {
     return counts;
   }, [rows]);
 
+  if (!booted) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          background: "#f7f7f8",
+          padding: "32px 20px",
+        }}
+      >
+        <div style={{ maxWidth: 720, margin: "0 auto" }}>
+          <div
+            style={{
+              background: "#fff",
+              border: "1px solid #e5e7eb",
+              borderRadius: 18,
+              padding: 24,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+            }}
+          >
+            Loading admin…
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          background: "#f7f7f8",
+          padding: "32px 20px",
+        }}
+      >
+        <div style={{ maxWidth: 720, margin: "0 auto" }}>
+          <div
+            style={{
+              background: "#fff",
+              border: "1px solid #e5e7eb",
+              borderRadius: 18,
+              padding: 24,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+            }}
+          >
+            <AdminHeader
+              title="Carascan admin login"
+              subtitle="Enter the admin password to access orders and manufacturing previews."
+            />
+
+            <div style={{ marginTop: 18 }}>
+              <label
+                style={{ display: "block", fontWeight: 600, marginBottom: 6 }}
+              >
+                Admin password
+              </label>
+              <input
+                type="password"
+                value={loginInput}
+                onChange={(e) => setLoginInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void handleLogin();
+                }}
+                placeholder="Enter admin password"
+                style={{
+                  width: "100%",
+                  padding: 12,
+                  borderRadius: 8,
+                  border: "1px solid #d1d5db",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+
+            <div style={{ marginTop: 16 }}>
+              <button
+                type="button"
+                onClick={() => void handleLogin()}
+                disabled={busy}
+                style={{
+                  border: 0,
+                  borderRadius: 10,
+                  padding: "12px 18px",
+                  fontWeight: 700,
+                  background: "#111827",
+                  color: "#fff",
+                  cursor: busy ? "default" : "pointer",
+                  opacity: busy ? 0.7 : 1,
+                }}
+              >
+                {busy ? "Checking..." : "Login"}
+              </button>
+            </div>
+
+            {message && (
+              <div
+                style={{
+                  marginTop: 16,
+                  padding: "12px 14px",
+                  borderRadius: 10,
+                  background: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                }}
+              >
+                {message}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main
       style={{
@@ -175,10 +337,36 @@ export default function AdminOrdersPage() {
             marginBottom: 20,
           }}
         >
-          <AdminHeader
-            title="Carascan admin dashboard"
-            subtitle="Search orders, inspect plate status, resend setup links, open the customer plate page, and review secure manufacturing SVG files."
-          />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 16,
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+            }}
+          >
+            <AdminHeader
+              title="Carascan admin dashboard"
+              subtitle="Search orders, inspect plate status, resend setup links, open the customer plate page, and review secure manufacturing SVG files."
+            />
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              style={{
+                border: "1px solid #d1d5db",
+                borderRadius: 10,
+                padding: "12px 18px",
+                fontWeight: 700,
+                background: "#fff",
+                color: "#111827",
+                cursor: "pointer",
+              }}
+            >
+              Logout
+            </button>
+          </div>
 
           <div
             style={{
@@ -235,8 +423,8 @@ export default function AdminOrdersPage() {
             <div style={{ display: "flex", gap: 12, alignItems: "end" }}>
               <button
                 type="button"
-                onClick={() => loadOrders()}
-                disabled={busy || !tokenReady || !token.trim()}
+                onClick={() => void loadOrders()}
+                disabled={busy}
                 style={{
                   border: 0,
                   borderRadius: 10,
@@ -245,7 +433,7 @@ export default function AdminOrdersPage() {
                   background: "#111827",
                   color: "#fff",
                   cursor: busy ? "default" : "pointer",
-                  opacity: busy || !tokenReady || !token.trim() ? 0.7 : 1,
+                  opacity: busy ? 0.7 : 1,
                 }}
               >
                 {busy ? "Loading..." : "Load orders"}
@@ -257,7 +445,7 @@ export default function AdminOrdersPage() {
                   setSearchDigits("");
                   void loadOrders(token, "");
                 }}
-                disabled={busy || !tokenReady || !token.trim()}
+                disabled={busy}
                 style={{
                   border: "1px solid #d1d5db",
                   borderRadius: 10,
@@ -266,7 +454,7 @@ export default function AdminOrdersPage() {
                   background: "#fff",
                   color: "#111827",
                   cursor: busy ? "default" : "pointer",
-                  opacity: busy || !tokenReady || !token.trim() ? 0.7 : 1,
+                  opacity: busy ? 0.7 : 1,
                 }}
               >
                 Clear
