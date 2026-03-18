@@ -33,31 +33,40 @@ function formatMoney(cents?: number | null, currency?: string | null) {
   return `${value.toFixed(2)} ${String(currency ?? "").toUpperCase()}`.trim();
 }
 
+function normaliseIdentifierSearch(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 6);
+  if (!digits) return "";
+  return `CSN-${digits.padStart(6, "0")}`;
+}
+
 export default function AdminOrdersPage() {
-  const [query, setQuery] = useState("");
+  const [searchDigits, setSearchDigits] = useState("");
   const [busy, setBusy] = useState(false);
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [message, setMessage] = useState("");
   const [token, setToken] = useState("");
+  const [tokenReady, setTokenReady] = useState(false);
 
   useEffect(() => {
     const url = new URL(window.location.href);
     const tokenFromUrl = url.searchParams.get("token") ?? "";
     setToken(tokenFromUrl);
+    setTokenReady(true);
 
-    if (tokenFromUrl) {
+    if (tokenFromUrl.trim()) {
       void loadOrders(tokenFromUrl, "");
     } else {
-      setMessage("Missing token.");
+      setMessage("Admin token missing from URL.");
     }
   }, []);
 
-  async function loadOrders(tokenOverride?: string, queryOverride?: string) {
-    const tokenToUse = tokenOverride ?? token;
-    const queryToUse = queryOverride ?? query;
+  async function loadOrders(tokenOverride?: string, digitsOverride?: string) {
+    const tokenToUse = (tokenOverride ?? token).trim();
+    const digitsToUse = (digitsOverride ?? searchDigits).trim();
+    const queryValue = normaliseIdentifierSearch(digitsToUse);
 
-    if (!tokenToUse.trim()) {
-      setMessage("Missing token.");
+    if (!tokenToUse) {
+      setMessage("Admin token missing from URL.");
       setRows([]);
       return;
     }
@@ -67,9 +76,9 @@ export default function AdminOrdersPage() {
 
     try {
       const r = await fetch(
-        `/api/admin/orders?q=${encodeURIComponent(
-          queryToUse.trim()
-        )}&token=${encodeURIComponent(tokenToUse.trim())}`,
+        `/api/admin/orders?q=${encodeURIComponent(queryValue)}&token=${encodeURIComponent(
+          tokenToUse
+        )}`,
         {
           cache: "no-store",
         }
@@ -83,8 +92,13 @@ export default function AdminOrdersPage() {
         return;
       }
 
-      setRows(j.items ?? []);
-      setMessage(`Loaded ${j.items?.length ?? 0} order(s).`);
+      const items = Array.isArray(j.items) ? j.items : [];
+      setRows(items);
+      setMessage(
+        queryValue
+          ? `Loaded ${items.length} order(s) for ${queryValue}.`
+          : `Loaded ${items.length} order(s).`
+      );
     } catch {
       setMessage("Failed to load orders.");
       setRows([]);
@@ -163,51 +177,101 @@ export default function AdminOrdersPage() {
         >
           <AdminHeader
             title="Carascan admin dashboard"
-            subtitle="Search orders, inspect plate status, resend setup links, open the customer plate page, and review manufacturing SVG files."
+            subtitle="Search orders, inspect plate status, resend setup links, open the customer plate page, and review secure manufacturing SVG files."
           />
 
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr auto",
+              gridTemplateColumns: "260px auto",
               gap: 12,
               alignItems: "end",
             }}
           >
             <div>
               <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
-                Search
+                Search identifier
               </label>
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Identifier, slug, plate ID, Stripe session, shipping name..."
+              <div
                 style={{
-                  width: "100%",
-                  padding: 10,
-                  borderRadius: 8,
+                  display: "flex",
+                  alignItems: "center",
                   border: "1px solid #d1d5db",
+                  borderRadius: 8,
+                  background: "#fff",
+                  overflow: "hidden",
                 }}
-              />
+              >
+                <div
+                  style={{
+                    padding: "10px 12px",
+                    background: "#f3f4f6",
+                    borderRight: "1px solid #d1d5db",
+                    fontWeight: 700,
+                    color: "#111827",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  CSN-
+                </div>
+                <input
+                  value={searchDigits}
+                  onChange={(e) =>
+                    setSearchDigits(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  }
+                  placeholder="000029"
+                  inputMode="numeric"
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    border: 0,
+                    outline: "none",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => loadOrders()}
-              disabled={busy || !token.trim()}
-              style={{
-                border: 0,
-                borderRadius: 10,
-                padding: "12px 18px",
-                fontWeight: 700,
-                background: "#111827",
-                color: "#fff",
-                cursor: busy ? "default" : "pointer",
-                opacity: busy || !token.trim() ? 0.7 : 1,
-              }}
-            >
-              {busy ? "Loading..." : "Load orders"}
-            </button>
+            <div style={{ display: "flex", gap: 12, alignItems: "end" }}>
+              <button
+                type="button"
+                onClick={() => loadOrders()}
+                disabled={busy || !tokenReady || !token.trim()}
+                style={{
+                  border: 0,
+                  borderRadius: 10,
+                  padding: "12px 18px",
+                  fontWeight: 700,
+                  background: "#111827",
+                  color: "#fff",
+                  cursor: busy ? "default" : "pointer",
+                  opacity: busy || !tokenReady || !token.trim() ? 0.7 : 1,
+                }}
+              >
+                {busy ? "Loading..." : "Load orders"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchDigits("");
+                  void loadOrders(token, "");
+                }}
+                disabled={busy || !tokenReady || !token.trim()}
+                style={{
+                  border: "1px solid #d1d5db",
+                  borderRadius: 10,
+                  padding: "12px 18px",
+                  fontWeight: 700,
+                  background: "#fff",
+                  color: "#111827",
+                  cursor: busy ? "default" : "pointer",
+                  opacity: busy || !tokenReady || !token.trim() ? 0.7 : 1,
+                }}
+              >
+                Clear
+              </button>
+            </div>
           </div>
 
           {message && (
@@ -264,7 +328,9 @@ export default function AdminOrdersPage() {
               : null;
 
             const svgPreviewUrl = row.plate?.identifier
-              ? `/plates/${encodeURIComponent(row.plate.identifier)}/svg`
+              ? `/plates/${encodeURIComponent(row.plate.identifier)}/svg?token=${encodeURIComponent(
+                  token
+                )}`
               : null;
 
             return (
@@ -391,7 +457,7 @@ export default function AdminOrdersPage() {
             );
           })}
 
-          {!rows.length && (
+          {!rows.length && !busy && (
             <div
               style={{
                 background: "#fff",
@@ -401,7 +467,7 @@ export default function AdminOrdersPage() {
                 color: "#6b7280",
               }}
             >
-              No orders loaded yet.
+              No matching orders found.
             </div>
           )}
         </div>
