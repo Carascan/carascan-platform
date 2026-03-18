@@ -9,6 +9,15 @@ const CONTACT_CHAR_LIMIT = 500;
 const REPORT_CHAR_LIMIT = 500;
 const EMERGENCY_CHAR_LIMIT = 700;
 
+function esc(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
 type PlateResponse = {
   plate: {
     slug: string;
@@ -28,6 +37,155 @@ type PlateResponse = {
     mounting_holes?: boolean | null;
   } | null;
 };
+
+type PreviewSvgInput = {
+  identifier: string;
+  qrImageHref: string;
+  mountingHoles: boolean;
+  logoUrl?: string;
+};
+
+function buildPreviewSvg({
+  identifier,
+  qrImageHref,
+  mountingHoles,
+  logoUrl,
+}: PreviewSvgInput): string {
+  const widthMm = 90;
+  const heightMm = 90;
+  const cornerRadiusMm = 3;
+  const holeDiameterMm = 5.2;
+
+  const holes = [
+    { x: 5, y: 5 },
+    { x: 85, y: 5 },
+    { x: 5, y: 85 },
+    { x: 85, y: 85 },
+  ];
+
+  const logoWidth = 84;
+  const logoHeight = 9.2;
+  const logoCenterX = 45;
+  const logoCenterY = 16;
+  const logoX = logoCenterX - logoWidth / 2;
+  const logoY = logoCenterY - logoHeight / 2;
+
+  const qrSize = 50;
+  const qrCenterX = 45;
+  const qrCenterY = 51;
+  const qrX = qrCenterX - qrSize / 2;
+  const qrY = qrCenterY - qrSize / 2;
+
+  const textX = 45;
+  const textY = 82;
+  const textFontSize = 4.2;
+
+  const holeMarkup = mountingHoles
+    ? `
+      <g id="holes" fill="none" stroke="#111827" stroke-width="0.35">
+        ${holes
+          .map(
+            (h) =>
+              `<circle cx="${h.x}" cy="${h.y}" r="${holeDiameterMm / 2}" />`
+          )
+          .join("\n")}
+      </g>
+    `
+    : "";
+
+  const logoMarkup = logoUrl
+    ? `
+      <image
+        href="${esc(logoUrl)}"
+        x="${logoX}"
+        y="${logoY}"
+        width="${logoWidth}"
+        height="${logoHeight}"
+        preserveAspectRatio="xMidYMid meet"
+      />
+    `
+    : "";
+
+  return `
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="100%"
+      viewBox="0 0 ${widthMm} ${heightMm}"
+      role="img"
+      aria-label="Carascan plate preview"
+    >
+      <defs>
+        <linearGradient id="plateGradient" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#f7f7f7" />
+          <stop offset="45%" stop-color="#dfdfdf" />
+          <stop offset="100%" stop-color="#cfcfcf" />
+        </linearGradient>
+      </defs>
+
+      <rect
+        x="0"
+        y="0"
+        width="${widthMm}"
+        height="${heightMm}"
+        rx="${cornerRadiusMm}"
+        ry="${cornerRadiusMm}"
+        fill="url(#plateGradient)"
+      />
+
+      <rect
+        x="0.25"
+        y="0.25"
+        width="${widthMm - 0.5}"
+        height="${heightMm - 0.5}"
+        rx="${cornerRadiusMm}"
+        ry="${cornerRadiusMm}"
+        fill="none"
+        stroke="#111827"
+        stroke-width="0.35"
+      />
+
+      ${holeMarkup}
+
+      ${logoMarkup}
+
+      ${
+        qrImageHref
+          ? `
+      <image
+        href="${esc(qrImageHref)}"
+        x="${qrX}"
+        y="${qrY}"
+        width="${qrSize}"
+        height="${qrSize}"
+        preserveAspectRatio="none"
+      />
+      `
+          : `
+      <rect
+        x="${qrX}"
+        y="${qrY}"
+        width="${qrSize}"
+        height="${qrSize}"
+        fill="#ffffff"
+        stroke="#111827"
+        stroke-width="0.35"
+      />
+      `
+      }
+
+      <text
+        x="${textX}"
+        y="${textY}"
+        text-anchor="middle"
+        dominant-baseline="middle"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="${textFontSize}"
+        font-weight="500"
+        fill="#111827"
+      >${esc(identifier)}</text>
+    </svg>
+  `;
+}
 
 export default function PlatePage({
   params,
@@ -106,8 +264,17 @@ export default function PlatePage({
   const bio = data?.profile?.bio?.trim() || "";
   const identifier = data?.plate.identifier || "";
   const qrUrl = data?.design?.qr_url?.trim() || "";
-  const plateLogoUrl = data?.design?.logo_url?.trim() || LOGO_URL;
+  const logoUrl = data?.design?.logo_url?.trim() || LOGO_URL;
   const mountingHoles = data?.design?.mounting_holes !== false;
+
+  const previewSvg = useMemo(() => {
+    return buildPreviewSvg({
+      identifier,
+      qrImageHref: qrUrl,
+      mountingHoles,
+      logoUrl,
+    });
+  }, [identifier, qrUrl, mountingHoles, logoUrl]);
 
   const contactRemaining = CONTACT_CHAR_LIMIT - contactMessage.length;
   const reportRemaining = REPORT_CHAR_LIMIT - reportNotes.length;
@@ -339,11 +506,9 @@ export default function PlatePage({
             />
 
             <div style={styles.platePreviewWrap}>
-              <PlatePreviewSvg
-                identifier={identifier}
-                qrUrl={qrUrl}
-                logoUrl={plateLogoUrl}
-                mountingHoles={mountingHoles}
+              <div
+                style={styles.platePreviewFrame}
+                dangerouslySetInnerHTML={{ __html: previewSvg }}
               />
             </div>
 
@@ -430,8 +595,7 @@ export default function PlatePage({
                     style={styles.textarea}
                   />
                   <div style={styles.helperText}>
-                    Maximum {CONTACT_CHAR_LIMIT} characters. Recommended for short,
-                    clear messages.
+                    Maximum {CONTACT_CHAR_LIMIT} characters.
                     <span style={styles.counter}>{contactRemaining} remaining</span>
                   </div>
                 </div>
@@ -615,126 +779,6 @@ export default function PlatePage({
   );
 }
 
-function PlatePreviewSvg({
-  identifier,
-  qrUrl,
-  logoUrl,
-  mountingHoles,
-}: {
-  identifier: string;
-  qrUrl: string;
-  logoUrl: string;
-  mountingHoles: boolean;
-}) {
-  const width = 180;
-  const height = 180;
-
-  return (
-    <svg
-      viewBox="0 0 90 90"
-      width={width}
-      height={height}
-      aria-label="Plate preview"
-      style={{ display: "block" }}
-    >
-      <defs>
-        <linearGradient id="plateMetal" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#d9d9d9" />
-          <stop offset="22%" stopColor="#c8c8c8" />
-          <stop offset="50%" stopColor="#efefef" />
-          <stop offset="78%" stopColor="#c2c2c2" />
-          <stop offset="100%" stopColor="#dadada" />
-        </linearGradient>
-        <pattern
-          id="brushPattern"
-          patternUnits="userSpaceOnUse"
-          width="3"
-          height="90"
-        >
-          <rect width="3" height="90" fill="transparent" />
-          <rect x="0" width="0.7" height="90" fill="rgba(255,255,255,0.15)" />
-          <rect x="1.5" width="0.5" height="90" fill="rgba(0,0,0,0.04)" />
-        </pattern>
-      </defs>
-
-      <rect
-        x="0.5"
-        y="0.5"
-        width="89"
-        height="89"
-        rx="3"
-        ry="3"
-        fill="url(#plateMetal)"
-        stroke="#7b7b7b"
-        strokeWidth="0.6"
-      />
-      <rect
-        x="0.5"
-        y="0.5"
-        width="89"
-        height="89"
-        rx="3"
-        ry="3"
-        fill="url(#brushPattern)"
-        opacity="0.65"
-      />
-
-      {mountingHoles ? (
-        <g fill="none" stroke="#111827" strokeWidth="0.3">
-          <circle cx="5" cy="5" r="2.6" />
-          <circle cx="85" cy="5" r="2.6" />
-          <circle cx="5" cy="85" r="2.6" />
-          <circle cx="85" cy="85" r="2.6" />
-        </g>
-      ) : null}
-
-      <image
-        x="3"
-        y="11.4"
-        width="84"
-        height="9.2"
-        href={logoUrl}
-        preserveAspectRatio="xMidYMid meet"
-      />
-
-      {qrUrl ? (
-        <image
-          x="20"
-          y="26"
-          width="50"
-          height="50"
-          href={qrUrl}
-          preserveAspectRatio="none"
-        />
-      ) : (
-        <rect
-          x="20"
-          y="26"
-          width="50"
-          height="50"
-          fill="#ffffff"
-          stroke="#111827"
-          strokeWidth="0.4"
-        />
-      )}
-
-      <text
-        x="45"
-        y="82"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontFamily="Arial, Helvetica, sans-serif"
-        fontSize="4.2"
-        fontWeight="700"
-        fill="#111827"
-        letterSpacing="0.15"
-      >
-        {identifier}
-      </text>
-    </svg>
-  );
-}
-
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
@@ -757,6 +801,10 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     justifyContent: "center",
     margin: "0 auto 18px",
+  },
+  platePreviewFrame: {
+    width: 430,
+    maxWidth: "100%",
   },
   sub: {
     margin: 0,
