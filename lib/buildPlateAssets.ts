@@ -2,7 +2,6 @@ import { buildPlateUrl, getDefaultPlateSpec } from "./plate";
 import {
   generateQrBuffer,
   generateQrDataUrl,
-  generateQrSvgMarkup,
 } from "./generateQr";
 import { buildPlateSvg } from "./laserSvg";
 
@@ -21,7 +20,6 @@ export type BuildPlateAssetsResult = {
   spec: ReturnType<typeof getDefaultPlateSpec>;
   qrPngBuffer: Buffer;
   qrDataUrl: string;
-  qrSvgMarkup: string;
   plateSvg: string;
   metadata: Record<string, unknown>;
 };
@@ -31,24 +29,22 @@ export async function buildPlateAssets(
 ): Promise<BuildPlateAssetsResult> {
   const plateUrl = buildPlateUrl(input.slug);
 
+  // Manufacturing QR: no quiet zone, transparent background
   const qrPngBuffer = await generateQrBuffer(plateUrl, {
     mode: "production",
+    margin: 0,
     transparentBackground: true,
   });
 
   const qrDataUrl = await generateQrDataUrl(plateUrl, {
     mode: "production",
+    margin: 0,
     transparentBackground: true,
-  });
-
-  const qrSvgMarkup = await generateQrSvgMarkup(plateUrl, {
-    mode: "production",
   });
 
   const plateSvg = buildPlateSvg({
     identifier: input.identifier,
     qrImageHref: qrDataUrl,
-    qrSvgMarkup,
     mountingHoles: input.mountingHoles,
     logoSvgMarkup: input.logoSvgMarkup,
     logoImageHref: input.logoImageHref,
@@ -61,7 +57,6 @@ export async function buildPlateAssets(
     spec: getDefaultPlateSpec(),
     qrPngBuffer,
     qrDataUrl,
-    qrSvgMarkup,
     plateSvg,
     metadata: {
       identifier: input.identifier,
@@ -73,7 +68,8 @@ export async function buildPlateAssets(
         height: 90,
       },
       qr: {
-        type: "vector-no-quiet-zone",
+        type: "png-no-quiet-zone",
+        margin: 0,
       },
       generatedAt: new Date().toISOString(),
     },
