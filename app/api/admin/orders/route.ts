@@ -5,8 +5,11 @@ function isAuthorised(req: Request) {
   const envSecret = process.env.ADMIN_ACTION_SECRET;
   if (!envSecret) return false;
 
+  const url = new URL(req.url);
   const headerSecret = req.headers.get("x-admin-secret");
-  return headerSecret === envSecret;
+  const querySecret = url.searchParams.get("token");
+
+  return headerSecret === envSecret || querySecret === envSecret;
 }
 
 export async function GET(req: Request) {
@@ -19,7 +22,7 @@ export async function GET(req: Request) {
 
   const sb = supabaseAdmin();
 
-  let query = sb
+  const { data, error } = await sb
     .from("orders")
     .select(
       `
@@ -44,17 +47,15 @@ export async function GET(req: Request) {
         status,
         sku
       )
-    `,
+    `
     )
     .order("created_at", { ascending: false })
     .limit(100);
 
-  const { data, error } = await query;
-
   if (error) {
     return NextResponse.json(
       { error: `Orders fetch failed: ${error.message}` },
-      { status: 500 },
+      { status: 500 }
     );
   }
 

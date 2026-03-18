@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AdminHeader from "@/components/AdminHeader";
 
 type OrderRow = {
@@ -40,20 +40,33 @@ export default function AdminOrdersPage() {
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [message, setMessage] = useState("");
 
-  async function loadOrders() {
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get("token") ?? "";
+    if (token) {
+      setAdminSecret(token);
+    }
+  }, []);
+
+  async function loadOrders(secretOverride?: string) {
+    const secretToUse = secretOverride ?? adminSecret;
+
     setBusy(true);
     setMessage("");
 
     try {
-      const r = await fetch(
-        `/api/admin/orders?q=${encodeURIComponent(query.trim())}`,
-        {
-          headers: {
-            "x-admin-secret": adminSecret,
-          },
-          cache: "no-store",
-        }
-      );
+      const url = `/api/admin/orders?q=${encodeURIComponent(
+        query.trim()
+      )}&token=${encodeURIComponent(secretToUse.trim())}`;
+
+      const r = await fetch(url, {
+        headers: secretToUse.trim()
+          ? {
+              "x-admin-secret": secretToUse,
+            }
+          : {},
+        cache: "no-store",
+      });
 
       const j = await r.json();
 
@@ -72,6 +85,12 @@ export default function AdminOrdersPage() {
       setBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (adminSecret.trim()) {
+      loadOrders(adminSecret);
+    }
+  }, [adminSecret]);
 
   async function resendSetupLink(plateId: string) {
     const ok = window.confirm("Resend setup link for this plate?");
@@ -191,7 +210,7 @@ export default function AdminOrdersPage() {
 
             <button
               type="button"
-              onClick={loadOrders}
+              onClick={() => loadOrders()}
               disabled={busy || !adminSecret.trim()}
               style={{
                 border: 0,
@@ -262,7 +281,7 @@ export default function AdminOrdersPage() {
               : null;
 
             const svgPreviewUrl = row.plate?.identifier
-              ? `/admin/plates/${encodeURIComponent(row.plate.identifier)}/svg`
+              ? `/plates/${encodeURIComponent(row.plate.identifier)}/svg`
               : null;
 
             return (
