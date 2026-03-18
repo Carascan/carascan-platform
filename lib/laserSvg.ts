@@ -28,6 +28,35 @@ export function stripOuterSvg(svgText: string): string {
     .trim();
 }
 
+function extractSvgViewBox(svgText: string): {
+  minX: number;
+  minY: number;
+  width: number;
+  height: number;
+} | null {
+  const match = svgText.match(/viewBox="([^"]+)"/i);
+  if (!match) return null;
+
+  const parts = match[1].trim().split(/\s+/).map(Number);
+  if (parts.length !== 4 || parts.some((n) => Number.isNaN(n))) return null;
+
+  return {
+    minX: parts[0],
+    minY: parts[1],
+    width: parts[2],
+    height: parts[3],
+  };
+}
+
+function stripOuterSvgKeepInner(svgText: string): string {
+  return svgText
+    .replace(/<\?xml[\s\S]*?\?>/gi, "")
+    .replace(/<!DOCTYPE[\s\S]*?>/gi, "")
+    .replace(/<svg[^>]*>/i, "")
+    .replace(/<\/svg>/i, "")
+    .trim();
+}
+
 export function buildPlateSvg({
   identifier,
   qrImageHref,
@@ -52,20 +81,20 @@ export function buildPlateSvg({
   // Identifier bottom 2mm from edge
   const textX = 45;
   const textFontSize = 4.2;
-  const textBottom = spec.heightMm - 2;
-  const textY = textBottom - textFontSize / 2;
-  const identifierTop = textBottom - textFontSize;
+  const textBottom = spec.heightMm - 2; // 88
+  const textY = textBottom - textFontSize / 2; // 85.9
+  const identifierTop = textBottom - textFontSize; // 83.8 approx
 
-  // QR fills hero zone
+  // QR hero zone
   const gapBelowLogo = 3.0;
   const gapAboveIdentifier = 2.0;
 
-  const qrTop = logoBottom + gapBelowLogo;
-  const qrBottom = identifierTop - gapAboveIdentifier;
-  const qrSize = qrBottom - qrTop;
+  const qrTop = logoBottom + gapBelowLogo; // 23.6
+  const qrBottom = identifierTop - gapAboveIdentifier; // 81.8
+  const qrSize = qrBottom - qrTop; // 58.2
 
   const qrCenterX = 45;
-  const qrX = qrCenterX - qrSize / 2;
+  const qrX = qrCenterX - qrSize / 2; // 15.9
   const qrY = qrTop;
 
   const holeMarkup = mountingHoles
@@ -110,25 +139,7 @@ export function buildPlateSvg({
     : `
   <g id="LOGO_SVG"></g>`;
 
-  const qrMarkup = qrSvgMarkup
-  ? `
-  <g id="QR_VECTOR">
-    <svg
-      x="${qrX}"
-      y="${qrY}"
-      width="${qrSize}"
-      height="${qrSize}"
-      preserveAspectRatio="none"
-      overflow="hidden"
-    >
-      ${qrSvgMarkup
-        .replace(/<\?xml[\s\S]*?\?>/gi, "")
-        .replace(/<!DOCTYPE[\s\S]*?>/gi, "")
-        .replace(/<svg[^>]*>/i, "")
-        .replace(/<\/svg>/i, "")}
-    </svg>
-  </g>`
-  : `
+  let qrMarkup = `
   <g id="QR_RASTER">
     <image
       x="${qrX}"
@@ -139,6 +150,21 @@ export function buildPlateSvg({
       href="${esc(qrImageHref)}"
     />
   </g>`;
+
+  if (qrSvgMarkup) {
+    const viewBox = extractSvgViewBox(qrSvgMarkup);
+    const inner = stripOuterSvgKeepInner(qrSvgMarkup);
+
+    if (viewBox && viewBox.width > 0 && viewBox.height > 0) {
+      const scaleX = qrSize / viewBox.width;
+      const scaleY = qrSize / viewBox.height;
+
+      qrMarkup = `
+  <g id="QR_VECTOR" transform="translate(${qrX}, ${qrY}) scale(${scaleX}, ${scaleY}) translate(${-viewBox.minX}, ${-viewBox.minY})">
+    ${inner}
+  </g>`;
+    }
+  }
 
   const crosshairMarkup = includeCrosshair
     ? `
