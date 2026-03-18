@@ -9,7 +9,6 @@ import { sendManufacturingEmail } from "@/lib/sendManufacturingEmail";
 import { buildCustomerPlateEmailPayload } from "@/lib/buildCustomerPlateEmailPayload";
 import { sendCustomerPlateEmail } from "@/lib/sendCustomerPlateEmail";
 import { formatIdentifier } from "@/lib/plate";
-import { stripOuterSvg } from "@/lib/laserSvg";
 
 const LOGO_URL_FALLBACK =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
@@ -66,9 +65,7 @@ async function generateNextIdentifier(sb: ReturnType<typeof supabaseAdmin>) {
 
   const current = data?.identifier ?? null;
   const currentNumber =
-    current && /^CSN-(\d{6})$/.test(current)
-      ? Number(current.slice(4))
-      : 0;
+    current && /^CSN-(\d{6})$/.test(current) ? Number(current.slice(4)) : 0;
 
   return formatIdentifier(currentNumber + 1);
 }
@@ -79,16 +76,18 @@ function readMountingHoles(session: any): boolean {
   return String(raw).toLowerCase() === "true";
 }
 
-async function loadLogoSvgMarkup(logoUrl: string): Promise<string> {
+async function loadLogoSvgDataUrl(logoUrl: string): Promise<string> {
   try {
     const response = await fetch(logoUrl, { cache: "no-store" });
+
     if (!response.ok) {
       console.warn(`Logo fetch failed: ${response.status} ${response.statusText}`);
       return "";
     }
 
     const svgText = await response.text();
-    return stripOuterSvg(svgText);
+    const base64 = Buffer.from(svgText, "utf8").toString("base64");
+    return `data:image/svg+xml;base64,${base64}`;
   } catch (error) {
     console.warn("Logo fetch failed:", error);
     return "";
@@ -97,7 +96,7 @@ async function loadLogoSvgMarkup(logoUrl: string): Promise<string> {
 
 async function uploadPlateAssets(
   sb: ReturnType<typeof supabaseAdmin>,
-  assets: Awaited<ReturnType<typeof buildPlateAssets>>,
+  assets: Awaited<ReturnType<typeof buildPlateAssets>>
 ) {
   const prefix = `plates/${assets.identifier}`;
 
@@ -105,10 +104,12 @@ async function uploadPlateAssets(
   const svgPath = `${prefix}/plate.svg`;
   const metadataPath = `${prefix}/metadata.json`;
 
-  const qrUpload = await sb.storage.from(ASSETS_BUCKET).upload(qrPath, assets.qrPngBuffer, {
-    contentType: "image/png",
-    upsert: true,
-  });
+  const qrUpload = await sb.storage
+    .from(ASSETS_BUCKET)
+    .upload(qrPath, assets.qrPngBuffer, {
+      contentType: "image/png",
+      upsert: true,
+    });
 
   if (qrUpload.error) {
     throw new Error(`QR upload failed: ${qrUpload.error.message}`);
@@ -138,7 +139,9 @@ async function uploadPlateAssets(
 
   const { data: qrPublic } = sb.storage.from(ASSETS_BUCKET).getPublicUrl(qrPath);
   const { data: svgPublic } = sb.storage.from(ASSETS_BUCKET).getPublicUrl(svgPath);
-  const { data: metadataPublic } = sb.storage.from(ASSETS_BUCKET).getPublicUrl(metadataPath);
+  const { data: metadataPublic } = sb.storage
+    .from(ASSETS_BUCKET)
+    .getPublicUrl(metadataPath);
 
   return {
     qrPath,
@@ -153,7 +156,7 @@ async function uploadPlateAssets(
 async function updateOrderStatus(
   sb: ReturnType<typeof supabaseAdmin>,
   orderId: string,
-  status: "paid" | "pack_generated" | "sent_to_manufacturing" | "cancelled",
+  status: "paid" | "pack_generated" | "sent_to_manufacturing" | "cancelled"
 ) {
   const { error } = await sb.from("orders").update({ status }).eq("id", orderId);
 
@@ -165,7 +168,7 @@ async function updateOrderStatus(
 async function updatePlateStatus(
   sb: ReturnType<typeof supabaseAdmin>,
   plateId: string,
-  status: "draft" | "setup_pending" | "active" | "disabled",
+  status: "draft" | "setup_pending" | "active" | "disabled"
 ) {
   const { error } = await sb.from("plates").update({ status }).eq("id", plateId);
 
@@ -184,7 +187,7 @@ export async function POST(req: Request) {
   if (!sig || !secret) {
     return NextResponse.json(
       { error: "Missing webhook config" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -196,7 +199,7 @@ export async function POST(req: Request) {
   } catch (err: any) {
     return NextResponse.json(
       { error: `Webhook signature failed: ${err?.message ?? "unknown"}` },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -243,7 +246,7 @@ export async function POST(req: Request) {
     const setupToken = randToken(48);
     const plateUrl = `${baseUrl}/p/${slug}`;
     const setupUrl = `${baseUrl}/setup/${setupToken}`;
-    const logoSvgMarkup = await loadLogoSvgMarkup(logoUrl);
+    const logoImageHref = await loadLogoSvgDataUrl(logoUrl);
 
     const { data: plate, error: plateErr } = await sb
       .from("plates")
@@ -267,7 +270,7 @@ export async function POST(req: Request) {
       identifier,
       slug,
       mountingHoles,
-      logoSvgMarkup,
+      logoImageHref,
     });
 
     const savedAssets = await uploadPlateAssets(sb, assets);
@@ -327,7 +330,7 @@ export async function POST(req: Request) {
     }
 
     const expiresAt = new Date(
-      Date.now() + 1000 * 60 * 60 * 24 * 14,
+      Date.now() + 1000 * 60 * 60 * 24 * 14
     ).toISOString();
 
     const { error: tokenErr } = await sb.from("plate_setup_tokens").insert({
@@ -351,7 +354,7 @@ export async function POST(req: Request) {
     });
 
     const manufacturingEmailResult = await sendManufacturingEmail(
-      manufacturingPayload,
+      manufacturingPayload
     );
 
     if (manufacturingEmailResult.ok && !manufacturingEmailResult.skipped) {
@@ -386,7 +389,7 @@ export async function POST(req: Request) {
     console.error("Webhook failed:", e);
     return NextResponse.json(
       { error: e?.message ?? "Webhook failed" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
