@@ -3,16 +3,56 @@ import Link from "next/link";
 const BUCKET_BASE =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets";
 
+function isAuthorised(token?: string) {
+  const envSecret = process.env.ADMIN_ACTION_SECRET;
+  if (!envSecret) return false;
+  return token === envSecret;
+}
+
 export default async function PlateSvgPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ identifier: string }>;
+  searchParams: Promise<{ token?: string }>;
 }) {
   const { identifier } = await params;
+  const { token } = await searchParams;
+
+  if (!isAuthorised(token)) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          background: "#f7f7f8",
+          padding: "32px 20px",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+          <div
+            style={{
+              background: "#fff",
+              border: "1px solid #e5e7eb",
+              borderRadius: 18,
+              padding: 24,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+            }}
+          >
+            <h1 style={{ marginTop: 0, fontSize: 28 }}>Unauthorised</h1>
+            <p style={{ color: "#4b5563", lineHeight: 1.6 }}>
+              This SVG preview page requires a valid admin token.
+            </p>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   const svgUrl = `${BUCKET_BASE}/plates/${encodeURIComponent(identifier)}/plate.svg`;
   const qrUrl = `${BUCKET_BASE}/plates/${encodeURIComponent(identifier)}/qr.png`;
   const metadataUrl = `${BUCKET_BASE}/plates/${encodeURIComponent(identifier)}/metadata.json`;
+  const adminOrdersUrl = `/admin/orders?token=${encodeURIComponent(token ?? "")}`;
 
   return (
     <main
@@ -45,7 +85,7 @@ export default async function PlateSvgPage({
 
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <Link
-              href="/admin/orders"
+              href={adminOrdersUrl}
               style={{
                 textDecoration: "none",
                 padding: "12px 16px",
