@@ -28,7 +28,7 @@ function getDefaults(mode: QrMode) {
 
 export async function generateQrDataUrl(
   value: string,
-  options: GenerateQrOptions = {},
+  options: GenerateQrOptions = {}
 ): Promise<string> {
   const mode = options.mode ?? "preview";
   const defaults = getDefaults(mode);
@@ -46,7 +46,7 @@ export async function generateQrDataUrl(
 
 export async function generateQrBuffer(
   value: string,
-  options: GenerateQrOptions = {},
+  options: GenerateQrOptions = {}
 ): Promise<Buffer> {
   const mode = options.mode ?? "production";
   const defaults = getDefaults(mode);
@@ -61,4 +61,37 @@ export async function generateQrBuffer(
       light: options.transparentBackground === false ? "#ffffff" : "#0000",
     },
   });
+}
+
+export async function generateQrSvgMarkup(
+  value: string,
+  options: GenerateQrOptions = {}
+): Promise<string> {
+  const mode = options.mode ?? "production";
+  const defaults = getDefaults(mode);
+
+  const qr = QRCode.create(value, {
+    errorCorrectionLevel: defaults.errorCorrectionLevel,
+  });
+
+  const size = qr.modules.size;
+  const cells = qr.modules.data;
+
+  const rects: string[] = [];
+
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      const index = row * size + col;
+      if (cells[index]) {
+        rects.push(`<rect x="${col}" y="${row}" width="1" height="1" />`);
+      }
+    }
+  }
+
+  return `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">
+  <g fill="#000000">
+    ${rects.join("\n    ")}
+  </g>
+</svg>`.trim();
 }

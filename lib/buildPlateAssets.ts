@@ -1,5 +1,9 @@
 import { buildPlateUrl, getDefaultPlateSpec } from "./plate";
-import { generateQrBuffer, generateQrDataUrl } from "./generateQr";
+import {
+  generateQrBuffer,
+  generateQrDataUrl,
+  generateQrSvgMarkup,
+} from "./generateQr";
 import { buildPlateSvg } from "./laserSvg";
 
 export type BuildPlateAssetsInput = {
@@ -17,6 +21,7 @@ export type BuildPlateAssetsResult = {
   spec: ReturnType<typeof getDefaultPlateSpec>;
   qrPngBuffer: Buffer;
   qrDataUrl: string;
+  qrSvgMarkup: string;
   plateSvg: string;
   metadata: Record<string, unknown>;
 };
@@ -36,9 +41,14 @@ export async function buildPlateAssets(
     transparentBackground: true,
   });
 
+  const qrSvgMarkup = await generateQrSvgMarkup(plateUrl, {
+    mode: "production",
+  });
+
   const plateSvg = buildPlateSvg({
     identifier: input.identifier,
     qrImageHref: qrDataUrl,
+    qrSvgMarkup,
     mountingHoles: input.mountingHoles,
     logoSvgMarkup: input.logoSvgMarkup,
     logoImageHref: input.logoImageHref,
@@ -51,6 +61,7 @@ export async function buildPlateAssets(
     spec: getDefaultPlateSpec(),
     qrPngBuffer,
     qrDataUrl,
+    qrSvgMarkup,
     plateSvg,
     metadata: {
       identifier: input.identifier,
@@ -60,6 +71,9 @@ export async function buildPlateAssets(
       plateSizeMm: {
         width: 90,
         height: 90,
+      },
+      qr: {
+        type: "vector-no-quiet-zone",
       },
       generatedAt: new Date().toISOString(),
     },

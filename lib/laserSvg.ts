@@ -3,6 +3,7 @@ import { getDefaultPlateSpec, getHoleCenters } from "./plate";
 export type BuildPlateSvgInput = {
   identifier: string;
   qrImageHref: string;
+  qrSvgMarkup?: string;
   mountingHoles: boolean;
   logoSvgMarkup?: string;
   logoImageHref?: string;
@@ -30,6 +31,7 @@ export function stripOuterSvg(svgText: string): string {
 export function buildPlateSvg({
   identifier,
   qrImageHref,
+  qrSvgMarkup,
   mountingHoles,
   logoSvgMarkup,
   logoImageHref,
@@ -47,20 +49,20 @@ export function buildPlateSvg({
   const logoY = logoCenterY - logoHeight / 2;
   const logoBottom = logoY + logoHeight; // 20.6
 
-  // Identifier moved so bottom sits 2 mm from plate edge
+  // Identifier bottom 2mm from edge
   const textX = 45;
   const textFontSize = 4.2;
-  const textBottom = spec.heightMm - 2; // 88
-  const textY = textBottom - textFontSize / 2; // approx centre position
-  const identifierTop = textBottom - textFontSize; // approx 83.8
+  const textBottom = spec.heightMm - 2;
+  const textY = textBottom - textFontSize / 2;
+  const identifierTop = textBottom - textFontSize;
 
-  // QR fills space between logo and identifier
+  // QR fills hero zone
   const gapBelowLogo = 3.0;
   const gapAboveIdentifier = 2.0;
 
-  const qrTop = logoBottom + gapBelowLogo; // 23.6
-  const qrBottom = identifierTop - gapAboveIdentifier; // 81.8
-  const qrSize = qrBottom - qrTop; // 58.2
+  const qrTop = logoBottom + gapBelowLogo;
+  const qrBottom = identifierTop - gapAboveIdentifier;
+  const qrSize = qrBottom - qrTop;
 
   const qrCenterX = 45;
   const qrX = qrCenterX - qrSize / 2;
@@ -107,6 +109,43 @@ export function buildPlateSvg({
   </g>`
     : `
   <g id="LOGO_SVG"></g>`;
+
+  const qrMarkup = qrSvgMarkup
+    ? `
+  <g id="QR_VECTOR">
+    <svg
+      x="${qrX}"
+      y="${qrY}"
+      width="${qrSize}"
+      height="${qrSize}"
+      viewBox="0 0 1 1"
+      preserveAspectRatio="none"
+      overflow="hidden"
+    >
+      ${qrSvgMarkup
+        .replace(/<\?xml[\s\S]*?\?>/gi, "")
+        .replace(/<!DOCTYPE[\s\S]*?>/gi, "")
+        .replace(/<svg[^>]*viewBox="0 0 ([^"]+)"[^>]*>/i, (_m, vb) => {
+          const parts = vb.trim().split(/\s+/);
+          const w = Number(parts[2] ?? parts[0] ?? 1);
+          const h = Number(parts[3] ?? parts[1] ?? 1);
+          return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" preserveAspectRatio="none">`;
+        })
+        .replace(/<svg[^>]*>/i, "")
+        .replace(/<\/svg>/i, "")}
+    </svg>
+  </g>`
+    : `
+  <g id="QR_RASTER">
+    <image
+      x="${qrX}"
+      y="${qrY}"
+      width="${qrSize}"
+      height="${qrSize}"
+      preserveAspectRatio="none"
+      href="${esc(qrImageHref)}"
+    />
+  </g>`;
 
   const crosshairMarkup = includeCrosshair
     ? `
@@ -160,17 +199,7 @@ export function buildPlateSvg({
       rx="${spec.cornerRadiusMm}"
       ry="${spec.cornerRadiusMm}"
     />
-  </g>${holeMarkup}${logoMarkup}
-  <g id="QR_RASTER">
-    <image
-      x="${qrX}"
-      y="${qrY}"
-      width="${qrSize}"
-      height="${qrSize}"
-      preserveAspectRatio="none"
-      href="${esc(qrImageHref)}"
-    />
-  </g>
+  </g>${holeMarkup}${logoMarkup}${qrMarkup}
 
   <g id="IDENTIFIER">
     <text
