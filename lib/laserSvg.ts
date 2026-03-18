@@ -38,47 +38,34 @@ export function buildPlateSvg({
   const spec = getDefaultPlateSpec();
   const holes = getHoleCenters(spec);
 
-  // -----------------------------
-  // LOGO (fixed)
-  // -----------------------------
+  // Locked logo geometry
   const logoWidth = 84;
   const logoHeight = 9.2;
   const logoCenterX = 45;
   const logoCenterY = 16;
-
   const logoX = logoCenterX - logoWidth / 2;
   const logoY = logoCenterY - logoHeight / 2;
+  const logoBottom = logoY + logoHeight; // 20.6
 
-  const logoBottom = logoY + logoHeight; // 20.6 mm
-
-  // -----------------------------
-  // IDENTIFIER (fixed)
-  // -----------------------------
+  // Identifier moved so bottom sits 2 mm from plate edge
   const textX = 45;
-  const textY = 82;
   const textFontSize = 4.2;
+  const textBottom = spec.heightMm - 2; // 88
+  const textY = textBottom - textFontSize / 2; // approx centre position
+  const identifierTop = textBottom - textFontSize; // approx 83.8
 
-  // approximate text top
-  const identifierTop = textY - textFontSize / 2;
-
-  // -----------------------------
-  // QR POSITIONING (CONTROLLED)
-  // -----------------------------
-  const gapBelowLogo = 4.0;
+  // QR fills space between logo and identifier
+  const gapBelowLogo = 3.0;
   const gapAboveIdentifier = 2.0;
 
-  const qrTop = logoBottom + gapBelowLogo;
-  const qrBottom = identifierTop - gapAboveIdentifier;
-
-  const qrSize = qrBottom - qrTop;
+  const qrTop = logoBottom + gapBelowLogo; // 23.6
+  const qrBottom = identifierTop - gapAboveIdentifier; // 81.8
+  const qrSize = qrBottom - qrTop; // 58.2
 
   const qrCenterX = 45;
   const qrX = qrCenterX - qrSize / 2;
   const qrY = qrTop;
 
-  // -----------------------------
-  // HOLES
-  // -----------------------------
   const holeMarkup = mountingHoles
     ? `
   <g id="HOLES" fill="none" stroke="black" stroke-width="0.3">
@@ -91,9 +78,6 @@ export function buildPlateSvg({
   </g>`
     : "";
 
-  // -----------------------------
-  // LOGO RENDER
-  // -----------------------------
   const logoMarkup = logoImageHref
     ? `
   <g id="LOGO_IMAGE">
@@ -127,8 +111,18 @@ export function buildPlateSvg({
   const crosshairMarkup = includeCrosshair
     ? `
   <g id="CROSSHAIR" fill="none" stroke="red" stroke-width="0.2">
-    <line x1="${spec.widthMm / 2}" y1="0" x2="${spec.widthMm / 2}" y2="${spec.heightMm}" />
-    <line x1="0" y1="${spec.heightMm / 2}" x2="${spec.widthMm}" y2="${spec.heightMm / 2}" />
+    <line
+      x1="${spec.widthMm / 2}"
+      y1="0"
+      x2="${spec.widthMm / 2}"
+      y2="${spec.heightMm}"
+    />
+    <line
+      x1="0"
+      y1="${spec.heightMm / 2}"
+      x2="${spec.widthMm}"
+      y2="${spec.heightMm / 2}"
+    />
   </g>`
     : "";
 
@@ -166,11 +160,7 @@ export function buildPlateSvg({
       rx="${spec.cornerRadiusMm}"
       ry="${spec.cornerRadiusMm}"
     />
-  </g>
-
-  ${holeMarkup}
-  ${logoMarkup}
-
+  </g>${holeMarkup}${logoMarkup}
   <g id="QR_RASTER">
     <image
       x="${qrX}"
@@ -191,11 +181,7 @@ export function buildPlateSvg({
       font-family="Arial, Helvetica, sans-serif"
       font-size="${textFontSize}"
       fill="black"
-    >
-      ${esc(identifier)}
-    </text>
-  </g>
-
-  ${crosshairMarkup}
+    >${esc(identifier)}</text>
+  </g>${crosshairMarkup}
 </svg>`;
 }
