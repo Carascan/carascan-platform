@@ -4,8 +4,7 @@ const LOGO_URL =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
 async function getPlate(slug: string) {
-  const baseUrl =
-    process.env.APP_BASE_URL || "https://carascan.com.au";
+  const baseUrl = process.env.APP_BASE_URL || "https://carascan.com.au";
 
   const r = await fetch(
     `${baseUrl}/api/plates/${encodeURIComponent(slug)}`,
@@ -62,7 +61,9 @@ export default async function PlatePage({
               }}
             />
 
-            <h1 style={{ margin: "0 0 10px", fontSize: 32 }}>Carascan Plate</h1>
+            <h1 style={{ margin: "0 0 10px", fontSize: 32 }}>
+              Carascan Plate
+            </h1>
             <p style={{ margin: 0, color: "#4b5563" }}>
               Secure contact and emergency access for this plate.
             </p>
@@ -158,6 +159,24 @@ export default async function PlatePage({
                 </div>
               )}
 
+              <a
+                href={`/p/${slug}/report-location`}
+                style={{
+                  display: "block",
+                  textAlign: "center",
+                  textDecoration: "none",
+                  border: "1px solid #d1d5db",
+                  borderRadius: 12,
+                  padding: "16px 20px",
+                  fontSize: 16,
+                  fontWeight: 600,
+                  background: "#ffffff",
+                  color: "#111827",
+                }}
+              >
+                Report Location
+              </a>
+
               {data.plate.emergency_enabled ? (
                 <a
                   href={`/p/${slug}/emergency`}
@@ -170,8 +189,8 @@ export default async function PlatePage({
                     padding: "16px 20px",
                     fontSize: 16,
                     fontWeight: 600,
-                    background: "#ffffff",
-                    color: "#111827",
+                    background: "#fff7ed",
+                    color: "#9a3412",
                   }}
                 >
                   In Case of Emergency

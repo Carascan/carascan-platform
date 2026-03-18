@@ -1,9 +1,12 @@
 import QRCode from "qrcode";
+import { getPlatePublicUrl } from "@/lib/plateUrl";
 
-export async function makeQrPngDataUrl(url: string) {
-  return QRCode.toDataURL(url, { errorCorrectionLevel: "H", margin: 2, scale: 8 });
-}
+export async function generateQrPng(slug: string) {
+  const url = getPlatePublicUrl(slug);
 
-export async function makeQrPngBuffer(url: string) {
-  return QRCode.toBuffer(url, { errorCorrectionLevel: "H", margin: 2, scale: 8, type: "png" });
+  return QRCode.toBuffer(url, {
+    type: "png",
+    width: 1200,
+    margin: 1,
+  });
 }
