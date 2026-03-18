@@ -1,7 +1,5 @@
 import Link from "next/link";
-
-const BUCKET_BASE =
-  "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets";
+import type { CSSProperties } from "react";
 
 function isAuthorised(token?: string) {
   const envSecret = process.env.ADMIN_ACTION_SECRET;
@@ -49,10 +47,25 @@ export default async function PlateSvgPage({
     );
   }
 
-  const svgUrl = `${BUCKET_BASE}/plates/${encodeURIComponent(identifier)}/plate.svg`;
-  const qrUrl = `${BUCKET_BASE}/plates/${encodeURIComponent(identifier)}/qr.png`;
-  const metadataUrl = `${BUCKET_BASE}/plates/${encodeURIComponent(identifier)}/metadata.json`;
-  const adminOrdersUrl = `/admin/orders?token=${encodeURIComponent(token ?? "")}`;
+  const tokenQuery = encodeURIComponent(token ?? "");
+
+  const svgUrl = `/api/admin/plates/${encodeURIComponent(
+    identifier
+  )}/file?kind=svg&token=${tokenQuery}`;
+
+  const qrUrl = `/api/admin/plates/${encodeURIComponent(
+    identifier
+  )}/file?kind=qr&token=${tokenQuery}`;
+
+  const metadataUrl = `/api/admin/plates/${encodeURIComponent(
+    identifier
+  )}/file?kind=metadata&token=${tokenQuery}`;
+
+  const svgDownloadUrl = `/api/admin/plates/${encodeURIComponent(
+    identifier
+  )}/file?kind=svg&download=1&token=${tokenQuery}`;
+
+  const adminOrdersUrl = `/admin/orders?token=${tokenQuery}`;
 
   return (
     <main
@@ -100,8 +113,7 @@ export default async function PlateSvgPage({
             </Link>
 
             <a
-              href={svgUrl}
-              download={`${identifier}.svg`}
+              href={svgDownloadUrl}
               style={{
                 textDecoration: "none",
                 padding: "12px 16px",
@@ -165,21 +177,11 @@ export default async function PlateSvgPage({
             <h2 style={{ marginTop: 0, fontSize: 20 }}>Files</h2>
 
             <div style={{ display: "grid", gap: 12 }}>
-              <a
-                href={svgUrl}
-                target="_blank"
-                rel="noreferrer"
-                style={linkStyle}
-              >
+              <a href={svgUrl} target="_blank" rel="noreferrer" style={linkStyle}>
                 Open SVG
               </a>
 
-              <a
-                href={qrUrl}
-                target="_blank"
-                rel="noreferrer"
-                style={linkStyle}
-              >
+              <a href={qrUrl} target="_blank" rel="noreferrer" style={linkStyle}>
                 Open QR PNG
               </a>
 
@@ -204,10 +206,10 @@ export default async function PlateSvgPage({
               }}
             >
               <div>
-                <strong>Storage path:</strong>
+                <strong>Secure route:</strong>
               </div>
               <div style={{ wordBreak: "break-all" }}>
-                assets/plates/{identifier}/plate.svg
+                /api/admin/plates/{identifier}/file?kind=svg
               </div>
             </div>
           </aside>
@@ -217,7 +219,7 @@ export default async function PlateSvgPage({
   );
 }
 
-const linkStyle: React.CSSProperties = {
+const linkStyle: CSSProperties = {
   display: "block",
   textDecoration: "none",
   padding: "12px 14px",
