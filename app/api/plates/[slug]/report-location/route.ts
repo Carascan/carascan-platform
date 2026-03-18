@@ -9,6 +9,19 @@ export async function POST(
   try {
     const body = await req.json();
 
+    const messageParts = [
+      body?.message ?? "",
+      body?.latitude && body?.longitude
+        ? `Google Maps: https://maps.google.com/?q=${body.latitude},${body.longitude}`
+        : "",
+      body?.latitude && body?.longitude
+        ? `Coordinates: ${body.latitude}, ${body.longitude}`
+        : "",
+      body?.accuracy_m ? `Accuracy: ${body.accuracy_m}m` : "",
+    ].filter(Boolean);
+
+    const relayMessage = messageParts.join("\n\n");
+
     const r = await fetch(
       `${process.env.APP_BASE_URL || "https://carascan.com.au"}/api/plates/${encodeURIComponent(slug)}/contact`,
       {
@@ -20,7 +33,7 @@ export async function POST(
           reporter_name: body?.reporter_name ?? "",
           reporter_phone: body?.reporter_phone ?? "",
           reporter_email: body?.reporter_email ?? "",
-          message: body?.message ?? "",
+          message: relayMessage,
           meta: {
             type: "location_report",
             latitude: body?.latitude ?? null,
@@ -40,10 +53,7 @@ export async function POST(
       );
     }
 
-    return NextResponse.json({
-      ok: true,
-      relayed_via: "contact",
-    });
+    return NextResponse.json({ ok: true, relayed_via: "contact" });
   } catch (error) {
     return NextResponse.json(
       {
