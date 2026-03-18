@@ -52,7 +52,7 @@ export default function AdminOrdersPage() {
             "x-admin-secret": adminSecret,
           },
           cache: "no-store",
-        },
+        }
       );
 
       const j = await r.json();
@@ -95,7 +95,7 @@ export default function AdminOrdersPage() {
       }
 
       alert(
-        `Setup link resent.\nIdentifier: ${j.identifier ?? ""}\nEmail: ${j.email ?? ""}`,
+        `Setup link resent.\nIdentifier: ${j.identifier ?? ""}\nEmail: ${j.email ?? ""}`
       );
     } catch {
       alert("Failed to resend setup link.");
@@ -143,7 +143,7 @@ export default function AdminOrdersPage() {
         >
           <AdminHeader
             title="Carascan admin dashboard"
-            subtitle="Search orders, inspect plate status, resend setup links, and open the customer plate page."
+            subtitle="Search orders, inspect plate status, resend setup links, open the customer plate page, and review manufacturing SVG files."
           />
 
           <div
@@ -261,6 +261,10 @@ export default function AdminOrdersPage() {
               ? `/p/${encodeURIComponent(row.plate.slug)}`
               : null;
 
+            const svgPreviewUrl = row.plate?.identifier
+              ? `/admin/plates/${encodeURIComponent(row.plate.identifier)}/svg`
+              : null;
+
             return (
               <div
                 key={row.id}
@@ -281,7 +285,25 @@ export default function AdminOrdersPage() {
                   }}
                 >
                   <div style={{ display: "grid", gap: 8 }}>
-                    <div><strong>Identifier:</strong> {row.plate?.identifier ?? "—"}</div>
+                    <div>
+                      <strong>Identifier:</strong>{" "}
+                      {svgPreviewUrl ? (
+                        <a
+                          href={svgPreviewUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            color: "#111827",
+                            fontWeight: 700,
+                            textDecoration: "underline",
+                          }}
+                        >
+                          {row.plate?.identifier ?? "—"}
+                        </a>
+                      ) : (
+                        row.plate?.identifier ?? "—"
+                      )}
+                    </div>
                     <div><strong>Plate ID:</strong> {row.plate?.id ?? "—"}</div>
                     <div><strong>Slug:</strong> {row.plate?.slug ?? "—"}</div>
                     <div><strong>Order status:</strong> {row.status ?? "—"}</div>
@@ -339,6 +361,26 @@ export default function AdminOrdersPage() {
                         }}
                       >
                         Open customer page
+                      </a>
+                    ) : null}
+
+                    {svgPreviewUrl ? (
+                      <a
+                        href={svgPreviewUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          display: "inline-block",
+                          textAlign: "center",
+                          textDecoration: "none",
+                          borderRadius: 10,
+                          padding: "10px 14px",
+                          fontWeight: 700,
+                          background: "#dbeafe",
+                          color: "#1d4ed8",
+                        }}
+                      >
+                        Open SVG preview
                       </a>
                     ) : null}
                   </div>
