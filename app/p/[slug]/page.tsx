@@ -4,16 +4,26 @@ const LOGO_URL =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
 async function getPlate(slug: string) {
+  const baseUrl =
+    process.env.APP_BASE_URL || "https://carascan.com.au";
+
   const r = await fetch(
-    `${process.env.APP_BASE_URL}/api/plates/${encodeURIComponent(slug)}`,
+    `${baseUrl}/api/plates/${encodeURIComponent(slug)}`,
     { cache: "no-store" }
   );
+
   if (!r.ok) return null;
   return r.json();
 }
 
-export default async function PlatePage({ params }: { params: { slug: string } }) {
-  const data = await getPlate(params.slug);
+export default async function PlatePage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const data = await getPlate(slug);
+
   if (!data) return notFound();
 
   return (
@@ -117,7 +127,7 @@ export default async function PlatePage({ params }: { params: { slug: string } }
             >
               {data.plate.contact_enabled ? (
                 <a
-                  href={`/p/${params.slug}/contact`}
+                  href={`/p/${slug}/contact`}
                   style={{
                     display: "block",
                     textAlign: "center",
@@ -150,7 +160,7 @@ export default async function PlatePage({ params }: { params: { slug: string } }
 
               {data.plate.emergency_enabled ? (
                 <a
-                  href={`/p/${params.slug}/emergency`}
+                  href={`/p/${slug}/emergency`}
                   style={{
                     display: "block",
                     textAlign: "center",
