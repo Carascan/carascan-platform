@@ -19,27 +19,6 @@ type PlateResponse = {
   };
 };
 
-async function getCoarseLocation(): Promise<LocationSnapshot | null> {
-  if (!navigator.geolocation) return null;
-
-  return new Promise((resolve) => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        resolve({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          accuracy_m: pos.coords.accuracy ?? null,
-        }),
-      () => resolve(null),
-      {
-        enableHighAccuracy: false,
-        maximumAge: 600000,
-        timeout: 5000,
-      }
-    );
-  });
-}
-
 async function getPreciseLocation(): Promise<LocationSnapshot> {
   if (!navigator.geolocation) {
     throw new Error("Location access is not supported on this device.");
@@ -93,9 +72,6 @@ export default function PlatePage({
   const [data, setData] = useState<PlateResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [coarseLocation, setCoarseLocation] =
-    useState<LocationSnapshot | null>(null);
-
   const [reportStatus, setReportStatus] = useState("");
   const [reportBusy, setReportBusy] = useState(false);
 
@@ -110,11 +86,6 @@ export default function PlatePage({
       if (!mounted) return;
 
       setSlug(resolved.slug);
-
-      const loc = await getCoarseLocation();
-      if (mounted) {
-        setCoarseLocation(loc);
-      }
 
       try {
         const r = await fetch(`/api/plates/${encodeURIComponent(resolved.slug)}`, {
@@ -231,11 +202,9 @@ export default function PlatePage({
 
       <h2>{data?.plate?.identifier ?? "Carascan"}</h2>
 
-      {coarseLocation && (
-        <div style={{ marginBottom: 12, fontSize: 12, color: "#6b7280" }}>
-          Approximate location detected
-        </div>
-      )}
+      <div style={{ marginBottom: 12, fontSize: 12, color: "#6b7280" }}>
+        Your device will ask for location permission when you send a report.
+      </div>
 
       <div style={{ display: "grid", gap: 12, maxWidth: 320 }}>
         <button onClick={sendReportLocation} disabled={reportBusy}>
