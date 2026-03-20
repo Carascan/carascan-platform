@@ -44,7 +44,12 @@ export async function GET(
       phone: plate.customer?.phone,
     });
 
-    const emailResult = await sendManufacturingEmail(emailPayload);
+   const emailResult = await sendManufacturingEmail({
+  to: emailPayload.to,
+  identifier: plate.identifier, // 👈 FIX
+  svgUrl: emailPayload.svgUrl,
+  qrUrl: emailPayload.qrUrl,
+});
 
     return NextResponse.json({
       ok: true,
