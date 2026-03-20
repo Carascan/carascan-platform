@@ -1,4 +1,3 @@
-// lib/notifyEmail.ts
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -269,6 +268,28 @@ function buildEmergencyText(input: BaseNotifyInput) {
   ].join("\n");
 }
 
+export async function sendEmail(to: string | string[], subject: string, html: string) {
+  const from =
+    process.env.RESEND_FROM_EMAIL ||
+    process.env.FROM_EMAIL ||
+    "Carascan <noreply@carascan.com.au>";
+
+  const recipients = Array.isArray(to) ? to : [to];
+
+  const result = await resend.emails.send({
+    from,
+    to: recipients,
+    subject,
+    html,
+  });
+
+  if (result.error) {
+    throw new Error(result.error.message || "Failed to send email.");
+  }
+
+  return result;
+}
+
 export async function sendLocationReportEmail(input: BaseNotifyInput) {
   const html = buildShellHtml({
     title: "Carascan location report",
@@ -291,7 +312,10 @@ export async function sendLocationReportEmail(input: BaseNotifyInput) {
   const text = buildLocationText(input);
 
   const result = await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL || "Carascan <noreply@carascan.com.au>",
+    from:
+      process.env.RESEND_FROM_EMAIL ||
+      process.env.FROM_EMAIL ||
+      "Carascan <noreply@carascan.com.au>",
     to: input.to,
     subject: `Location report for ${input.identifier}`,
     html,
@@ -329,7 +353,10 @@ export async function sendEmergencyAlertEmail(input: BaseNotifyInput) {
   const text = buildEmergencyText(input);
 
   const result = await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL || "Carascan <noreply@carascan.com.au>",
+    from:
+      process.env.RESEND_FROM_EMAIL ||
+      process.env.FROM_EMAIL ||
+      "Carascan <noreply@carascan.com.au>",
     to: input.to,
     subject: `EMERGENCY ALERT for ${input.identifier}`,
     html,
