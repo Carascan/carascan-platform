@@ -45,6 +45,12 @@ type PreviewSvgInput = {
   logoUrl?: string;
 };
 
+type LocationSnapshot = {
+  latitude: number;
+  longitude: number;
+  accuracy_m: number | null;
+};
+
 function buildPreviewSvg({
   identifier,
   qrImageHref,
@@ -188,6 +194,59 @@ function buildPreviewSvg({
   `;
 }
 
+function mapsLink(loc: LocationSnapshot | null) {
+  if (!loc) return "";
+  return `https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`;
+}
+
+async function requestCurrentLocation(): Promise<LocationSnapshot> {
+  if (!navigator.geolocation) {
+    throw new Error("Location access is not supported on this device.");
+  }
+
+  return await new Promise<LocationSnapshot>((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy_m: Number.isFinite(position.coords.accuracy)
+            ? Math.round(position.coords.accuracy)
+            : null,
+        });
+      },
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          reject(
+            new Error(
+              "Location permission was denied. Please allow location access and try again."
+            )
+          );
+          return;
+        }
+        if (error.code === error.POSITION_UNAVAILABLE) {
+          reject(
+            new Error("Your location could not be determined. Please try again.")
+          );
+          return;
+        }
+        if (error.code === error.TIMEOUT) {
+          reject(
+            new Error("Location request timed out. Please try again.")
+          );
+          return;
+        }
+        reject(new Error(error.message || "Unable to access your location."));
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      }
+    );
+  });
+}
+
 export default function PlatePage({
   params,
 }: {
@@ -215,6 +274,7 @@ export default function PlatePage({
   const [reportPhone, setReportPhone] = useState("");
   const [reportEmail, setReportEmail] = useState("");
   const [reportNotes, setReportNotes] = useState("");
+  const [reportLocation, setReportLocation] = useState<LocationSnapshot | null>(null);
 
   const [emergencyBusy, setEmergencyBusy] = useState(false);
   const [emergencyStatus, setEmergencyStatus] = useState("");
@@ -222,6 +282,7 @@ export default function PlatePage({
   const [emergencyPhone, setEmergencyPhone] = useState("");
   const [emergencyEmail, setEmergencyEmail] = useState("");
   const [emergencyMessage, setEmergencyMessage] = useState("");
+  const [emergencyLocation, setEmergencyLocation] = useState<LocationSnapshot | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -322,78 +383,73 @@ export default function PlatePage({
     }
   }
 
-  async function useMyLocation() {
-    if (!slug) return;
-
+  async function captureReportLocation() {
+    setReportBusy(true);
     setReportStatus("");
 
-    if (!navigator.geolocation) {
-      setReportStatus("Geolocation is not supported on this device.");
-      return;
+    try {
+      const loc = await requestCurrentLocation();
+      setReportLocation(loc);
+      setReportStatus("Location captured successfully.");
+    } catch (err) {
+      setReportStatus(err instanceof Error ? err.message : "Failed to capture location.");
+    } finally {
+      setReportBusy(false);
     }
+  }
+
+  async function sendReportLocation() {
+    if (!slug) return;
 
     setReportBusy(true);
+    setReportStatus("");
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          const accuracy = Math.round(position.coords.accuracy || 0);
+    try {
+      const loc = reportLocation ?? (await requestCurrentLocation());
+      setReportLocation(loc);
 
-          const message = [
-            reportNotes.trim(),
-            `Reported location: https://maps.google.com/?q=${lat},${lng}`,
-            `Coordinates: ${lat}, ${lng}`,
-            accuracy ? `Accuracy: ${accuracy}m` : "",
-          ]
-            .filter(Boolean)
-            .join("\n\n");
+      const message = [
+        reportNotes.trim(),
+        `Reported location: ${mapsLink(loc)}`,
+        `Coordinates: ${loc.latitude}, ${loc.longitude}`,
+        loc.accuracy_m ? `Accuracy: ${loc.accuracy_m}m` : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
 
-          const r = await fetch(
-            `/api/plates/${encodeURIComponent(slug)}/report-location`,
-            {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({
-                reporter_name: reportName,
-                reporter_phone: reportPhone,
-                reporter_email: reportEmail,
-                latitude: lat,
-                longitude: lng,
-                accuracy_m: accuracy || null,
-                message,
-              }),
-            }
-          );
-
-          const j = await r.json().catch(() => null);
-
-          if (!r.ok) {
-            setReportStatus(j?.error ?? "Failed to send location report.");
-            return;
-          }
-
-          setReportStatus("Location report sent successfully.");
-          setReportNotes("");
-        } catch (err) {
-          setReportStatus(
-            err instanceof Error ? err.message : "Failed to send location report."
-          );
-        } finally {
-          setReportBusy(false);
+      const r = await fetch(
+        `/api/plates/${encodeURIComponent(slug)}/report-location`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            reporter_name: reportName,
+            reporter_phone: reportPhone,
+            reporter_email: reportEmail,
+            latitude: loc.latitude,
+            longitude: loc.longitude,
+            accuracy_m: loc.accuracy_m,
+            message,
+          }),
         }
-      },
-      (error) => {
-        setReportBusy(false);
-        setReportStatus(error.message || "Unable to access your location.");
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0,
+      );
+
+      const j = await r.json().catch(() => null);
+
+      if (!r.ok) {
+        setReportStatus(j?.error ?? "Failed to send location report.");
+        return;
       }
-    );
+
+      setReportStatus("Location report sent successfully.");
+      setReportNotes("");
+    } catch (err) {
+      setReportStatus(
+        err instanceof Error ? err.message : "Failed to send location report."
+      );
+    } finally {
+      setReportBusy(false);
+    }
   }
 
   async function sendEmergencyAlert() {
@@ -403,6 +459,18 @@ export default function PlatePage({
     setEmergencyStatus("");
 
     try {
+      const loc = emergencyLocation ?? (await requestCurrentLocation());
+      setEmergencyLocation(loc);
+
+      const message = [
+        emergencyMessage.trim(),
+        `Emergency location: ${mapsLink(loc)}`,
+        `Coordinates: ${loc.latitude}, ${loc.longitude}`,
+        loc.accuracy_m ? `Accuracy: ${loc.accuracy_m}m` : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+
       const r = await fetch(`/api/plates/${encodeURIComponent(slug)}/emergency`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -410,7 +478,10 @@ export default function PlatePage({
           reporter_name: emergencyName,
           reporter_phone: emergencyPhone,
           reporter_email: emergencyEmail,
-          message: emergencyMessage.trim(),
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          accuracy_m: loc.accuracy_m,
+          message,
         }),
       });
 
@@ -531,12 +602,29 @@ export default function PlatePage({
                 </p>
 
                 <div style={styles.fieldGrid}>
-                  <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Your name" style={styles.input} />
-                  <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="Your phone" style={styles.input} />
-                  <input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="Your email" style={styles.input} />
+                  <input
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    placeholder="Your name"
+                    style={styles.input}
+                  />
+                  <input
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    placeholder="Your phone"
+                    style={styles.input}
+                  />
+                  <input
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="Your email"
+                    style={styles.input}
+                  />
                   <textarea
                     value={contactMessage}
-                    onChange={(e) => setContactMessage(e.target.value.slice(0, CONTACT_CHAR_LIMIT))}
+                    onChange={(e) =>
+                      setContactMessage(e.target.value.slice(0, CONTACT_CHAR_LIMIT))
+                    }
                     placeholder="Write your message"
                     rows={5}
                     style={styles.textarea}
@@ -558,7 +646,9 @@ export default function PlatePage({
                   </button>
                 </div>
 
-                {contactStatus ? <div style={styles.statusBox}>{contactStatus}</div> : null}
+                {contactStatus ? (
+                  <div style={styles.statusBox}>{contactStatus}</div>
+                ) : null}
               </div>
             ) : null}
 
@@ -566,17 +656,33 @@ export default function PlatePage({
               <div style={styles.panel}>
                 <h3 style={{ marginTop: 0 }}>Report Location</h3>
                 <p style={styles.sub}>
-                  Press the button below to allow GPS access and send the current
-                  location to the owner.
+                  Location access is required. Capture GPS first, then send the report.
                 </p>
 
                 <div style={styles.fieldGrid}>
-                  <input value={reportName} onChange={(e) => setReportName(e.target.value)} placeholder="Your name" style={styles.input} />
-                  <input value={reportPhone} onChange={(e) => setReportPhone(e.target.value)} placeholder="Your phone" style={styles.input} />
-                  <input value={reportEmail} onChange={(e) => setReportEmail(e.target.value)} placeholder="Your email" style={styles.input} />
+                  <input
+                    value={reportName}
+                    onChange={(e) => setReportName(e.target.value)}
+                    placeholder="Your name"
+                    style={styles.input}
+                  />
+                  <input
+                    value={reportPhone}
+                    onChange={(e) => setReportPhone(e.target.value)}
+                    placeholder="Your phone"
+                    style={styles.input}
+                  />
+                  <input
+                    value={reportEmail}
+                    onChange={(e) => setReportEmail(e.target.value)}
+                    placeholder="Your email"
+                    style={styles.input}
+                  />
                   <textarea
                     value={reportNotes}
-                    onChange={(e) => setReportNotes(e.target.value.slice(0, REPORT_CHAR_LIMIT))}
+                    onChange={(e) =>
+                      setReportNotes(e.target.value.slice(0, REPORT_CHAR_LIMIT))
+                    }
                     placeholder="Optional note, address, campsite, road marker, or other location details"
                     rows={5}
                     style={styles.textarea}
@@ -585,20 +691,41 @@ export default function PlatePage({
                     Maximum {REPORT_CHAR_LIMIT} characters.
                     <span style={styles.counter}>{reportRemaining} remaining</span>
                   </div>
+
+                  {reportLocation ? (
+                    <div style={styles.locationBox}>
+                      <div><strong>Captured location</strong></div>
+                      <div>{reportLocation.latitude}, {reportLocation.longitude}</div>
+                      {reportLocation.accuracy_m ? (
+                        <div>Accuracy: {reportLocation.accuracy_m}m</div>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
 
-                <div style={styles.singleButtonWrap}>
+                <div style={styles.doubleButtonWrap}>
                   <button
                     type="button"
-                    onClick={useMyLocation}
+                    onClick={captureReportLocation}
                     disabled={reportBusy}
+                    style={styles.secondaryButton}
+                  >
+                    {reportBusy ? "Requesting..." : "Capture My Location"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={sendReportLocation}
+                    disabled={reportBusy || !reportLocation}
                     style={styles.primaryButton}
                   >
-                    {reportBusy ? "Sending..." : "Share My Current Location"}
+                    {reportBusy ? "Sending..." : "Send Location Report"}
                   </button>
                 </div>
 
-                {reportStatus ? <div style={styles.statusBox}>{reportStatus}</div> : null}
+                {reportStatus ? (
+                  <div style={styles.statusBox}>{reportStatus}</div>
+                ) : null}
               </div>
             ) : null}
 
@@ -622,38 +749,96 @@ export default function PlatePage({
                   <div style={styles.panel}>
                     <h3 style={{ marginTop: 0 }}>Emergency Alert</h3>
                     <p style={styles.sub}>
-                      Send an emergency alert to the owner and emergency contacts.
+                      Location access is required for emergency alerts.
                     </p>
 
                     <div style={styles.fieldGrid}>
-                      <input value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} placeholder="Your name" style={styles.input} />
-                      <input value={emergencyPhone} onChange={(e) => setEmergencyPhone(e.target.value)} placeholder="Your phone" style={styles.input} />
-                      <input value={emergencyEmail} onChange={(e) => setEmergencyEmail(e.target.value)} placeholder="Your email" style={styles.input} />
+                      <input
+                        value={emergencyName}
+                        onChange={(e) => setEmergencyName(e.target.value)}
+                        placeholder="Your name"
+                        style={styles.input}
+                      />
+                      <input
+                        value={emergencyPhone}
+                        onChange={(e) => setEmergencyPhone(e.target.value)}
+                        placeholder="Your phone"
+                        style={styles.input}
+                      />
+                      <input
+                        value={emergencyEmail}
+                        onChange={(e) => setEmergencyEmail(e.target.value)}
+                        placeholder="Your email"
+                        style={styles.input}
+                      />
                       <textarea
                         value={emergencyMessage}
-                        onChange={(e) => setEmergencyMessage(e.target.value.slice(0, EMERGENCY_CHAR_LIMIT))}
+                        onChange={(e) =>
+                          setEmergencyMessage(
+                            e.target.value.slice(0, EMERGENCY_CHAR_LIMIT)
+                          )
+                        }
                         placeholder="Describe the emergency"
                         rows={5}
                         style={styles.textarea}
                       />
                       <div style={styles.helperText}>
                         Maximum {EMERGENCY_CHAR_LIMIT} characters.
-                        <span style={styles.counter}>{emergencyRemaining} remaining</span>
+                        <span style={styles.counter}>
+                          {emergencyRemaining} remaining
+                        </span>
                       </div>
+
+                      {emergencyLocation ? (
+                        <div style={styles.locationBox}>
+                          <div><strong>Captured emergency location</strong></div>
+                          <div>{emergencyLocation.latitude}, {emergencyLocation.longitude}</div>
+                          {emergencyLocation.accuracy_m ? (
+                            <div>Accuracy: {emergencyLocation.accuracy_m}m</div>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
 
-                    <div style={styles.singleButtonWrap}>
+                    <div style={styles.doubleButtonWrap}>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setEmergencyBusy(true);
+                          setEmergencyStatus("");
+                          try {
+                            const loc = await requestCurrentLocation();
+                            setEmergencyLocation(loc);
+                            setEmergencyStatus("Emergency location captured successfully.");
+                          } catch (err) {
+                            setEmergencyStatus(
+                              err instanceof Error
+                                ? err.message
+                                : "Failed to capture emergency location."
+                            );
+                          } finally {
+                            setEmergencyBusy(false);
+                          }
+                        }}
+                        disabled={emergencyBusy}
+                        style={styles.secondaryButton}
+                      >
+                        {emergencyBusy ? "Requesting..." : "Capture Emergency Location"}
+                      </button>
+
                       <button
                         type="button"
                         onClick={sendEmergencyAlert}
-                        disabled={emergencyBusy || !emergencyMessage.trim()}
+                        disabled={emergencyBusy || !emergencyLocation}
                         style={styles.emergencyButton}
                       >
                         {emergencyBusy ? "Sending..." : "Send Emergency Alert"}
                       </button>
                     </div>
 
-                    {emergencyStatus ? <div style={styles.statusBox}>{emergencyStatus}</div> : null}
+                    {emergencyStatus ? (
+                      <div style={styles.statusBox}>{emergencyStatus}</div>
+                    ) : null}
                   </div>
                 ) : null}
               </>
@@ -674,30 +859,186 @@ export default function PlatePage({
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: "100vh", padding: "32px 20px", background: "#f7f7f8", fontFamily: "Arial, sans-serif" },
-  wrap: { maxWidth: 760, margin: "0 auto" },
-  card: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 18, padding: 28, boxShadow: "0 10px 30px rgba(0,0,0,0.06)" },
-  platePreviewWrap: { display: "flex", justifyContent: "center", margin: "0 auto 18px" },
-  platePreviewFrame: { width: 430, maxWidth: "100%" },
-  sub: { margin: 0, color: "#4b5563", lineHeight: 1.6 },
-  caravanName: { margin: "10px 0 0 0", color: "#111827", fontSize: 22, fontWeight: 700 },
-  bioBox: { background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 14, padding: 18, marginBottom: 20 },
-  bioText: { margin: 0, color: "#374151", lineHeight: 1.6, textAlign: "center" },
-  actionBox: { background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 14, padding: 20, marginBottom: 16 },
-  actionsHeading: { marginTop: 0, marginBottom: 14, textAlign: "center" },
-  topButtonGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 },
-  primaryButton: { border: 0, borderRadius: 12, padding: "16px 20px", fontSize: 16, fontWeight: 600, background: "#111827", color: "#ffffff", cursor: "pointer" },
-  secondaryButton: { border: "1px solid #d1d5db", borderRadius: 12, padding: "16px 20px", fontSize: 16, fontWeight: 600, background: "#ffffff", color: "#111827", cursor: "pointer" },
-  emergencyWrap: { display: "flex", justifyContent: "center", marginTop: 18 },
-  emergencyButton: { border: 0, borderRadius: 12, padding: "16px 20px", minWidth: 280, fontSize: 16, fontWeight: 700, background: "#dc2626", color: "#ffffff", cursor: "pointer" },
-  disabledBox: { border: "1px solid #e5e7eb", borderRadius: 12, padding: "16px 20px", color: "#6b7280", background: "#ffffff", textAlign: "center" },
-  panel: { marginTop: 18, paddingTop: 18, borderTop: "1px solid #e5e7eb", display: "grid", gap: 14 },
-  fieldGrid: { display: "grid", gap: 12 },
-  input: { width: "100%", border: "1px solid #d1d5db", borderRadius: 10, padding: "12px 14px", fontSize: 15, boxSizing: "border-box" },
-  textarea: { width: "100%", border: "1px solid #d1d5db", borderRadius: 10, padding: "12px 14px", fontSize: 15, boxSizing: "border-box", resize: "vertical" },
-  helperText: { fontSize: 13, color: "#6b7280", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" },
-  counter: { color: "#374151", fontWeight: 600, whiteSpace: "nowrap" },
-  singleButtonWrap: { display: "flex", justifyContent: "center" },
-  statusBox: { padding: 14, borderRadius: 12, background: "#ffffff", border: "1px solid #e5e7eb", color: "#111827" },
-  footer: { margin: 0, fontSize: 14, color: "#6b7280", textAlign: "center" },
+  page: {
+    minHeight: "100vh",
+    padding: "32px 20px",
+    background: "#f7f7f8",
+    fontFamily: "Arial, sans-serif",
+  },
+  wrap: {
+    maxWidth: 760,
+    margin: "0 auto",
+  },
+  card: {
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 18,
+    padding: 28,
+    boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+  },
+  platePreviewWrap: {
+    display: "flex",
+    justifyContent: "center",
+    margin: "0 auto 18px",
+  },
+  platePreviewFrame: {
+    width: 430,
+    maxWidth: "100%",
+  },
+  sub: {
+    margin: 0,
+    color: "#4b5563",
+    lineHeight: 1.6,
+  },
+  caravanName: {
+    margin: "10px 0 0 0",
+    color: "#111827",
+    fontSize: 22,
+    fontWeight: 700,
+  },
+  bioBox: {
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb",
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 20,
+  },
+  bioText: {
+    margin: 0,
+    color: "#374151",
+    lineHeight: 1.6,
+    textAlign: "center",
+  },
+  actionBox: {
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb",
+    borderRadius: 14,
+    padding: 20,
+    marginBottom: 16,
+  },
+  actionsHeading: {
+    marginTop: 0,
+    marginBottom: 14,
+    textAlign: "center",
+  },
+  topButtonGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: 14,
+  },
+  primaryButton: {
+    border: 0,
+    borderRadius: 12,
+    padding: "16px 20px",
+    fontSize: 16,
+    fontWeight: 600,
+    background: "#111827",
+    color: "#ffffff",
+    cursor: "pointer",
+  },
+  secondaryButton: {
+    border: "1px solid #d1d5db",
+    borderRadius: 12,
+    padding: "16px 20px",
+    fontSize: 16,
+    fontWeight: 600,
+    background: "#ffffff",
+    color: "#111827",
+    cursor: "pointer",
+  },
+  emergencyWrap: {
+    display: "flex",
+    justifyContent: "center",
+    marginTop: 18,
+  },
+  emergencyButton: {
+    border: 0,
+    borderRadius: 12,
+    padding: "16px 20px",
+    minWidth: 280,
+    fontSize: 16,
+    fontWeight: 700,
+    background: "#dc2626",
+    color: "#ffffff",
+    cursor: "pointer",
+  },
+  disabledBox: {
+    border: "1px solid #e5e7eb",
+    borderRadius: 12,
+    padding: "16px 20px",
+    color: "#6b7280",
+    background: "#ffffff",
+    textAlign: "center",
+  },
+  panel: {
+    marginTop: 18,
+    paddingTop: 18,
+    borderTop: "1px solid #e5e7eb",
+    display: "grid",
+    gap: 14,
+  },
+  fieldGrid: {
+    display: "grid",
+    gap: 12,
+  },
+  input: {
+    width: "100%",
+    border: "1px solid #d1d5db",
+    borderRadius: 10,
+    padding: "12px 14px",
+    fontSize: 15,
+    boxSizing: "border-box",
+  },
+  textarea: {
+    width: "100%",
+    border: "1px solid #d1d5db",
+    borderRadius: 10,
+    padding: "12px 14px",
+    fontSize: 15,
+    boxSizing: "border-box",
+    resize: "vertical",
+  },
+  helperText: {
+    fontSize: 13,
+    color: "#6b7280",
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
+    alignItems: "center",
+  },
+  counter: {
+    color: "#374151",
+    fontWeight: 600,
+    whiteSpace: "nowrap",
+  },
+  singleButtonWrap: {
+    display: "flex",
+    justifyContent: "center",
+  },
+  doubleButtonWrap: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: 12,
+  },
+  locationBox: {
+    padding: 14,
+    borderRadius: 12,
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    color: "#111827",
+    lineHeight: 1.6,
+  },
+  statusBox: {
+    padding: 14,
+    borderRadius: 12,
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    color: "#111827",
+  },
+  footer: {
+    margin: 0,
+    fontSize: 14,
+    color: "#6b7280",
+    textAlign: "center",
+  },
 };
