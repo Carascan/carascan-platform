@@ -1,11 +1,28 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { Resend } from "resend";
+import { sendEmail } from "@/lib/notifyEmail";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-function buildMapsUrl(lat: number, lng: number) {
+function buildGoogleMapsUrl(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
+}
+
+function buildStaticMapUrl(lat: number, lng: number) {
+  const key = process.env.GOOGLE_MAPS_API_KEY?.trim();
+  if (!key) return null;
+
+  const params = new URLSearchParams({
+    center: `${lat},${lng}`,
+    zoom: "15",
+    size: "600x300",
+    scale: "1",
+    maptype: "roadmap",
+    format: "png",
+    key,
+  });
+
+  params.append("markers", `color:red|${lat},${lng}`);
+
+  return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
 }
 
 export async function POST(
@@ -20,6 +37,7 @@ export async function POST(
     const reporterPhone = String(body?.reporter_phone ?? "").trim();
     const reporterEmail = String(body?.reporter_email ?? "").trim();
     const message = String(body?.message ?? "").trim();
+    const locationSource = String(body?.location_source ?? "device").trim();
 
     const lat = Number(body?.latitude);
     const lng = Number(body?.longitude);
@@ -81,9 +99,7 @@ export async function POST(
       )
     );
 
-    const recipients = Array.from(
-      new Set([...ownerEmails, ...emergencyEmails])
-    );
+    const recipients = Array.from(new Set([...ownerEmails, ...emergencyEmails]));
 
     if (!recipients.length) {
       return NextResponse.json(
@@ -92,54 +108,74 @@ export async function POST(
       );
     }
 
-    const mapsUrl = buildMapsUrl(lat, lng);
+    const mapsUrl = buildGoogleMapsUrl(lat, lng);
+    const staticMapUrl = buildStaticMapUrl(lat, lng);
 
     const html = `
-      <h2 style="color:#dc2626;">EMERGENCY ALERT</h2>
+      <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111827;">
+        <h2 style="margin:0 0 16px 0;color:#dc2626;">EMERGENCY ALERT</h2>
 
-      <p><strong>Plate:</strong> ${plate.identifier}</p>
+        <p style="margin:0 0 10px 0;"><strong>Plate:</strong> ${plate.identifier}</p>
 
-      <p>
-        <a href="${mapsUrl}" target="_blank">
-          Open location in Google Maps
-        </a>
-      </p>
+        ${
+          staticMapUrl
+            ? `
+          <p style="margin:0 0 14px 0;">
+            <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
+              <img
+                src="${staticMapUrl}"
+                alt="Emergency location map"
+                width="600"
+                border="0"
+                style="display:block;width:100%;max-width:600px;height:auto;border:1px solid #d1d5db;border-radius:10px;"
+              />
+            </a>
+          </p>
+        `
+            : ""
+        }
 
-      <p><strong>Coordinates:</strong> ${lat}, ${lng}</p>
-      ${accuracyM ? `<p><strong>Accuracy:</strong> ${accuracyM}m</p>` : ""}
+        <p style="margin:0 0 12px 0;">
+          <a
+            href="${mapsUrl}"
+            target="_blank"
+            rel="noopener noreferrer"
+            style="display:inline-block;padding:10px 14px;background:#dc2626;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;"
+          >
+            Open location in Google Maps
+          </a>
+        </p>
 
-      <hr/>
+        <p style="margin:0 0 8px 0;"><strong>Coordinates:</strong> ${lat}, ${lng}</p>
+        ${
+          accuracyM != null
+            ? `<p style="margin:0 0 8px 0;"><strong>Accuracy:</strong> ${accuracyM}m</p>`
+            : ""
+        }
+        <p style="margin:0 0 16px 0;"><strong>Location source:</strong> ${locationSource}</p>
 
-      <p><strong>Reporter:</strong> ${
-        reporterName || "Not provided"
-      }</p>
+        <hr style="margin:20px 0;" />
 
-      <p><strong>Phone:</strong> ${
-        reporterPhone || "Not provided"
-      }</p>
+        <p style="margin:0 0 8px 0;"><strong>Reporter:</strong> ${reporterName || "Not provided"}</p>
+        <p style="margin:0 0 8px 0;"><strong>Phone:</strong> ${reporterPhone || "Not provided"}</p>
+        <p style="margin:0 0 8px 0;"><strong>Email:</strong> ${reporterEmail || "Not provided"}</p>
 
-      <p><strong>Email:</strong> ${
-        reporterEmail || "Not provided"
-      }</p>
+        ${
+          message
+            ? `<p style="margin:12px 0 0 0;"><strong>Details:</strong><br/>${message.replace(/\n/g, "<br/>")}</p>`
+            : ""
+        }
 
-      ${
-        message
-          ? `<p><strong>Details:</strong><br/>${message.replace(
-              /\n/g,
-              "<br/>"
-            )}</p>`
-          : ""
-      }
+        <p style="margin:16px 0 0 0;color:#6b7280;font-size:13px;word-break:break-all;">
+          Direct link:<br />
+          <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color:#2563eb;">
+            ${mapsUrl}
+          </a>
+        </p>
+      </div>
     `;
 
-    await resend.emails.send({
-      from:
-        process.env.RESEND_FROM_EMAIL ||
-        "Carascan <noreply@carascan.com.au>",
-      to: recipients,
-      subject: `🚨 EMERGENCY - ${plate.identifier}`,
-      html,
-    });
+    await sendEmail(recipients, `🚨 EMERGENCY - ${plate.identifier}`, html);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

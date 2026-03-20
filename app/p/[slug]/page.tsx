@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 const LOGO_URL =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
-
-const CONTACT_CHAR_LIMIT = 500;
-const REPORT_CHAR_LIMIT = 500;
-const EMERGENCY_CHAR_LIMIT = 700;
 
 type LocationSnapshot = {
   latitude: number;
   longitude: number;
   accuracy_m: number | null;
+};
+
+type PlateResponse = {
+  plate?: {
+    identifier?: string;
+    contact_enabled?: boolean;
+    emergency_enabled?: boolean;
+  };
 };
 
 async function getCoarseLocation(): Promise<LocationSnapshot | null> {
@@ -28,7 +32,7 @@ async function getCoarseLocation(): Promise<LocationSnapshot | null> {
         }),
       () => resolve(null),
       {
-        enableHighAccuracy: false, // 👈 COARSE
+        enableHighAccuracy: false,
         maximumAge: 600000,
         timeout: 5000,
       }
@@ -37,6 +41,10 @@ async function getCoarseLocation(): Promise<LocationSnapshot | null> {
 }
 
 async function getPreciseLocation(): Promise<LocationSnapshot> {
+  if (!navigator.geolocation) {
+    throw new Error("Location access is not supported on this device.");
+  }
+
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
       (pos) =>
@@ -45,9 +53,31 @@ async function getPreciseLocation(): Promise<LocationSnapshot> {
           longitude: pos.coords.longitude,
           accuracy_m: pos.coords.accuracy ?? null,
         }),
-      (err) => reject(err),
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          reject(
+            new Error(
+              "Location permission was denied. Please allow access and try again."
+            )
+          );
+          return;
+        }
+
+        if (err.code === err.POSITION_UNAVAILABLE) {
+          reject(new Error("Your current location could not be determined."));
+          return;
+        }
+
+        if (err.code === err.TIMEOUT) {
+          reject(new Error("Location request timed out. Please try again."));
+          return;
+        }
+
+        reject(new Error(err.message || "Unable to access your location."));
+      },
       {
-        enableHighAccuracy: true, // 👈 PRECISE (user prompted)
+        enableHighAccuracy: true,
+        maximumAge: 0,
         timeout: 15000,
       }
     );
@@ -60,46 +90,66 @@ export default function PlatePage({
   params: Promise<{ slug: string }>;
 }) {
   const [slug, setSlug] = useState("");
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<PlateResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [coarseLocation, setCoarseLocation] =
     useState<LocationSnapshot | null>(null);
 
-  const [status, setStatus] = useState("");
-  const [sending, setSending] = useState(false);
+  const [reportStatus, setReportStatus] = useState("");
+  const [reportBusy, setReportBusy] = useState(false);
+
+  const [emergencyStatus, setEmergencyStatus] = useState("");
+  const [emergencyBusy, setEmergencyBusy] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+
     async function init() {
       const resolved = await params;
+      if (!mounted) return;
+
       setSlug(resolved.slug);
 
-      // 👇 SILENT COARSE LOCATION ON LOAD
       const loc = await getCoarseLocation();
-      setCoarseLocation(loc);
+      if (mounted) {
+        setCoarseLocation(loc);
+      }
 
-      const r = await fetch(`/api/plates/${resolved.slug}`);
-      const j = await r.json();
+      try {
+        const r = await fetch(`/api/plates/${encodeURIComponent(resolved.slug)}`, {
+          cache: "no-store",
+        });
+        const j = await r.json();
 
-      setData(j);
-      setLoading(false);
+        if (!mounted) return;
+
+        setData(j);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
     }
 
     init();
+
+    return () => {
+      mounted = false;
+    };
   }, [params]);
 
-  async function sendLocation(type: "contact" | "emergency") {
+  async function sendReportLocation() {
     if (!slug) return;
 
     try {
-      setSending(true);
-      setStatus("Requesting location permission...");
+      setReportBusy(true);
+      setReportStatus("Requesting location permission...");
 
-      // 👇 ONLY NOW we ask for precise
       const precise = await getPreciseLocation();
 
       const r = await fetch(
-        `/api/plates/${slug}/${type === "emergency" ? "emergency" : "contact"}`,
+        `/api/plates/${encodeURIComponent(slug)}/report-location`,
         {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -108,33 +158,78 @@ export default function PlatePage({
             longitude: precise.longitude,
             accuracy_m: precise.accuracy_m,
             location_source: "device",
-            message: type === "emergency" ? "Emergency alert" : "Location report",
+            message: "Location report",
           }),
         }
       );
 
-      const j = await r.json();
+      const j = await r.json().catch(() => null);
 
       if (!r.ok) {
-        setStatus(j?.error ?? "Failed.");
+        setReportStatus(j?.error ?? "Failed to send location report.");
         return;
       }
 
-      setStatus("Location sent successfully.");
-    } catch {
-      setStatus("Location permission denied.");
+      setReportStatus("Location report sent successfully.");
+    } catch (error) {
+      setReportStatus(
+        error instanceof Error ? error.message : "Failed to send location report."
+      );
     } finally {
-      setSending(false);
+      setReportBusy(false);
     }
   }
 
-  if (loading) return <main>Loading...</main>;
+  async function sendEmergencyAlert() {
+    if (!slug) return;
+
+    try {
+      setEmergencyBusy(true);
+      setEmergencyStatus("Requesting location permission...");
+
+      const precise = await getPreciseLocation();
+
+      const r = await fetch(
+        `/api/plates/${encodeURIComponent(slug)}/emergency`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            latitude: precise.latitude,
+            longitude: precise.longitude,
+            accuracy_m: precise.accuracy_m,
+            location_source: "device",
+            message: "Emergency alert",
+          }),
+        }
+      );
+
+      const j = await r.json().catch(() => null);
+
+      if (!r.ok) {
+        setEmergencyStatus(j?.error ?? "Failed to send emergency alert.");
+        return;
+      }
+
+      setEmergencyStatus("Emergency alert sent successfully.");
+    } catch (error) {
+      setEmergencyStatus(
+        error instanceof Error ? error.message : "Failed to send emergency alert."
+      );
+    } finally {
+      setEmergencyBusy(false);
+    }
+  }
+
+  if (loading) {
+    return <main style={{ padding: 24 }}>Loading...</main>;
+  }
 
   return (
     <main style={{ padding: 24 }}>
-      <img src={LOGO_URL} style={{ maxWidth: 300 }} />
+      <img src={LOGO_URL} alt="Carascan" style={{ maxWidth: 300 }} />
 
-      <h2>{data?.plate?.identifier}</h2>
+      <h2>{data?.plate?.identifier ?? "Carascan"}</h2>
 
       {coarseLocation && (
         <div style={{ marginBottom: 12, fontSize: 12, color: "#6b7280" }}>
@@ -142,24 +237,24 @@ export default function PlatePage({
         </div>
       )}
 
-      <div style={{ display: "grid", gap: 12 }}>
-        <button
-          onClick={() => sendLocation("contact")}
-          disabled={sending}
-        >
-          {sending ? "Sending..." : "Contact Owner"}
+      <div style={{ display: "grid", gap: 12, maxWidth: 320 }}>
+        <button onClick={sendReportLocation} disabled={reportBusy}>
+          {reportBusy ? "Sending..." : "Report Location"}
         </button>
 
-        <button
-          onClick={() => sendLocation("emergency")}
-          disabled={sending}
-          style={{ background: "red", color: "white" }}
-        >
-          {sending ? "Sending..." : "Emergency"}
-        </button>
+        {data?.plate?.emergency_enabled !== false && (
+          <button
+            onClick={sendEmergencyAlert}
+            disabled={emergencyBusy}
+            style={{ background: "#dc2626", color: "#ffffff" }}
+          >
+            {emergencyBusy ? "Sending..." : "Emergency"}
+          </button>
+        )}
       </div>
 
-      {status && <p>{status}</p>}
+      {reportStatus && <p>{reportStatus}</p>}
+      {emergencyStatus && <p>{emergencyStatus}</p>}
     </main>
   );
 }
