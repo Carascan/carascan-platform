@@ -1,7 +1,7 @@
 // app/api/plates/[slug]/report-location/route.ts
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { sendLocationReportEmail } from "@/lib/notifyEmail";
+import { sendEmail } from "@/lib/notifyEmail";
 
 export async function POST(
   req: Request,
@@ -72,18 +72,40 @@ export async function POST(
       );
     }
 
-    await sendLocationReportEmail({
-      to: [ownerEmail],
-      identifier: plate.identifier,
-      slug: plate.slug,
-      reporterName,
-      reporterPhone,
-      reporterEmail,
-      message,
-      lat,
-      lng,
-      accuracyM,
-    });
+const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+
+const html = `
+  <h2>Location Report</h2>
+
+  <p><strong>Plate:</strong> ${plate.identifier}</p>
+
+  <p>
+    <a href="${mapsUrl}" target="_blank">
+      Open in Google Maps
+    </a>
+  </p>
+
+  <p><strong>Coordinates:</strong> ${lat}, ${lng}</p>
+  ${accuracyM ? `<p><strong>Accuracy:</strong> ${accuracyM}m</p>` : ""}
+
+  <hr/>
+
+  <p><strong>Reporter:</strong> ${reporterName || "Not provided"}</p>
+  <p><strong>Phone:</strong> ${reporterPhone || "Not provided"}</p>
+  <p><strong>Email:</strong> ${reporterEmail || "Not provided"}</p>
+
+  ${
+    message
+      ? `<p><strong>Notes:</strong><br/>${message.replace(/\n/g, "<br/>")}</p>`
+      : ""
+  }
+`;
+
+await sendEmail(
+  [ownerEmail],
+  `Location report - ${plate.identifier}`,
+  html
+);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
