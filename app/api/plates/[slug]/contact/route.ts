@@ -1,142 +1,103 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { Resend } from "resend";
-import { z } from "zod";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-const BodySchema = z.object({
-  reporter_name: z.string().optional().nullable(),
-  reporter_phone: z.string().optional().nullable(),
-  reporter_email: z.string().optional().nullable(),
-  message: z.string().optional().nullable(),
-
-  // 👇 NEW (location support)
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
-  accuracy_m: z.number().optional().nullable(),
-  location_source: z.string().optional(),
-});
+import { sendEmail } from "@/lib/notifyEmail";
 
 function buildMapsUrl(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
 }
 
 export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ slug: string }> }
+  req: Request,
+  { params }: { params: Promise<{ slug: string }> }
 ) {
-  const sb = supabaseAdmin();
-
   try {
-    const { slug } = await context.params;
-    const rawBody = await req.json().catch(() => null);
+    const { slug } = await params;
+    const body = await req.json();
 
-    const parsed = BodySchema.safeParse(rawBody);
+    const reporterName = String(body?.reporter_name ?? "").trim();
+    const reporterPhone = String(body?.reporter_phone ?? "").trim();
+    const reporterEmail = String(body?.reporter_email ?? "").trim();
+    const message = String(body?.message ?? "").trim();
 
-    if (!parsed.success) {
+    const lat = Number(body?.latitude);
+    const lng = Number(body?.longitude);
+    const accuracyM =
+      body?.accuracy_m == null || body?.accuracy_m === ""
+        ? null
+        : Number(body.accuracy_m);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       return NextResponse.json(
-        { error: "Invalid request body" },
+        { error: "Latitude and longitude are required." },
         { status: 400 }
       );
     }
 
-    const body = parsed.data;
+    const sb = supabaseAdmin();
 
-    const { data: plate, error: plateError } = await sb
+    const { data: plate } = await sb
       .from("plates")
-      .select("id, slug, identifier, contact_enabled")
+      .select("id, identifier, slug")
       .eq("slug", slug)
       .maybeSingle();
 
-    if (plateError) {
-      return NextResponse.json(
-        { error: `Plate lookup failed: ${plateError.message}` },
-        { status: 500 }
-      );
-    }
-
     if (!plate) {
-      return NextResponse.json({ error: "Plate not found" }, { status: 404 });
+      return NextResponse.json({ error: "Plate not found." }, { status: 404 });
     }
 
-    if (!plate.contact_enabled) {
-      return NextResponse.json(
-        { error: "Contact is disabled for this plate" },
-        { status: 403 }
-      );
-    }
-
-    const { data: tokenRow, error: tokenError } = await sb
+    const { data: tokenRows } = await sb
       .from("plate_setup_tokens")
       .select("email")
-      .eq("plate_id", plate.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .eq("plate_id", plate.id);
 
-    if (tokenError) {
+    const recipients = Array.from(
+      new Set(
+        (tokenRows ?? [])
+          .map((r) => String(r.email ?? "").trim())
+          .filter(Boolean)
+      )
+    );
+
+    if (!recipients.length) {
       return NextResponse.json(
-        { error: `Recipient lookup failed: ${tokenError.message}` },
-        { status: 500 }
+        { error: "No recipients found." },
+        { status: 404 }
       );
     }
 
-    const recipientEmail = tokenRow?.email ?? null;
-
-    if (!recipientEmail) {
-      return NextResponse.json(
-        { error: "No owner email configured for this plate" },
-        { status: 400 }
-      );
-    }
-
-    const subject = `Carascan report - ${plate.identifier ?? plate.slug}`;
-
-    // 👇 LOCATION HANDLING
-    const hasLocation =
-      typeof body.latitude === "number" &&
-      typeof body.longitude === "number";
-
-    const mapsLink = hasLocation
-      ? buildMapsUrl(body.latitude!, body.longitude!)
-      : null;
+    const mapsUrl = buildMapsUrl(lat, lng);
 
     const html = `
-      <p><strong>Carascan notification</strong></p>
+      <h2>Location Report</h2>
 
-      <p><strong>Plate:</strong> ${plate.identifier ?? plate.slug}</p>
+      <p><strong>Plate:</strong> ${plate.identifier}</p>
 
-      ${
-        hasLocation
-          ? `
-        <p><strong>Location:</strong></p>
-        <p><a href="${mapsLink}" target="_blank">Open in Google Maps</a></p>
-        <p>${body.latitude}, ${body.longitude}</p>
-        ${
-          body.accuracy_m
-            ? `<p>Accuracy: ${body.accuracy_m}m</p>`
-            : ""
-        }
-      `
-          : ""
-      }
+      <p>
+        <a href="${mapsUrl}" target="_blank">
+          Open in Google Maps
+        </a>
+      </p>
 
-      <p><strong>Reporter name:</strong> ${
-        body.reporter_name?.trim() || "Not provided"
+      <p><strong>Coordinates:</strong> ${lat}, ${lng}</p>
+      ${accuracyM ? `<p><strong>Accuracy:</strong> ${accuracyM}m</p>` : ""}
+
+      <hr/>
+
+      <p><strong>Reporter:</strong> ${
+        reporterName || "Not provided"
       }</p>
 
-      <p><strong>Reporter phone:</strong> ${
-        body.reporter_phone?.trim() || "Not provided"
+      <p><strong>Phone:</strong> ${
+        reporterPhone || "Not provided"
       }</p>
 
-      <p><strong>Reporter email:</strong> ${
-        body.reporter_email?.trim() || "Not provided"
+      <p><strong>Email:</strong> ${
+        reporterEmail || "Not provided"
       }</p>
 
       ${
-        body.message
-          ? `<p><strong>Message:</strong><br/>${body.message.replace(
+        message
+          ? `<p><strong>Notes:</strong><br/>${message.replace(
               /\n/g,
               "<br/>"
             )}</p>`
@@ -144,21 +105,16 @@ export async function POST(
       }
     `;
 
-    await resend.emails.send({
-      from:
-        process.env.RESEND_FROM_EMAIL ||
-        "Carascan <noreply@carascan.com.au>",
-      to: [recipientEmail],
-      subject,
-      html,
-    });
+    await sendEmail(
+      recipients,
+      `Location report - ${plate.identifier}`,
+      html
+    );
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Contact route failed:", error);
-
     return NextResponse.json(
-      { error: "Failed to send contact message" },
+      { error: "Failed to send location report." },
       { status: 500 }
     );
   }
