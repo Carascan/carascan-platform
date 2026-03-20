@@ -46,9 +46,7 @@ export async function GET(
 
    const emailResult = await sendManufacturingEmail({
   to: emailPayload.to,
-  identifier: plate.identifier, // 👈 FIX
-  svgUrl: emailPayload.svgUrl,
-  qrUrl: emailPayload.qrUrl,
+  identifier: plate.identifier,
 });
 
     return NextResponse.json({
