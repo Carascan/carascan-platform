@@ -1,19 +1,19 @@
-// app/api/stripe/webhook/route.ts
 import crypto from "crypto";
 import { NextResponse } from "next/server";
-import { stripeClient } from "@/lib/stripe";
+import { stripeClient, formatIdentifier } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { buildPlateAssets } from "@/lib/buildPlateAssets";
 import { buildManufacturingEmailPayload } from "@/lib/buildManufacturingEmailPayload";
-import { sendManufacturingEmail } from "@/lib/sendManufacturingEmail";
 import { buildCustomerPlateEmailPayload } from "@/lib/buildCustomerPlateEmailPayload";
+import { sendManufacturingEmail, sendEmail } from "@/lib/notifyEmail";
 import { sendCustomerPlateEmail } from "@/lib/sendCustomerPlateEmail";
-import { formatIdentifier } from "@/lib/plate";
 
 const LOGO_URL_FALLBACK =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
 const ASSETS_BUCKET = process.env.PLATE_ASSETS_BUCKET ?? "assets";
+const MANUFACTURING_EMAIL_TO =
+  process.env.MANUFACTURING_EMAIL_TO ?? process.env.FROM_EMAIL ?? "";
 
 function randSlug(len = 10) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -297,6 +297,7 @@ export async function POST(req: Request) {
       plate_height_mm: 90,
       qr_size_mm: 50,
       hole_diameter_mm: 5.2,
+      mounting_holes: mountingHoles,
     });
 
     if (designErr) {
@@ -347,10 +348,9 @@ export async function POST(req: Request) {
     await updateOrderStatus(sb, order.id, "pack_generated");
     await updatePlateStatus(sb, plate.id, "setup_pending");
 
-    const manufacturingPayload = buildManufacturingEmailPayload(assets, {
-      name: customerName ?? undefined,
-      email: email ?? undefined,
-      phone: customerPhone ?? undefined,
+    const manufacturingPayload = buildManufacturingEmailPayload({
+      to: MANUFACTURING_EMAIL_TO,
+      identifier: plate.identifier,
     });
 
     const manufacturingEmailResult = await sendManufacturingEmail(
@@ -362,7 +362,7 @@ export async function POST(req: Request) {
     }
 
     let customerEmailResult:
-      | { ok: boolean; skipped?: boolean; reason?: string; result?: unknown }
+      | { ok: boolean; skipped?: boolean; reason?: string; result?: unknown; error?: string }
       | null = null;
 
     if (email) {

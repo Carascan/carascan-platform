@@ -5,8 +5,17 @@ export type CustomerPlateEmailPayload = {
   to: string;
   subject: string;
   text: string;
-  html: string; // ✅ added
+  html: string;
 };
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
 
 export function buildCustomerPlateEmailPayload(
   assets: BuildPlateAssetsResult,
@@ -17,8 +26,7 @@ export function buildCustomerPlateEmailPayload(
   }
 ): CustomerPlateEmailPayload {
   const setupUrl = buildSetupUrl(input.setupToken);
-
-  const name = input.customerName ?? "there";
+  const name = input.customerName?.trim() || "there";
 
   const text = [
     `Hi ${name},`,
@@ -37,17 +45,17 @@ export function buildCustomerPlateEmailPayload(
   ].join("\n");
 
   const html = `
-    <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111827">
-      <h2>Carascan Order</h2>
+    <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111827;">
+      <h2 style="margin:0 0 16px 0;">Carascan Order</h2>
 
-      <p>Hi ${name},</p>
+      <p>Hi ${escapeHtml(name)},</p>
 
       <p>Thanks for your Carascan order.</p>
 
-      <p><strong>Plate reference:</strong> ${assets.identifier}</p>
+      <p><strong>Plate reference:</strong> ${escapeHtml(assets.identifier)}</p>
 
-      <p>
-        <a href="${setupUrl}" style="display:inline-block;padding:12px 16px;background:#111827;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600">
+      <p style="margin:20px 0;">
+        <a href="${setupUrl}" style="display:inline-block;padding:12px 16px;background:#111827;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;">
           Complete Setup
         </a>
       </p>
@@ -55,11 +63,13 @@ export function buildCustomerPlateEmailPayload(
       <p>Your plate is not active yet.</p>
       <p>Please complete setup to activate your Carascan page.</p>
 
-      <hr style="margin:24px 0"/>
+      <hr style="margin:24px 0;" />
 
       <p><strong>Plate URL after activation:</strong></p>
       <p>
-        <a href="${assets.plateUrl}">${assets.plateUrl}</a>
+        <a href="${assets.plateUrl}" style="color:#2563eb;">
+          ${assets.plateUrl}
+        </a>
       </p>
     </div>
   `;
@@ -68,6 +78,6 @@ export function buildCustomerPlateEmailPayload(
     to: input.customerEmail,
     subject: `Your Carascan plate order – ${assets.identifier}`,
     text,
-    html, // ✅ critical
+    html,
   };
 }

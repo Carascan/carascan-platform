@@ -1,67 +1,60 @@
-import { NextRequest, NextResponse } from "next/server";
-import { buildPlateAssets } from "@/lib/buildPlateAssets";
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabaseServer";
 import { buildManufacturingEmailPayload } from "@/lib/buildManufacturingEmailPayload";
-import { sendManufacturingEmail } from "@/lib/sendManufacturingEmail";
+import { sendManufacturingEmail } from "@/lib/notifyEmail";
 
-// Replace with real DB lookup
-async function getMockPlate(plateId: string) {
-  return {
-    id: plateId,
-    identifier: "CSN-000234",
-    slug: "abc123xyz",
-    mountingHoles: true,
-    logoSvgMarkup: "",
-    customer: {
-      name: "Test Customer",
-      email: "customer@example.com",
-      phone: "",
-    },
-  };
-}
+const MANUFACTURING_EMAIL_TO =
+  process.env.MANUFACTURING_EMAIL_TO ?? process.env.FROM_EMAIL ?? "";
 
-export async function GET(
-  _req: NextRequest,
-  context: { params: Promise<{ plateId: string }> },
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ plateId: string }> }
 ) {
   try {
-    const { plateId } = await context.params;
-    const plate = await getMockPlate(plateId);
+    const { plateId } = await params;
+    const sb = supabaseAdmin();
+
+    const { data: plate, error: plateError } = await sb
+      .from("plates")
+      .select("id, identifier, slug")
+      .eq("id", plateId)
+      .maybeSingle();
+
+    if (plateError) {
+      return NextResponse.json(
+        { error: `Plate lookup failed: ${plateError.message}` },
+        { status: 500 }
+      );
+    }
 
     if (!plate) {
       return NextResponse.json({ error: "Plate not found" }, { status: 404 });
     }
 
-    const assets = await buildPlateAssets({
+    if (!MANUFACTURING_EMAIL_TO) {
+      return NextResponse.json(
+        { error: "Missing MANUFACTURING_EMAIL_TO or FROM_EMAIL" },
+        { status: 500 }
+      );
+    }
+
+    const manufacturingPayload = buildManufacturingEmailPayload({
+      to: MANUFACTURING_EMAIL_TO,
       identifier: plate.identifier,
-      slug: plate.slug,
-      mountingHoles: plate.mountingHoles,
-      logoSvgMarkup: plate.logoSvgMarkup,
     });
 
-    const emailPayload = buildManufacturingEmailPayload(assets, {
-      name: plate.customer?.name,
-      email: plate.customer?.email,
-      phone: plate.customer?.phone,
-    });
-
-   const emailResult = await sendManufacturingEmail({
-  to: emailPayload.to,
-  identifier: plate.identifier,
-});
+    const emailResult = await sendManufacturingEmail(manufacturingPayload);
 
     return NextResponse.json({
       ok: true,
-      identifier: assets.identifier,
-      slug: assets.slug,
-      plateUrl: assets.plateUrl,
-      metadata: assets.metadata,
       email: emailResult,
     });
   } catch (error) {
-    console.error("Failed to generate laser pack", error);
+    console.error("Laser pack route failed:", error);
+
     return NextResponse.json(
-      { error: "Failed to generate laser pack" },
-      { status: 500 },
+      { error: "Failed to process laser pack" },
+      { status: 500 }
     );
   }
 }
