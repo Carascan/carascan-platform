@@ -1,67 +1,190 @@
 "use client";
+
 import { useState } from "react";
 
-export default function EmergencyClient({ slug }: { slug: string }) {
+type Props = {
+  slug: string;
+};
+
+export default function EmergencyClient({ slug }: Props) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [msg, setMsg] = useState("");
-  const [status, setStatus] = useState<string>("");
-  const [loc, setLoc] = useState<{lat:number,lng:number,acc:number}|null>(null);
+  const [status, setStatus] = useState("");
+  const [sending, setSending] = useState(false);
+  const [confirm, setConfirm] = useState(false);
+  const [sentTime, setSentTime] = useState<string | null>(null);
 
-  const getLoc = async () => {
-    setStatus("");
-    if (!navigator.geolocation) { setStatus("Geolocation not available."); return; }
-    navigator.geolocation.getCurrentPosition(
-      (p)=> setLoc({ lat:p.coords.latitude, lng:p.coords.longitude, acc:p.coords.accuracy }),
-      ()=> setStatus("Location permission denied (still can send without location)."),
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
-  };
+  async function getDeviceLocation() {
+    if (!navigator.geolocation) return null;
+
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          timeout: 10000,
+          enableHighAccuracy: true,
+          maximumAge: 0,
+        })
+      );
+
+      return {
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracy_m: pos.coords.accuracy,
+        location_source: "device",
+      };
+    } catch {
+      return null;
+    }
+  }
 
   const send = async () => {
     setStatus("");
-    const r = await fetch(`/api/plates/${encodeURIComponent(slug)}/emergency`, {
-      method:"POST",
-      headers: {"content-type":"application/json"},
-      body: JSON.stringify({
-        reporter_name:name, reporter_phone:phone, reporter_email:email, message:msg,
-        geo_lat: loc?.lat, geo_lng: loc?.lng, geo_accuracy_m: loc?.acc
-      })
-    });
-    const j = await r.json();
-    if (!r.ok) return setStatus(j?.error ?? "Failed.");
-    setStatus("Emergency alert sent to emergency contacts.");
+
+    if (!confirm) {
+      setConfirm(true);
+      return;
+    }
+
+    try {
+      setSending(true);
+      setStatus("Requesting location permission...");
+
+      const location = await getDeviceLocation();
+
+      if (!location) {
+        setStatus("Location permission denied or unavailable.");
+        return;
+      }
+
+      setStatus("Sending emergency alert...");
+
+      const r = await fetch(
+        `/api/plates/${encodeURIComponent(slug)}/emergency`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            reporter_name: name.trim() || null,
+            reporter_phone: phone.trim() || null,
+            reporter_email: email.trim() || null,
+            message: msg.trim() || null,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy_m: location.accuracy_m,
+            location_source: location.location_source,
+          }),
+        }
+      );
+
+      const j = await r.json();
+
+      if (!r.ok) {
+        setStatus(j?.error ?? "Failed.");
+        return;
+      }
+
+      const now = new Date().toLocaleTimeString();
+      setSentTime(now);
+      setStatus(`Emergency alert sent at ${now}`);
+      setMsg("");
+      setConfirm(false);
+    } catch {
+      setStatus("Failed.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
     <main>
-      <h1>In Case of Emergency</h1>
-      {status && <div className="card"><b>{status}</b></div>}
+      <h1>Emergency alert</h1>
+
+      {status && (
+        <div className="card">
+          <b>{status}</b>
+        </div>
+      )}
+
+      {sentTime && (
+        <div className="card" style={{ background: "#fff7ed" }}>
+          <b>Emergency alert sent at {sentTime}</b>
+        </div>
+      )}
+
       <div className="card">
-        <p><b>This will notify the caravan’s emergency contacts by SMS + email (where provided).</b></p>
-        <label>Your name (recommended)</label>
-        <input value={name} onChange={(e)=>setName(e.target.value)} />
+        <div
+          className="card"
+          style={{
+            marginBottom: 14,
+            background: confirm ? "#fff7ed" : "#f9fafb",
+          }}
+        >
+          <b>
+            {confirm
+              ? "Confirm emergency alert"
+              : "Emergency alerts notify the owner and emergency contacts."}
+          </b>
+
+          <div style={{ marginTop: 6 }}>
+            {confirm
+              ? "Press the button again to send the alert."
+              : "Use this only for urgent situations."}
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <a
+              href="tel:000"
+              style={{
+                display: "inline-block",
+                background: "#dc2626",
+                color: "#fff",
+                padding: "10px 16px",
+                borderRadius: 6,
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
+            >
+              Call Emergency Services (000)
+            </a>
+          </div>
+        </div>
+
+        <label>Your name (optional)</label>
+        <input value={name} onChange={(e) => setName(e.target.value)} />
+
         <div className="grid grid2">
           <div>
-            <label>Your phone (recommended)</label>
-            <input value={phone} onChange={(e)=>setPhone(e.target.value)} />
+            <label>Your phone (optional)</label>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
+
           <div>
             <label>Your email (optional)</label>
-            <input value={email} onChange={(e)=>setEmail(e.target.value)} />
+            <input value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
         </div>
-        <label>Message (required)</label>
-        <textarea value={msg} onChange={(e)=>setMsg(e.target.value)} rows={5} />
-        <div style={{display:"flex", gap:10, alignItems:"center", flexWrap:"wrap"}}>
-          <button className="btn secondary" type="button" onClick={getLoc}>Share my location</button>
-          {loc && <small>Location attached ✅ ({loc.lat.toFixed(5)}, {loc.lng.toFixed(5)})</small>}
-        </div>
-        <div style={{height:10}} />
-        <button className="btn" type="button" onClick={send}>Send Emergency Alert</button>
+
+        <label>Emergency details</label>
+        <textarea
+          rows={5}
+          value={msg}
+          onChange={(e) => setMsg(e.target.value)}
+        />
+
+        <button className="btn" onClick={send} disabled={sending}>
+          {sending
+            ? "Sending..."
+            : confirm
+            ? "Send emergency alert"
+            : "Continue"}
+        </button>
       </div>
-      <small>If you are in immediate danger, call emergency services.</small>
+
+      <small>
+        Emergency alerts are sent to the owner and enabled emergency contacts.
+      </small>
     </main>
   );
 }

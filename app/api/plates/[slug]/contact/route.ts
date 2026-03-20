@@ -1,18 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { sendEmail } from "@/lib/notifyEmail";
+import { Resend } from "resend";
 import { z } from "zod";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const BodySchema = z.object({
   reporter_name: z.string().optional().nullable(),
   reporter_phone: z.string().optional().nullable(),
   reporter_email: z.string().optional().nullable(),
-  message: z.string().min(1).max(2000),
+  message: z.string().optional().nullable(),
+
+  // 👇 NEW (location support)
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  accuracy_m: z.number().optional().nullable(),
+  location_source: z.string().optional(),
 });
+
+function buildMapsUrl(lat: number, lng: number) {
+  return `https://www.google.com/maps?q=${lat},${lng}`;
+}
 
 export async function POST(
   req: NextRequest,
-  context: { params: Promise<{ slug: string }> },
+  context: { params: Promise<{ slug: string }> }
 ) {
   const sb = supabaseAdmin();
 
@@ -25,7 +37,7 @@ export async function POST(
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Invalid request body" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -40,7 +52,7 @@ export async function POST(
     if (plateError) {
       return NextResponse.json(
         { error: `Plate lookup failed: ${plateError.message}` },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -51,7 +63,7 @@ export async function POST(
     if (!plate.contact_enabled) {
       return NextResponse.json(
         { error: "Contact is disabled for this plate" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -66,7 +78,7 @@ export async function POST(
     if (tokenError) {
       return NextResponse.json(
         { error: `Recipient lookup failed: ${tokenError.message}` },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -75,25 +87,71 @@ export async function POST(
     if (!recipientEmail) {
       return NextResponse.json(
         { error: "No owner email configured for this plate" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const subject = plate.identifier
-      ? `Carascan contact message - ${plate.identifier}`
-      : `Carascan contact message - ${plate.slug}`;
+    const subject = `Carascan report - ${plate.identifier ?? plate.slug}`;
+
+    // 👇 LOCATION HANDLING
+    const hasLocation =
+      typeof body.latitude === "number" &&
+      typeof body.longitude === "number";
+
+    const mapsLink = hasLocation
+      ? buildMapsUrl(body.latitude!, body.longitude!)
+      : null;
 
     const html = `
-      <p>You have received a new Carascan contact message.</p>
+      <p><strong>Carascan notification</strong></p>
+
       <p><strong>Plate:</strong> ${plate.identifier ?? plate.slug}</p>
-      <p><strong>Reporter name:</strong> ${body.reporter_name?.trim() || "Not provided"}</p>
-      <p><strong>Reporter phone:</strong> ${body.reporter_phone?.trim() || "Not provided"}</p>
-      <p><strong>Reporter email:</strong> ${body.reporter_email?.trim() || "Not provided"}</p>
-      <p><strong>Message:</strong></p>
-      <p>${body.message.replace(/\n/g, "<br />")}</p>
+
+      ${
+        hasLocation
+          ? `
+        <p><strong>Location:</strong></p>
+        <p><a href="${mapsLink}" target="_blank">Open in Google Maps</a></p>
+        <p>${body.latitude}, ${body.longitude}</p>
+        ${
+          body.accuracy_m
+            ? `<p>Accuracy: ${body.accuracy_m}m</p>`
+            : ""
+        }
+      `
+          : ""
+      }
+
+      <p><strong>Reporter name:</strong> ${
+        body.reporter_name?.trim() || "Not provided"
+      }</p>
+
+      <p><strong>Reporter phone:</strong> ${
+        body.reporter_phone?.trim() || "Not provided"
+      }</p>
+
+      <p><strong>Reporter email:</strong> ${
+        body.reporter_email?.trim() || "Not provided"
+      }</p>
+
+      ${
+        body.message
+          ? `<p><strong>Message:</strong><br/>${body.message.replace(
+              /\n/g,
+              "<br/>"
+            )}</p>`
+          : ""
+      }
     `;
 
-    await sendEmail(recipientEmail, subject, html);
+    await resend.emails.send({
+      from:
+        process.env.RESEND_FROM_EMAIL ||
+        "Carascan <noreply@carascan.com.au>",
+      to: [recipientEmail],
+      subject,
+      html,
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
@@ -101,7 +159,7 @@ export async function POST(
 
     return NextResponse.json(
       { error: "Failed to send contact message" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -10,12 +10,6 @@ type ContactClientProps = {
 
 type Mode = "contact" | "emergency" | "location_only";
 
-type LocationPayload = {
-  lat: number;
-  lng: number;
-  accuracy?: number | null;
-} | null;
-
 export default function ContactClient({
   slug,
   allowContactOwner,
@@ -34,7 +28,15 @@ export default function ContactClient({
   const [locationOnlyConfirm, setLocationOnlyConfirm] = useState(false);
   const [sentTime, setSentTime] = useState<string | null>(null);
 
-  async function getLocation(): Promise<LocationPayload> {
+  const switchMode = (nextMode: Mode) => {
+    setMode(nextMode);
+    setStatus("");
+    setSentTime(null);
+    setEmergencyConfirm(false);
+    setLocationOnlyConfirm(false);
+  };
+
+  async function getDeviceLocation() {
     if (!navigator.geolocation) return null;
 
     try {
@@ -47,22 +49,15 @@ export default function ContactClient({
       );
 
       return {
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-        accuracy: pos.coords.accuracy,
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracy_m: pos.coords.accuracy,
+        location_source: "device",
       };
     } catch {
       return null;
     }
   }
-
-  const switchMode = (nextMode: Mode) => {
-    setMode(nextMode);
-    setStatus("");
-    setSentTime(null);
-    setEmergencyConfirm(false);
-    setLocationOnlyConfirm(false);
-  };
 
   const send = async () => {
     setStatus("");
@@ -94,24 +89,37 @@ export default function ContactClient({
 
     try {
       setSending(true);
+      setStatus("Requesting location permission...");
 
-      const location = await getLocation();
+      const deviceLocation = await getDeviceLocation();
 
-      if (mode === "location_only" && !location) {
-        setStatus("Location access is required for location reporting.");
+      if (!deviceLocation) {
+        setStatus("Location permission denied or unavailable.");
         return;
       }
 
-      const r = await fetch(`/api/plates/${encodeURIComponent(slug)}/contact`, {
+      setStatus("Sending...");
+
+      const endpoint =
+        mode === "emergency"
+          ? `/api/plates/${encodeURIComponent(slug)}/emergency`
+          : `/api/plates/${encodeURIComponent(slug)}/report-location`;
+
+      const r = await fetch(endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          type: mode,
           reporter_name: name.trim() || null,
           reporter_phone: phone.trim() || null,
           reporter_email: email.trim() || null,
-          message: mode === "location_only" ? "Location reported" : msg.trim(),
-          location,
+          message:
+            mode === "location_only"
+              ? "Location reported"
+              : msg.trim() || null,
+          latitude: deviceLocation.latitude,
+          longitude: deviceLocation.longitude,
+          accuracy_m: deviceLocation.accuracy_m,
+          location_source: deviceLocation.location_source,
         }),
       });
 
@@ -125,30 +133,10 @@ export default function ContactClient({
       const now = new Date().toLocaleTimeString();
       setSentTime(now);
 
-      if (mode === "contact") {
-        setStatus(
-          "Location reported at " +
-            now +
-            " - email sent to owner and ICE contacts. Location reported at " +
-            now +
-            " - SMS sent to owner and ICE contacts."
-        );
-      } else if (mode === "emergency") {
-        setStatus(
-          "Location reported at " +
-            now +
-            " - email sent to owner and ICE contacts. Location reported at " +
-            now +
-            " - SMS sent to owner and ICE contacts."
-        );
+      if (mode === "emergency") {
+        setStatus(`Emergency alert sent at ${now}`);
       } else {
-        setStatus(
-          "Location reported at " +
-            now +
-            " - email sent to owner and ICE contacts. Location reported at " +
-            now +
-            " - SMS sent to owner and ICE contacts."
-        );
+        setStatus(`Location reported at ${now}`);
       }
 
       setMsg("");
@@ -195,11 +183,6 @@ export default function ContactClient({
               ? `Emergency alert sent at ${sentTime}`
               : `Location reported at ${sentTime}`}
           </b>
-          <div style={{ marginTop: 6 }}>
-            {mode === "emergency"
-              ? "If the situation escalates contact emergency services immediately."
-              : "The owner and enabled contacts have been notified with the latest location."}
-          </div>
         </div>
       )}
 
@@ -253,7 +236,7 @@ export default function ContactClient({
 
             <div style={{ marginTop: 6 }}>
               {emergencyConfirm
-                ? "Press the emergency button again to send the alert."
+                ? "Press the button again to send the alert."
                 : "Use this only for urgent situations."}
             </div>
 
@@ -292,8 +275,8 @@ export default function ContactClient({
 
             <div style={{ marginTop: 6 }}>
               {locationOnlyConfirm
-                ? "Press again to send the location report now."
-                : "Best suited to vehicles, plant, stickers, trailers, and asset recovery."}
+                ? "Press again to send the location report."
+                : "Your device will ask for location permission when sending."}
             </div>
           </div>
         )}
@@ -331,39 +314,23 @@ export default function ContactClient({
           {sending
             ? "Sending..."
             : mode === "contact"
-            ? "Send"
+            ? "Send location report"
             : mode === "emergency"
             ? emergencyConfirm
-              ? "Send emergency alert now"
-              : "Continue emergency alert"
+              ? "Send emergency alert"
+              : "Continue"
             : locationOnlyConfirm
-            ? "Send location report now"
-            : "Continue location report"}
+            ? "Send location report"
+            : "Continue"}
         </button>
       </div>
-
-      {status && (
-        <div
-          className="card"
-          style={{
-            marginTop: 16,
-            background: "#f9fafb",
-            border: "1px solid #e5e7eb",
-          }}
-        >
-          <b>Thank you for your report.</b>
-          <div style={{ marginTop: 6 }}>
-            We hope being part of this community keeps us all safe on the road.
-          </div>
-        </div>
-      )}
 
       <small>
         {mode === "contact"
           ? "Owner contact details are never shown publicly."
           : mode === "emergency"
           ? "Emergency alerts are sent to the owner and enabled emergency contacts."
-          : "Location reporting sends the current GPS position to the owner and enabled contacts."}
+          : "Location reporting sends your device GPS location to the owner."}
       </small>
     </main>
   );

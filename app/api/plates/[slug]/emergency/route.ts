@@ -1,7 +1,12 @@
-// app/api/plates/[slug]/emergency/route.ts
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { sendEmergencyAlertEmail } from "@/lib/notifyEmail";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+function buildMapsUrl(lat: number, lng: number) {
+  return `https://www.google.com/maps?q=${lat},${lng}`;
+}
 
 export async function POST(
   req: Request,
@@ -15,6 +20,7 @@ export async function POST(
     const reporterPhone = String(body?.reporter_phone ?? "").trim();
     const reporterEmail = String(body?.reporter_email ?? "").trim();
     const message = String(body?.message ?? "").trim();
+
     const lat = Number(body?.latitude);
     const lng = Number(body?.longitude);
     const accuracyM =
@@ -48,74 +54,100 @@ export async function POST(
       return NextResponse.json({ error: "Plate not found." }, { status: 404 });
     }
 
-    const { data: tokenRows, error: tokenError } = await sb
+    const { data: tokenRows } = await sb
       .from("plate_setup_tokens")
       .select("email")
-      .eq("plate_id", plate.id)
-      .order("expires_at", { ascending: false });
-
-    if (tokenError) {
-      return NextResponse.json(
-        { error: `Owner email lookup failed: ${tokenError.message}` },
-        { status: 500 }
-      );
-    }
+      .eq("plate_id", plate.id);
 
     const ownerEmails = Array.from(
       new Set(
         (tokenRows ?? [])
-          .map((row) => String(row.email ?? "").trim())
+          .map((r) => String(r.email ?? "").trim())
           .filter(Boolean)
       )
     );
 
-    const { data: contacts, error: contactsError } = await sb
+    const { data: contacts } = await sb
       .from("emergency_contacts")
-      .select("email, enabled")
+      .select("email")
       .eq("plate_id", plate.id)
       .eq("enabled", true);
-
-    if (contactsError) {
-      return NextResponse.json(
-        { error: `Emergency contacts lookup failed: ${contactsError.message}` },
-        { status: 500 }
-      );
-    }
 
     const emergencyEmails = Array.from(
       new Set(
         (contacts ?? [])
-          .map((row) => String(row.email ?? "").trim())
+          .map((r) => String(r.email ?? "").trim())
           .filter(Boolean)
       )
     );
 
-    const recipients = Array.from(new Set([...ownerEmails, ...emergencyEmails]));
+    const recipients = Array.from(
+      new Set([...ownerEmails, ...emergencyEmails])
+    );
 
     if (!recipients.length) {
       return NextResponse.json(
-        { error: "No emergency email recipients found for this plate." },
+        { error: "No recipients found." },
         { status: 404 }
       );
     }
 
-    await sendEmergencyAlertEmail({
+    const mapsUrl = buildMapsUrl(lat, lng);
+
+    const html = `
+      <h2 style="color:#dc2626;">EMERGENCY ALERT</h2>
+
+      <p><strong>Plate:</strong> ${plate.identifier}</p>
+
+      <p>
+        <a href="${mapsUrl}" target="_blank">
+          Open location in Google Maps
+        </a>
+      </p>
+
+      <p><strong>Coordinates:</strong> ${lat}, ${lng}</p>
+      ${accuracyM ? `<p><strong>Accuracy:</strong> ${accuracyM}m</p>` : ""}
+
+      <hr/>
+
+      <p><strong>Reporter:</strong> ${
+        reporterName || "Not provided"
+      }</p>
+
+      <p><strong>Phone:</strong> ${
+        reporterPhone || "Not provided"
+      }</p>
+
+      <p><strong>Email:</strong> ${
+        reporterEmail || "Not provided"
+      }</p>
+
+      ${
+        message
+          ? `<p><strong>Details:</strong><br/>${message.replace(
+              /\n/g,
+              "<br/>"
+            )}</p>`
+          : ""
+      }
+    `;
+
+    await resend.emails.send({
+      from:
+        process.env.RESEND_FROM_EMAIL ||
+        "Carascan <noreply@carascan.com.au>",
       to: recipients,
-      identifier: plate.identifier,
-      slug: plate.slug,
-      reporterName,
-      reporterPhone,
-      reporterEmail,
-      message,
-      lat,
-      lng,
-      accuracyM,
+      subject: `🚨 EMERGENCY - ${plate.identifier}`,
+      html,
     });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Failed to send emergency alert.";
+      error instanceof Error
+        ? error.message
+        : "Failed to send emergency alert.";
+
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
