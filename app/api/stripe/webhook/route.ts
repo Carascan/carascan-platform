@@ -1,6 +1,9 @@
+function formatIdentifier(num: number) {
+  return `CSN-${String(num).padStart(6, "0")}`;
+}
 import crypto from "crypto";
 import { NextResponse } from "next/server";
-import { stripeClient, formatIdentifier } from "@/lib/stripe";
+import { stripeClient } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { buildPlateAssets } from "@/lib/buildPlateAssets";
 import { buildManufacturingEmailPayload } from "@/lib/buildManufacturingEmailPayload";
