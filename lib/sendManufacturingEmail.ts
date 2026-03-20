@@ -1,47 +1,36 @@
-import { Resend } from "resend";
-import { ManufacturingEmailPayload } from "./buildManufacturingEmailPayload";
+import { sendEmail } from "@/lib/notifyEmail";
 
-const resendApiKey = process.env.RESEND_API_KEY;
+type Input = {
+  to: string | string[];
+  identifier: string;
+  svgUrl?: string | null;
+  qrUrl?: string | null;
+};
 
-export async function sendManufacturingEmail(
-  payload: ManufacturingEmailPayload,
-) {
-  if (!resendApiKey) {
-    console.warn("RESEND_API_KEY is not configured. Manufacturing email not sent.");
-    return {
-      ok: false,
-      skipped: true,
-      reason: "Missing RESEND_API_KEY",
-    };
-  }
+export async function sendManufacturingEmail(input: Input) {
+  const { to, identifier, svgUrl, qrUrl } = input;
 
-  const from = process.env.FROM_EMAIL;
-  if (!from) {
-    console.warn("FROM_EMAIL is not configured. Manufacturing email not sent.");
-    return {
-      ok: false,
-      skipped: true,
-      reason: "Missing FROM_EMAIL",
-    };
-  }
+  const subject = `Manufacturing pack - ${identifier}`;
 
-  const resend = new Resend(resendApiKey);
+  const html = `
+    <h2>Carascan Manufacturing Pack</h2>
 
-  const result = await resend.emails.send({
-    from,
-    to: payload.to,
-    subject: payload.subject,
-    text: payload.text,
-    attachments: payload.attachments.map((a) => ({
-      filename: a.filename,
-      content: a.content,
-      contentType: a.contentType,
-    })),
-  });
+    <p><strong>Plate:</strong> ${identifier}</p>
 
-  return {
-    ok: true,
-    skipped: false,
-    result,
-  };
+    ${
+      svgUrl
+        ? `<p><a href="${svgUrl}" target="_blank">Download SVG File</a></p>`
+        : `<p>SVG file not available</p>`
+    }
+
+    ${
+      qrUrl
+        ? `<p><a href="${qrUrl}" target="_blank">View QR Code</a></p>`
+        : ""
+    }
+
+    <p>This file is ready for laser production.</p>
+  `;
+
+  await sendEmail(to, subject, html);
 }

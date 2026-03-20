@@ -1,42 +1,23 @@
-import { Resend } from "resend";
+import { sendEmail } from "@/lib/notifyEmail";
 import { SetupLinkEmailPayload } from "./buildSetupLinkEmailPayload";
 
-const resendApiKey = process.env.RESEND_API_KEY;
-
 export async function sendSetupLinkEmail(
-  payload: SetupLinkEmailPayload,
+  payload: SetupLinkEmailPayload
 ) {
-  if (!resendApiKey) {
-    console.warn("RESEND_API_KEY is not configured. Setup link email not sent.");
+  try {
+    await sendEmail(payload.to, payload.subject, payload.html);
+
+    return {
+      ok: true,
+      skipped: false,
+    };
+  } catch (error) {
+    console.error("Setup link email failed:", error);
+
     return {
       ok: false,
-      skipped: true,
-      reason: "Missing RESEND_API_KEY",
+      skipped: false,
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
-
-  const from = process.env.FROM_EMAIL;
-  if (!from) {
-    console.warn("FROM_EMAIL is not configured. Setup link email not sent.");
-    return {
-      ok: false,
-      skipped: true,
-      reason: "Missing FROM_EMAIL",
-    };
-  }
-
-  const resend = new Resend(resendApiKey);
-
-  const result = await resend.emails.send({
-    from,
-    to: payload.to,
-    subject: payload.subject,
-    text: payload.text,
-  });
-
-  return {
-    ok: true,
-    skipped: false,
-    result,
-  };
 }
