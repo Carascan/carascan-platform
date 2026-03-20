@@ -9,7 +9,7 @@ const CONTACT_CHAR_LIMIT = 500;
 const REPORT_CHAR_LIMIT = 500;
 const EMERGENCY_CHAR_LIMIT = 700;
 
-function esc(value: string): string {
+function esc(value: string) {
   return value
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
@@ -70,15 +70,16 @@ function buildPreviewSvg({
   const logoX = logoCenterX - logoWidth / 2;
   const logoY = logoCenterY - logoHeight / 2;
 
-  const qrSize = 50;
+  const qrSize = 58.2;
   const qrCenterX = 45;
-  const qrCenterY = 51;
+  const qrTop = 23.6;
   const qrX = qrCenterX - qrSize / 2;
-  const qrY = qrCenterY - qrSize / 2;
+  const qrY = qrTop;
 
   const textX = 45;
-  const textY = 82;
   const textFontSize = 4.2;
+  const textBottom = 88;
+  const textY = textBottom - textFontSize / 2;
 
   const holeMarkup = mountingHoles
     ? `
@@ -321,43 +322,6 @@ export default function PlatePage({
     }
   }
 
-  async function sendManualReport() {
-    if (!slug) return;
-
-    setReportBusy(true);
-    setReportStatus("");
-
-    try {
-      const r = await fetch(
-        `/api/plates/${encodeURIComponent(slug)}/report-location`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            reporter_name: reportName,
-            reporter_phone: reportPhone,
-            reporter_email: reportEmail,
-            message: reportNotes.trim(),
-          }),
-        }
-      );
-
-      const j = await r.json().catch(() => null);
-
-      if (!r.ok) {
-        setReportStatus(j?.error ?? "Failed to send report.");
-        return;
-      }
-
-      setReportStatus("Location report sent successfully.");
-      setReportNotes("");
-    } catch (err) {
-      setReportStatus(err instanceof Error ? err.message : "Failed to send report.");
-    } finally {
-      setReportBusy(false);
-    }
-  }
-
   async function useMyLocation() {
     if (!slug) return;
 
@@ -567,29 +531,12 @@ export default function PlatePage({
                 </p>
 
                 <div style={styles.fieldGrid}>
-                  <input
-                    value={contactName}
-                    onChange={(e) => setContactName(e.target.value)}
-                    placeholder="Your name"
-                    style={styles.input}
-                  />
-                  <input
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
-                    placeholder="Your phone"
-                    style={styles.input}
-                  />
-                  <input
-                    value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
-                    placeholder="Your email"
-                    style={styles.input}
-                  />
+                  <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Your name" style={styles.input} />
+                  <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="Your phone" style={styles.input} />
+                  <input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="Your email" style={styles.input} />
                   <textarea
                     value={contactMessage}
-                    onChange={(e) =>
-                      setContactMessage(e.target.value.slice(0, CONTACT_CHAR_LIMIT))
-                    }
+                    onChange={(e) => setContactMessage(e.target.value.slice(0, CONTACT_CHAR_LIMIT))}
                     placeholder="Write your message"
                     rows={5}
                     style={styles.textarea}
@@ -611,9 +558,7 @@ export default function PlatePage({
                   </button>
                 </div>
 
-                {contactStatus ? (
-                  <div style={styles.statusBox}>{contactStatus}</div>
-                ) : null}
+                {contactStatus ? <div style={styles.statusBox}>{contactStatus}</div> : null}
               </div>
             ) : null}
 
@@ -621,34 +566,17 @@ export default function PlatePage({
               <div style={styles.panel}>
                 <h3 style={{ marginTop: 0 }}>Report Location</h3>
                 <p style={styles.sub}>
-                  Share the current location of this caravan with the owner. You
-                  can allow GPS access or send a manual note.
+                  Press the button below to allow GPS access and send the current
+                  location to the owner.
                 </p>
 
                 <div style={styles.fieldGrid}>
-                  <input
-                    value={reportName}
-                    onChange={(e) => setReportName(e.target.value)}
-                    placeholder="Your name"
-                    style={styles.input}
-                  />
-                  <input
-                    value={reportPhone}
-                    onChange={(e) => setReportPhone(e.target.value)}
-                    placeholder="Your phone"
-                    style={styles.input}
-                  />
-                  <input
-                    value={reportEmail}
-                    onChange={(e) => setReportEmail(e.target.value)}
-                    placeholder="Your email"
-                    style={styles.input}
-                  />
+                  <input value={reportName} onChange={(e) => setReportName(e.target.value)} placeholder="Your name" style={styles.input} />
+                  <input value={reportPhone} onChange={(e) => setReportPhone(e.target.value)} placeholder="Your phone" style={styles.input} />
+                  <input value={reportEmail} onChange={(e) => setReportEmail(e.target.value)} placeholder="Your email" style={styles.input} />
                   <textarea
                     value={reportNotes}
-                    onChange={(e) =>
-                      setReportNotes(e.target.value.slice(0, REPORT_CHAR_LIMIT))
-                    }
+                    onChange={(e) => setReportNotes(e.target.value.slice(0, REPORT_CHAR_LIMIT))}
                     placeholder="Optional note, address, campsite, road marker, or other location details"
                     rows={5}
                     style={styles.textarea}
@@ -659,29 +587,18 @@ export default function PlatePage({
                   </div>
                 </div>
 
-                <div style={styles.topButtonGrid}>
+                <div style={styles.singleButtonWrap}>
                   <button
                     type="button"
                     onClick={useMyLocation}
                     disabled={reportBusy}
                     style={styles.primaryButton}
                   >
-                    {reportBusy ? "Sending..." : "Use My Current Location"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={sendManualReport}
-                    disabled={reportBusy}
-                    style={styles.secondaryButton}
-                  >
-                    {reportBusy ? "Sending..." : "Send Manual Report"}
+                    {reportBusy ? "Sending..." : "Share My Current Location"}
                   </button>
                 </div>
 
-                {reportStatus ? (
-                  <div style={styles.statusBox}>{reportStatus}</div>
-                ) : null}
+                {reportStatus ? <div style={styles.statusBox}>{reportStatus}</div> : null}
               </div>
             ) : null}
 
@@ -709,40 +626,19 @@ export default function PlatePage({
                     </p>
 
                     <div style={styles.fieldGrid}>
-                      <input
-                        value={emergencyName}
-                        onChange={(e) => setEmergencyName(e.target.value)}
-                        placeholder="Your name"
-                        style={styles.input}
-                      />
-                      <input
-                        value={emergencyPhone}
-                        onChange={(e) => setEmergencyPhone(e.target.value)}
-                        placeholder="Your phone"
-                        style={styles.input}
-                      />
-                      <input
-                        value={emergencyEmail}
-                        onChange={(e) => setEmergencyEmail(e.target.value)}
-                        placeholder="Your email"
-                        style={styles.input}
-                      />
+                      <input value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} placeholder="Your name" style={styles.input} />
+                      <input value={emergencyPhone} onChange={(e) => setEmergencyPhone(e.target.value)} placeholder="Your phone" style={styles.input} />
+                      <input value={emergencyEmail} onChange={(e) => setEmergencyEmail(e.target.value)} placeholder="Your email" style={styles.input} />
                       <textarea
                         value={emergencyMessage}
-                        onChange={(e) =>
-                          setEmergencyMessage(
-                            e.target.value.slice(0, EMERGENCY_CHAR_LIMIT)
-                          )
-                        }
+                        onChange={(e) => setEmergencyMessage(e.target.value.slice(0, EMERGENCY_CHAR_LIMIT))}
                         placeholder="Describe the emergency"
                         rows={5}
                         style={styles.textarea}
                       />
                       <div style={styles.helperText}>
                         Maximum {EMERGENCY_CHAR_LIMIT} characters.
-                        <span style={styles.counter}>
-                          {emergencyRemaining} remaining
-                        </span>
+                        <span style={styles.counter}>{emergencyRemaining} remaining</span>
                       </div>
                     </div>
 
@@ -757,9 +653,7 @@ export default function PlatePage({
                       </button>
                     </div>
 
-                    {emergencyStatus ? (
-                      <div style={styles.statusBox}>{emergencyStatus}</div>
-                    ) : null}
+                    {emergencyStatus ? <div style={styles.statusBox}>{emergencyStatus}</div> : null}
                   </div>
                 ) : null}
               </>
@@ -780,173 +674,30 @@ export default function PlatePage({
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    padding: "32px 20px",
-    background: "#f7f7f8",
-    fontFamily: "Arial, sans-serif",
-  },
-  wrap: {
-    maxWidth: 760,
-    margin: "0 auto",
-  },
-  card: {
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    borderRadius: 18,
-    padding: 28,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
-  },
-  platePreviewWrap: {
-    display: "flex",
-    justifyContent: "center",
-    margin: "0 auto 18px",
-  },
-  platePreviewFrame: {
-    width: 430,
-    maxWidth: "100%",
-  },
-  sub: {
-    margin: 0,
-    color: "#4b5563",
-    lineHeight: 1.6,
-  },
-  caravanName: {
-    margin: "10px 0 0 0",
-    color: "#111827",
-    fontSize: 22,
-    fontWeight: 700,
-  },
-  bioBox: {
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 20,
-  },
-  bioText: {
-    margin: 0,
-    color: "#374151",
-    lineHeight: 1.6,
-    textAlign: "center",
-  },
-  actionBox: {
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
-    borderRadius: 14,
-    padding: 20,
-    marginBottom: 16,
-  },
-  actionsHeading: {
-    marginTop: 0,
-    marginBottom: 14,
-    textAlign: "center",
-  },
-  topButtonGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 14,
-  },
-  primaryButton: {
-    border: 0,
-    borderRadius: 12,
-    padding: "16px 20px",
-    fontSize: 16,
-    fontWeight: 600,
-    background: "#111827",
-    color: "#ffffff",
-    cursor: "pointer",
-  },
-  secondaryButton: {
-    border: "1px solid #d1d5db",
-    borderRadius: 12,
-    padding: "16px 20px",
-    fontSize: 16,
-    fontWeight: 600,
-    background: "#ffffff",
-    color: "#111827",
-    cursor: "pointer",
-  },
-  emergencyWrap: {
-    display: "flex",
-    justifyContent: "center",
-    marginTop: 18,
-  },
-  emergencyButton: {
-    border: 0,
-    borderRadius: 12,
-    padding: "16px 20px",
-    minWidth: 280,
-    fontSize: 16,
-    fontWeight: 700,
-    background: "#dc2626",
-    color: "#ffffff",
-    cursor: "pointer",
-  },
-  disabledBox: {
-    border: "1px solid #e5e7eb",
-    borderRadius: 12,
-    padding: "16px 20px",
-    color: "#6b7280",
-    background: "#ffffff",
-    textAlign: "center",
-  },
-  panel: {
-    marginTop: 18,
-    paddingTop: 18,
-    borderTop: "1px solid #e5e7eb",
-    display: "grid",
-    gap: 14,
-  },
-  fieldGrid: {
-    display: "grid",
-    gap: 12,
-  },
-  input: {
-    width: "100%",
-    border: "1px solid #d1d5db",
-    borderRadius: 10,
-    padding: "12px 14px",
-    fontSize: 15,
-    boxSizing: "border-box",
-  },
-  textarea: {
-    width: "100%",
-    border: "1px solid #d1d5db",
-    borderRadius: 10,
-    padding: "12px 14px",
-    fontSize: 15,
-    boxSizing: "border-box",
-    resize: "vertical",
-  },
-  helperText: {
-    fontSize: 13,
-    color: "#6b7280",
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 12,
-    alignItems: "center",
-  },
-  counter: {
-    color: "#374151",
-    fontWeight: 600,
-    whiteSpace: "nowrap",
-  },
-  singleButtonWrap: {
-    display: "flex",
-    justifyContent: "center",
-  },
-  statusBox: {
-    padding: 14,
-    borderRadius: 12,
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    color: "#111827",
-  },
-  footer: {
-    margin: 0,
-    fontSize: 14,
-    color: "#6b7280",
-    textAlign: "center",
-  },
+  page: { minHeight: "100vh", padding: "32px 20px", background: "#f7f7f8", fontFamily: "Arial, sans-serif" },
+  wrap: { maxWidth: 760, margin: "0 auto" },
+  card: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 18, padding: 28, boxShadow: "0 10px 30px rgba(0,0,0,0.06)" },
+  platePreviewWrap: { display: "flex", justifyContent: "center", margin: "0 auto 18px" },
+  platePreviewFrame: { width: 430, maxWidth: "100%" },
+  sub: { margin: 0, color: "#4b5563", lineHeight: 1.6 },
+  caravanName: { margin: "10px 0 0 0", color: "#111827", fontSize: 22, fontWeight: 700 },
+  bioBox: { background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 14, padding: 18, marginBottom: 20 },
+  bioText: { margin: 0, color: "#374151", lineHeight: 1.6, textAlign: "center" },
+  actionBox: { background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 14, padding: 20, marginBottom: 16 },
+  actionsHeading: { marginTop: 0, marginBottom: 14, textAlign: "center" },
+  topButtonGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 },
+  primaryButton: { border: 0, borderRadius: 12, padding: "16px 20px", fontSize: 16, fontWeight: 600, background: "#111827", color: "#ffffff", cursor: "pointer" },
+  secondaryButton: { border: "1px solid #d1d5db", borderRadius: 12, padding: "16px 20px", fontSize: 16, fontWeight: 600, background: "#ffffff", color: "#111827", cursor: "pointer" },
+  emergencyWrap: { display: "flex", justifyContent: "center", marginTop: 18 },
+  emergencyButton: { border: 0, borderRadius: 12, padding: "16px 20px", minWidth: 280, fontSize: 16, fontWeight: 700, background: "#dc2626", color: "#ffffff", cursor: "pointer" },
+  disabledBox: { border: "1px solid #e5e7eb", borderRadius: 12, padding: "16px 20px", color: "#6b7280", background: "#ffffff", textAlign: "center" },
+  panel: { marginTop: 18, paddingTop: 18, borderTop: "1px solid #e5e7eb", display: "grid", gap: 14 },
+  fieldGrid: { display: "grid", gap: 12 },
+  input: { width: "100%", border: "1px solid #d1d5db", borderRadius: 10, padding: "12px 14px", fontSize: 15, boxSizing: "border-box" },
+  textarea: { width: "100%", border: "1px solid #d1d5db", borderRadius: 10, padding: "12px 14px", fontSize: 15, boxSizing: "border-box", resize: "vertical" },
+  helperText: { fontSize: 13, color: "#6b7280", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" },
+  counter: { color: "#374151", fontWeight: 600, whiteSpace: "nowrap" },
+  singleButtonWrap: { display: "flex", justifyContent: "center" },
+  statusBox: { padding: 14, borderRadius: 12, background: "#ffffff", border: "1px solid #e5e7eb", color: "#111827" },
+  footer: { margin: 0, fontSize: 14, color: "#6b7280", textAlign: "center" },
 };
