@@ -1,125 +1,7 @@
+// app/api/plates/[slug]/report-location/route.ts
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-function buildMapsUrl(lat: number, lng: number) {
-  return `https://www.google.com/maps?q=${lat},${lng}`;
-}
-
-function buildStaticMapUrl(lat: number, lng: number) {
-  const key = process.env.GOOGLE_MAPS_API_KEY;
-  if (!key) return null;
-
-  return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=15&size=1200x630&scale=2&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${key}`;
-}
-
-function buildEmailHtml(input: {
-  identifier: string;
-  slug: string;
-  reporterName: string;
-  reporterPhone: string;
-  reporterEmail: string;
-  message: string;
-  lat: number;
-  lng: number;
-  accuracyM?: number | null;
-}) {
-  const mapsUrl = buildMapsUrl(input.lat, input.lng);
-  const staticMapUrl = buildStaticMapUrl(input.lat, input.lng);
-
-  return `
-    <div style="font-family:Arial,Helvetica,sans-serif;color:#111827;line-height:1.6">
-      <h2 style="margin:0 0 16px">Carascan location report</h2>
-
-      <p style="margin:0 0 8px"><strong>Plate:</strong> ${escapeHtml(input.identifier)}</p>
-      <p style="margin:0 0 8px"><strong>Public slug:</strong> ${escapeHtml(input.slug)}</p>
-      <p style="margin:0 0 8px"><strong>Reporter:</strong> ${escapeHtml(input.reporterName || "Not provided")}</p>
-      <p style="margin:0 0 8px"><strong>Phone:</strong> ${escapeHtml(input.reporterPhone || "Not provided")}</p>
-      <p style="margin:0 0 8px"><strong>Email:</strong> ${escapeHtml(input.reporterEmail || "Not provided")}</p>
-      <p style="margin:0 0 8px"><strong>Coordinates:</strong> ${input.lat}, ${input.lng}</p>
-      ${
-        input.accuracyM != null
-          ? `<p style="margin:0 0 16px"><strong>Accuracy:</strong> ${input.accuracyM} m</p>`
-          : `<div style="height:8px"></div>`
-      }
-
-      <p style="margin:0 0 16px">
-        <a href="${mapsUrl}" target="_blank" rel="noreferrer" style="display:inline-block;padding:12px 16px;background:#111827;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700">
-          Open in Google Maps
-        </a>
-      </p>
-
-      ${
-        staticMapUrl
-          ? `
-        <p style="margin:0 0 16px">
-          <a href="${mapsUrl}" target="_blank" rel="noreferrer">
-            <img
-              src="${staticMapUrl}"
-              alt="Reported location map"
-              style="display:block;width:100%;max-width:600px;height:auto;border:1px solid #d1d5db;border-radius:12px"
-            />
-          </a>
-        </p>
-      `
-          : ""
-      }
-
-      ${
-        input.message
-          ? `
-        <div style="margin-top:16px;padding:14px;border:1px solid #e5e7eb;border-radius:12px;background:#f9fafb">
-          <div style="font-weight:700;margin-bottom:6px">Notes</div>
-          <div>${escapeHtml(input.message).replaceAll("\n", "<br/>")}</div>
-        </div>
-      `
-          : ""
-      }
-    </div>
-  `;
-}
-
-function buildEmailText(input: {
-  identifier: string;
-  slug: string;
-  reporterName: string;
-  reporterPhone: string;
-  reporterEmail: string;
-  message: string;
-  lat: number;
-  lng: number;
-  accuracyM?: number | null;
-}) {
-  const mapsUrl = buildMapsUrl(input.lat, input.lng);
-
-  return [
-    `Carascan location report`,
-    ``,
-    `Plate: ${input.identifier}`,
-    `Public slug: ${input.slug}`,
-    `Reporter: ${input.reporterName || "Not provided"}`,
-    `Phone: ${input.reporterPhone || "Not provided"}`,
-    `Email: ${input.reporterEmail || "Not provided"}`,
-    `Coordinates: ${input.lat}, ${input.lng}`,
-    input.accuracyM != null ? `Accuracy: ${input.accuracyM} m` : "",
-    `Google Maps: ${mapsUrl}`,
-    ``,
-    input.message ? `Notes:\n${input.message}` : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
-}
+import { sendLocationReportEmail } from "@/lib/notifyEmail";
 
 export async function POST(
   req: Request,
@@ -190,36 +72,17 @@ export async function POST(
       );
     }
 
-    const html = buildEmailHtml({
-      identifier: plate.identifier,
-      slug: plate.slug,
-      reporterName,
-      reporterPhone,
-      reporterEmail,
-      message,
-      lat,
-      lng,
-      accuracyM,
-    });
-
-    const text = buildEmailText({
-      identifier: plate.identifier,
-      slug: plate.slug,
-      reporterName,
-      reporterPhone,
-      reporterEmail,
-      message,
-      lat,
-      lng,
-      accuracyM,
-    });
-
-    await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || "Carascan <noreply@carascan.com.au>",
+    await sendLocationReportEmail({
       to: [ownerEmail],
-      subject: `Location report for ${plate.identifier}`,
-      html,
-      text,
+      identifier: plate.identifier,
+      slug: plate.slug,
+      reporterName,
+      reporterPhone,
+      reporterEmail,
+      message,
+      lat,
+      lng,
+      accuracyM,
     });
 
     return NextResponse.json({ ok: true });
