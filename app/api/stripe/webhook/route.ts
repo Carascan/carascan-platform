@@ -16,8 +16,12 @@ const LOGO_URL_FALLBACK =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
 const ASSETS_BUCKET = process.env.PLATE_ASSETS_BUCKET ?? "assets";
+// Permanent fix: support the configured manufacturing recipient env var first,
+// then fallback to legacy naming, then final hard fallback.
 const MANUFACTURING_EMAIL_TO =
-  process.env.MANUFACTURING_EMAIL_TO ?? process.env.FROM_EMAIL ?? "";
+  process.env.MANUFACTURING_EMAIL?.trim() ||
+  process.env.MANUFACTURING_EMAIL_TO?.trim() ||
+  "manufacture@carascan.com.au";
 
 function randSlug(len = 10) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
