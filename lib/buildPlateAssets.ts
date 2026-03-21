@@ -1,14 +1,14 @@
 import { buildPlateUrl, getDefaultPlateSpec } from "./plate";
-import {
-  generateQrBuffer,
-  generateQrDataUrl,
-} from "./generateQr";
+import { generateQrBuffer, generateQrDataUrl } from "./generateQr";
 import { buildPlateSvg } from "./laserSvg";
+
+export type MountingMethod = "rivet" | "adhesive";
 
 export type BuildPlateAssetsInput = {
   identifier: string;
   slug: string;
-  mountingHoles: boolean;
+  mountingMethod?: MountingMethod;
+  mountingHoles?: boolean;
   logoSvgMarkup?: string;
   logoImageHref?: string;
 };
@@ -24,12 +24,24 @@ export type BuildPlateAssetsResult = {
   metadata: Record<string, unknown>;
 };
 
+function resolveMountingMethod(
+  input: Pick<BuildPlateAssetsInput, "mountingMethod" | "mountingHoles">
+): MountingMethod {
+  if (input.mountingMethod === "adhesive") return "adhesive";
+  if (input.mountingMethod === "rivet") return "rivet";
+  if (typeof input.mountingHoles === "boolean") {
+    return input.mountingHoles ? "rivet" : "adhesive";
+  }
+  return "rivet";
+}
+
 export async function buildPlateAssets(
   input: BuildPlateAssetsInput
 ): Promise<BuildPlateAssetsResult> {
   const plateUrl = buildPlateUrl(input.slug);
+  const mountingMethod = resolveMountingMethod(input);
+  const mountingHoles = mountingMethod === "rivet";
 
-  // Manufacturing QR: no quiet zone, transparent background
   const qrPngBuffer = await generateQrBuffer(plateUrl, {
     mode: "production",
     margin: 0,
@@ -45,7 +57,7 @@ export async function buildPlateAssets(
   const plateSvg = buildPlateSvg({
     identifier: input.identifier,
     qrImageHref: qrDataUrl,
-    mountingHoles: input.mountingHoles,
+    mountingHoles,
     logoSvgMarkup: input.logoSvgMarkup,
     logoImageHref: input.logoImageHref,
   });
@@ -62,7 +74,8 @@ export async function buildPlateAssets(
       identifier: input.identifier,
       slug: input.slug,
       plateUrl,
-      mountingHoles: input.mountingHoles,
+      mountingMethod,
+      mountingHoles,
       plateSizeMm: {
         width: 90,
         height: 90,
