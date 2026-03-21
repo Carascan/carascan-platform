@@ -113,90 +113,6 @@ export default function Buy() {
           </div>
         </div>
 
-        <div
-          style={{
-            border: "1px solid #e5e7eb",
-            borderRadius: 14,
-            padding: 22,
-            marginBottom: 20,
-            background: "#ffffff",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 18,
-              fontWeight: 700,
-              color: "#111827",
-              marginBottom: 14,
-            }}
-          >
-            Pricing
-          </div>
-
-          <div style={{ display: "grid", gap: 10, color: "#374151" }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 16,
-              }}
-            >
-              <span>Plate</span>
-              <strong>$35.00</strong>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 16,
-              }}
-            >
-              <span>3 x Emergency contact subscription</span>
-              <strong>$24.00 / year</strong>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 16,
-              }}
-            >
-              <span>10 x Emergency contact option</span>
-              <strong>+$2.00 / year</strong>
-            </div>
-
-            <div
-              style={{
-                marginTop: 8,
-                paddingTop: 12,
-                borderTop: "1px solid #e5e7eb",
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 16,
-                color: "#111827",
-                fontSize: 18,
-              }}
-            >
-              <span>
-                Total today
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "#6b7280",
-                    marginTop: 4,
-                  }}
-                >
-                  Includes plate + selected annual subscription
-                </div>
-              </span>
-              <strong>${totalToday}.00</strong>
-            </div>
-          </div>
-        </div>
-
         <form action="/api/checkout/create" method="post">
           <div
             style={{
@@ -515,16 +431,19 @@ export default function Buy() {
                 >
                   Expanded annual subscription for up to 10 emergency contacts.
                 </div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    marginLeft: 24,
-                    fontWeight: 700,
-                    color: "#111827",
-                  }}
-                >
-                  $26.00 / year
-                </div>
+
+                {emergencyPlan === "10" && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      marginLeft: 24,
+                      fontWeight: 700,
+                      color: "#111827",
+                    }}
+                  >
+                    $26.00 / year
+                  </div>
+                )}
               </label>
             </div>
           </div>
@@ -603,6 +522,100 @@ export default function Buy() {
                 rebuilding the full page flow.
               </div>
             )}
+          </div>
+
+          <div
+            style={{
+              border: "1px solid #e5e7eb",
+              borderRadius: 14,
+              padding: 22,
+              marginBottom: 22,
+              background: "#f9fafb",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: "#111827",
+                marginBottom: 14,
+              }}
+            >
+              Pricing summary
+            </div>
+
+            <div style={{ display: "grid", gap: 10, color: "#374151" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 16,
+                }}
+              >
+                <span>Plate</span>
+                <strong>$35.00</strong>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 16,
+                }}
+              >
+                <span>
+                  {emergencyPlan === "10"
+                    ? "10 x Emergency contact subscription"
+                    : "3 x Emergency contact subscription"}
+                </span>
+                <strong>
+                  ${subscriptionPrice}.00 / year
+                </strong>
+              </div>
+
+              {emergencyPlan === "10" && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 16,
+                    color: "#6b7280",
+                    fontSize: 14,
+                  }}
+                >
+                  <span>Upgrade above standard 3-contact subscription</span>
+                  <strong>+$2.00 / year</strong>
+                </div>
+              )}
+
+              <div
+                style={{
+                  marginTop: 8,
+                  paddingTop: 12,
+                  borderTop: "1px solid #d1d5db",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 16,
+                  color: "#111827",
+                  fontSize: 18,
+                }}
+              >
+                <span>
+                  Total today
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: "#6b7280",
+                      marginTop: 4,
+                    }}
+                  >
+                    Includes plate + selected annual subscription
+                  </div>
+                </span>
+                <strong>${totalToday}.00</strong>
+              </div>
+            </div>
           </div>
 
           <button
