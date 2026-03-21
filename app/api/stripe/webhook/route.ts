@@ -596,32 +596,29 @@ const emergencyPlan =
       status: "setup_pending",
     });
 
-    const manufacturingPayload = buildManufacturingEmailPayload({
-      to: MANUFACTURING_EMAIL_TO,
-      identifier: plate.identifier,
-      customerName: customerName ?? null,
-      customerEmail: email,
-      customerPhone: customerPhone,
-      shippingName: customerName ?? null,
-      shippingLine1: addr?.line1 ?? null,
-      shippingLine2: addr?.line2 ?? null,
-      shippingCity: addr?.city ?? null,
-      shippingState: addr?.state ?? null,
-      shippingPostcode: addr?.postal_code ?? null,
-      shippingCountry: addr?.country ?? null,
-      paymentStatus: session.payment_status ?? null,
-      amountTotalCents: session.amount_total ?? null,
-      currency: session.currency ?? null,
-      adminUrl: `${baseUrl}/admin/orders?search=${encodeURIComponent(
-        plate.identifier
-      )}`,
-      svgContent: assets.plateSvg,
-      qrPngBuffer: assets.qrPngBuffer,
-      metadata: assets.metadata,
-      svgPublicUrl: savedAssets.svgPublicUrl,
-      qrPublicUrl: savedAssets.qrPublicUrl,
-      metadataPublicUrl: savedAssets.metadataPublicUrl,
-    });
+    const duplicateManufacturingPayload = buildManufacturingEmailPayload({
+  to: MANUFACTURING_EMAIL_TO,
+  identifier: plate.identifier,
+  customerName: duplicateCustomerName,
+  customerEmail: duplicateCustomerEmail,
+  customerPhone: duplicateCustomerPhone,
+  shippingName: duplicateCustomerName,
+  shippingLine1: duplicateAddress?.line1 ?? null,
+  shippingLine2: duplicateAddress?.line2 ?? null,
+  shippingCity: duplicateAddress?.city ?? null,
+  shippingState: duplicateAddress?.state ?? null,
+  shippingPostcode: duplicateAddress?.postal_code ?? null,
+  shippingCountry: duplicateAddress?.country ?? null,
+  paymentStatus: session.payment_status ?? null,
+  amountTotalCents: session.amount_total ?? null,
+  currency: session.currency ?? null,
+  adminUrl: `${baseUrl}/admin/orders?search=${encodeURIComponent(
+    plate.identifier
+  )}`,
+  svgContent: duplicateAssets.plateSvg,
+  qrPngBuffer: duplicateAssets.qrPngBuffer,
+  metadata: duplicateAssets.metadata,
+});
 
     console.log("[stripe-webhook] sending manufacturing email", {
       ...manufacturingPayload,

@@ -130,11 +130,11 @@ export function buildManufacturingEmailPayload(input: {
     ``,
     `A new Carascan plate order is ready for manufacturing.`,
     attachments.length > 0
-      ? `The laser-ready files are attached so you can drag the SVG straight into LightBurn.`
+      ? `The laser-ready files are attached so the SVG can be dragged straight into LightBurn.`
       : `The production reference is ready below.`,
     ``,
     `Identifier: ${input.identifier}`,
-    safeAdminUrl ? `Admin: ${safeAdminUrl}` : null,
+    safeAdminUrl ? `Admin job: ${safeAdminUrl}` : null,
     `Payment status: ${paymentStatus}`,
     `Order value: ${orderValue}`,
     ``,
