@@ -77,9 +77,12 @@ async function generateNextIdentifier(sb: ReturnType<typeof supabaseAdmin>) {
 }
 
 function readMountingHoles(session: any): boolean {
-  const raw = session?.metadata?.mounting_holes;
-  if (raw == null) return true;
-  return String(raw).toLowerCase() === "true";
+  const method = session?.metadata?.mounting_method;
+
+  // Default safe fallback = rivet (holes)
+  if (!method) return true;
+
+  return method === "rivet";
 }
 
 async function loadLogoSvgDataUrl(logoUrl: string): Promise<string> {
@@ -315,11 +318,11 @@ export async function POST(req: Request) {
       });
 
       const duplicateAssets = await buildPlateAssets({
-        identifier: plate.identifier,
-        slug: plate.slug,
-        mountingHoles: duplicateMountingHoles,
-        logoImageHref: duplicateLogoImageHref,
-      });
+  identifier: plate.identifier,
+  slug: plate.slug,
+  mountingMethod: duplicateMountingHoles ? "rivet" : "adhesive",
+  logoImageHref: duplicateLogoImageHref,
+});
 
       console.log("[stripe-webhook] duplicate assets built", {
         identifier: duplicateAssets.identifier,
@@ -409,16 +412,19 @@ export async function POST(req: Request) {
     }
 
     const email = session.customer_details?.email ?? null;
-    const customerName = session.customer_details?.name ?? null;
-    const customerPhone = session.customer_details?.phone ?? null;
-    const mountingHoles = readMountingHoles(session);
+const customerName = session.customer_details?.name ?? null;
+const customerPhone = session.customer_details?.phone ?? null;
+const mountingHoles = readMountingHoles(session);
+const emergencyPlan =
+  session?.metadata?.emergency_plan === "10" ? "10" : "3";
 
     console.log("[stripe-webhook] customer/session values", {
-      email,
-      customerName,
-      customerPhone,
-      mountingHoles,
-    });
+  email,
+  customerName,
+  customerPhone,
+  mountingHoles,
+  emergencyPlan,
+});
 
     const identifier = await generateNextIdentifier(sb);
     const slug = await generateUniqueSlug(sb);
@@ -468,11 +474,11 @@ export async function POST(req: Request) {
     });
 
     const assets = await buildPlateAssets({
-      identifier,
-      slug,
-      mountingHoles,
-      logoImageHref,
-    });
+  identifier,
+  slug,
+  mountingMethod: mountingHoles ? "rivet" : "adhesive",
+  logoImageHref,
+});
 
     console.log("[stripe-webhook] assets built", {
       identifier: assets.identifier,
