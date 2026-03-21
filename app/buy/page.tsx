@@ -12,7 +12,6 @@ export default function Buy() {
   const [emergencyPlan, setEmergencyPlan] = useState<"3" | "10">("3");
   const [showMountingInfo, setShowMountingInfo] = useState(false);
   const [showIncludedInfo, setShowIncludedInfo] = useState(false);
-  const [showUpgradeInfo, setShowUpgradeInfo] = useState(false);
 
   const platePrice = 35;
   const standardSubscription = 24;
@@ -466,63 +465,6 @@ export default function Buy() {
                 flexWrap: "wrap",
               }}
             >
-              <div>
-                <div
-                  style={{
-                    fontSize: 17,
-                    fontWeight: 700,
-                    color: "#111827",
-                  }}
-                >
-                  Future subscription expansion
-                </div>
-                <div
-                  style={{
-                    marginTop: 4,
-                    color: "#6b7280",
-                    fontWeight: 600,
-                    fontSize: 14,
-                  }}
-                >
-                  Page structure kept ready for later additions
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowUpgradeInfo((v) => !v)}
-                style={{
-                  border: "1px solid #d1d5db",
-                  borderRadius: 10,
-                  padding: "8px 12px",
-                  background: "#fff",
-                  color: "#111827",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                {showUpgradeInfo ? "Hide details" : "Show details"}
-              </button>
-            </div>
-
-            {showUpgradeInfo && (
-              <div
-                style={{
-                  marginTop: 14,
-                  padding: 14,
-                  borderRadius: 12,
-                  background: "#f9fafb",
-                  border: "1px solid #e5e7eb",
-                  color: "#4b5563",
-                  lineHeight: 1.6,
-                }}
-              >
-                This buy page is being structured so additional product and
-                subscription options can be added cleanly later without
-                rebuilding the full page flow.
-              </div>
-            )}
-          </div>
 
           <div
             style={{
