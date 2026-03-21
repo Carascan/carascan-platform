@@ -274,7 +274,7 @@ export default function Buy() {
               border: "1px solid #e5e7eb",
               borderRadius: 14,
               padding: 22,
-              marginBottom: 14,
+              marginBottom: 22,
               background: "#ffffff",
             }}
           >
@@ -453,25 +453,6 @@ export default function Buy() {
               borderRadius: 14,
               padding: 22,
               marginBottom: 22,
-              background: "#ffffff",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 12,
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-
-          <div
-            style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 14,
-              padding: 22,
-              marginBottom: 22,
               background: "#f9fafb",
             }}
           >
@@ -510,9 +491,7 @@ export default function Buy() {
                     ? "10 x Emergency contact subscription"
                     : "3 x Emergency contact subscription"}
                 </span>
-                <strong>
-                  ${subscriptionPrice}.00 / year
-                </strong>
+                <strong>${subscriptionPrice}.00 / year</strong>
               </div>
 
               {emergencyPlan === "10" && (
