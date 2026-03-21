@@ -14,12 +14,11 @@ export default function Buy() {
   const [showIncludedInfo, setShowIncludedInfo] = useState(false);
 
   const platePrice = 35;
-  const standardSubscription = 24;
-  const upgradeDelta = 2;
+  const standardSubscription = 2;
+  const upgradeSubscription = 4;
   const subscriptionPrice =
-    emergencyPlan === "10"
-      ? standardSubscription + upgradeDelta
-      : standardSubscription;
+    emergencyPlan === "10" ? upgradeSubscription : standardSubscription;
+  const upgradeDelta = upgradeSubscription - standardSubscription;
   const totalToday = platePrice + subscriptionPrice;
 
   return (
@@ -339,13 +338,11 @@ export default function Buy() {
                   lineHeight: 1.6,
                 }}
               >
-                The standard Carascan subscription supports up to 3 emergency
-                contacts.
+                The standard Carascan subscription supports up to 3 ICE
+                contacts and is billed monthly.
                 <br />
-                If you would like more than 3 emergency contacts, up to 10
-                contacts can be purchased.
-                <br />
-                Subscription renews annually.
+                If you would like more than 3 emergency contacts, up to 10 ICE
+                contacts can be purchased and billed monthly.
               </div>
             )}
 
@@ -372,7 +369,7 @@ export default function Buy() {
                   style={{ marginRight: 10 }}
                 />
                 <span style={{ fontWeight: 700, color: "#111827" }}>
-                  3 x Emergency contacts
+                  3 x ICE contacts
                 </span>
                 <div
                   style={{
@@ -382,7 +379,7 @@ export default function Buy() {
                     lineHeight: 1.5,
                   }}
                 >
-                  Standard annual subscription included in checkout pricing.
+                  Standard monthly subscription for up to 3 ICE contacts.
                 </div>
                 <div
                   style={{
@@ -392,7 +389,7 @@ export default function Buy() {
                     color: "#111827",
                   }}
                 >
-                  $24.00 / year
+                  $2.00 / month
                 </div>
               </label>
 
@@ -418,7 +415,7 @@ export default function Buy() {
                   style={{ marginRight: 10 }}
                 />
                 <span style={{ fontWeight: 700, color: "#111827" }}>
-                  10 x Emergency contacts
+                  10 x ICE contacts
                 </span>
                 <div
                   style={{
@@ -428,7 +425,7 @@ export default function Buy() {
                     lineHeight: 1.5,
                   }}
                 >
-                  Expanded annual subscription for up to 10 emergency contacts.
+                  Expanded monthly subscription for up to 10 ICE contacts.
                 </div>
 
                 {emergencyPlan === "10" && (
@@ -440,7 +437,7 @@ export default function Buy() {
                       color: "#111827",
                     }}
                   >
-                    $26.00 / year
+                    $4.00 / month
                   </div>
                 )}
               </label>
@@ -488,10 +485,10 @@ export default function Buy() {
               >
                 <span>
                   {emergencyPlan === "10"
-                    ? "10 x Emergency contact subscription"
-                    : "3 x Emergency contact subscription"}
+                    ? "10 x ICE contact subscription"
+                    : "3 x ICE contact subscription"}
                 </span>
-                <strong>${subscriptionPrice}.00 / year</strong>
+                <strong>${subscriptionPrice}.00 / month</strong>
               </div>
 
               {emergencyPlan === "10" && (
@@ -505,7 +502,7 @@ export default function Buy() {
                   }}
                 >
                   <span>Upgrade above standard 3-contact subscription</span>
-                  <strong>+$2.00 / year</strong>
+                  <strong>+${upgradeDelta}.00 / month</strong>
                 </div>
               )}
 
@@ -531,7 +528,7 @@ export default function Buy() {
                       marginTop: 4,
                     }}
                   >
-                    Includes plate + selected annual subscription
+                    Includes plate + first month of selected subscription
                   </div>
                 </span>
                 <strong>${totalToday}.00</strong>
