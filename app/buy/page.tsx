@@ -389,7 +389,7 @@ export default function Buy() {
                     color: "#111827",
                   }}
                 >
-                  $2.00 / month
+                  $2.00 / month ($24 per year unless cancelled)
                 </div>
               </label>
 
@@ -437,7 +437,7 @@ export default function Buy() {
                       color: "#111827",
                     }}
                   >
-                    $4.00 / month
+                    $4.00 / month ($48 per year unless cancelled)
                   </div>
                 )}
               </label>
