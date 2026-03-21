@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { ManufacturingEmailPayload } from "./buildManufacturingEmailPayload";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -108,10 +109,20 @@ function buildLocationMapBlock(input: {
   `;
 }
 
+export type EmailAttachment = {
+  filename: string;
+  content: string;
+  contentType?: string;
+};
+
 export async function sendEmail(
   to: string | string[],
   subject: string,
-  html: string
+  html: string,
+  options?: {
+    text?: string;
+    attachments?: EmailAttachment[];
+  }
 ) {
   const from = process.env.FROM_EMAIL;
 
@@ -126,6 +137,12 @@ export async function sendEmail(
     to: recipients,
     subject,
     html,
+    text: options?.text,
+    attachments: options?.attachments?.map((attachment) => ({
+      filename: attachment.filename,
+      content: attachment.content,
+      contentType: attachment.contentType,
+    })),
   });
 
   if (result.error) {
@@ -135,13 +152,7 @@ export async function sendEmail(
   return result;
 }
 
-export async function sendManufacturingEmail(payload: {
-  to: string | string[];
-  identifier: string;
-  latitude?: number | null;
-  longitude?: number | null;
-  accuracyM?: number | null;
-}) {
+export async function sendManufacturingEmail(payload: ManufacturingEmailPayload) {
   const from = process.env.FROM_EMAIL;
 
   if (!process.env.RESEND_API_KEY || !from) {
@@ -149,35 +160,10 @@ export async function sendManufacturingEmail(payload: {
     return { ok: false, skipped: true };
   }
 
-  const html = `
-    <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111827;">
-      <h2 style="margin:0 0 16px 0;">New Plate Ready for Manufacturing</h2>
-
-      <p style="margin:0 0 10px 0;">
-        <strong>Identifier:</strong> ${escapeHtml(payload.identifier)}
-      </p>
-
-      ${buildLocationMapBlock({
-        latitude: payload.latitude,
-        longitude: payload.longitude,
-        accuracyM: payload.accuracyM,
-        title: "Manufacturing location reference",
-      })}
-    </div>
-  `;
-
-  const recipients = Array.isArray(payload.to) ? payload.to : [payload.to];
-
-  const result = await resend.emails.send({
-    from,
-    to: recipients,
-    subject: `Manufacturing - ${payload.identifier}`,
-    html,
+  const result = await sendEmail(payload.to, payload.subject, payload.html, {
+    text: payload.text,
+    attachments: payload.attachments,
   });
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
 
   return {
     ok: true,

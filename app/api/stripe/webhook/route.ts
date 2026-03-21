@@ -538,9 +538,29 @@ export async function POST(req: Request) {
     });
 
     const manufacturingPayload = buildManufacturingEmailPayload({
-      to: MANUFACTURING_EMAIL_TO,
-      identifier: plate.identifier,
-    });
+  to: MANUFACTURING_EMAIL_TO,
+  identifier: plate.identifier,
+  customerName: customerName ?? null,
+  customerEmail: email,
+  customerPhone: customerPhone,
+  shippingName: customerName ?? null,
+  shippingLine1: addr?.line1 ?? null,
+  shippingLine2: addr?.line2 ?? null,
+  shippingCity: addr?.city ?? null,
+  shippingState: addr?.state ?? null,
+  shippingPostcode: addr?.postal_code ?? null,
+  shippingCountry: addr?.country ?? null,
+  paymentStatus: session.payment_status ?? null,
+  amountTotalCents: session.amount_total ?? null,
+  currency: session.currency ?? null,
+  adminUrl: `${baseUrl}/admin/orders`,
+  svgContent: assets.plateSvg,
+  qrPngBuffer: assets.qrPngBuffer,
+  metadata: assets.metadata,
+  svgPublicUrl: savedAssets.svgPublicUrl,
+  qrPublicUrl: savedAssets.qrPublicUrl,
+  metadataPublicUrl: savedAssets.metadataPublicUrl,
+});
 
     console.log("[stripe-webhook] sending manufacturing email", manufacturingPayload);
 
