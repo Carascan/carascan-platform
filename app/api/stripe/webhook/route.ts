@@ -16,8 +16,6 @@ const LOGO_URL_FALLBACK =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
 const ASSETS_BUCKET = process.env.PLATE_ASSETS_BUCKET ?? "assets";
-// Permanent fix: support the configured manufacturing recipient env var first,
-// then fallback to legacy naming, then final hard fallback.
 const MANUFACTURING_EMAIL_TO =
   process.env.MANUFACTURING_EMAIL?.trim() ||
   process.env.MANUFACTURING_EMAIL_TO?.trim() ||
@@ -280,7 +278,7 @@ export async function POST(req: Request) {
       throw new Error(`Existing order check failed: ${existingOrderErr.message}`);
     }
 
-    // 🔧 retry path for Stripe replays
+    // retry path for Stripe replays
     if (existingOrder) {
       console.log("[stripe-webhook] duplicate order detected - retrying emails");
 
@@ -298,61 +296,88 @@ export async function POST(req: Request) {
         plateLookupErr: plateLookupErr?.message ?? null,
       });
 
-      if (!plate) {
-        throw new Error("Plate not found for existing order");
+      if (plateLookupErr || !plate) {
+        throw new Error(plateLookupErr?.message ?? "Plate not found for existing order");
       }
 
-      const plateUrl = `${baseUrl}/p/${plate.slug}`;
+      const duplicateCustomerEmail = session.customer_details?.email ?? null;
+      const duplicateCustomerName = session.customer_details?.name ?? null;
+      const duplicateCustomerPhone = session.customer_details?.phone ?? null;
+      const duplicateAddress = session.customer_details?.address ?? null;
+      const duplicateLogoUrl = process.env.PLATE_LOGO_SVG_URL ?? LOGO_URL_FALLBACK;
+      const duplicateLogoImageHref = await loadLogoSvgDataUrl(duplicateLogoUrl);
+      const duplicateMountingHoles = readMountingHoles(session);
+
+      console.log("[stripe-webhook] rebuilding duplicate assets", {
+        identifier: plate.identifier,
+        slug: plate.slug,
+        mountingHoles: duplicateMountingHoles,
+      });
+
+      const duplicateAssets = await buildPlateAssets({
+        identifier: plate.identifier,
+        slug: plate.slug,
+        mountingHoles: duplicateMountingHoles,
+        logoImageHref: duplicateLogoImageHref,
+      });
+
+      console.log("[stripe-webhook] duplicate assets built", {
+        identifier: duplicateAssets.identifier,
+        plateSvgLength: duplicateAssets.plateSvg?.length ?? 0,
+        qrPngBufferLength: duplicateAssets.qrPngBuffer?.length ?? 0,
+        metadataKeys: duplicateAssets.metadata
+          ? Object.keys(duplicateAssets.metadata as Record<string, unknown>)
+          : [],
+      });
+
+      const duplicateManufacturingPayload = buildManufacturingEmailPayload({
+        to: MANUFACTURING_EMAIL_TO,
+        identifier: plate.identifier,
+        customerName: duplicateCustomerName,
+        customerEmail: duplicateCustomerEmail,
+        customerPhone: duplicateCustomerPhone,
+        shippingName: duplicateCustomerName,
+        shippingLine1: duplicateAddress?.line1 ?? null,
+        shippingLine2: duplicateAddress?.line2 ?? null,
+        shippingCity: duplicateAddress?.city ?? null,
+        shippingState: duplicateAddress?.state ?? null,
+        shippingPostcode: duplicateAddress?.postal_code ?? null,
+        shippingCountry: duplicateAddress?.country ?? null,
+        paymentStatus: session.payment_status ?? null,
+        amountTotalCents: session.amount_total ?? null,
+        currency: session.currency ?? null,
+        adminUrl: `${baseUrl}/admin/orders?search=${encodeURIComponent(
+          plate.identifier
+        )}`,
+        svgContent: duplicateAssets.plateSvg,
+        qrPngBuffer: duplicateAssets.qrPngBuffer,
+        metadata: duplicateAssets.metadata,
+      });
 
       console.log("[stripe-webhook] sending manufacturing email (duplicate path)", {
         to: MANUFACTURING_EMAIL_TO,
         identifier: plate.identifier,
+        hasAttachments: duplicateManufacturingPayload.attachments.length > 0,
+        attachmentNames: duplicateManufacturingPayload.attachments.map(
+          (a) => a.filename
+        ),
       });
 
-      const duplicateManufacturingPayload = buildManufacturingEmailPayload({
-  to: MANUFACTURING_EMAIL_TO,
-  identifier: plate.identifier,
+      const duplicateManufacturingResult = await sendManufacturingEmail(
+        duplicateManufacturingPayload
+      );
 
-  // ✅ pull directly from session (no scope issue)
-  customerName: session.customer_details?.name ?? null,
-  customerEmail: session.customer_details?.email ?? null,
-  customerPhone: session.customer_details?.phone ?? null,
-
-  shippingName: session.customer_details?.name ?? null,
-  shippingLine1: session.customer_details?.address?.line1 ?? null,
-  shippingLine2: session.customer_details?.address?.line2 ?? null,
-  shippingCity: session.customer_details?.address?.city ?? null,
-  shippingState: session.customer_details?.address?.state ?? null,
-  shippingPostcode: session.customer_details?.address?.postal_code ?? null,
-  shippingCountry: session.customer_details?.address?.country ?? null,
-
-  paymentStatus: session.payment_status ?? null,
-  amountTotalCents: session.amount_total ?? null,
-  currency: session.currency ?? null,
-
-  adminUrl: `${baseUrl}/admin/orders`,
-});
-
-const duplicateManufacturingResult = await sendManufacturingEmail(
-  duplicateManufacturingPayload
-);
-
-      console.log("[stripe-webhook] manufacturing email result (duplicate path)", duplicateManufacturingResult);
-
-      const email = session.customer_details?.email ?? null;
-      const customerName = session.customer_details?.name ?? null;
+      console.log(
+        "[stripe-webhook] manufacturing email result (duplicate path)",
+        duplicateManufacturingResult
+      );
 
       let duplicateCustomerEmailResult: unknown = null;
 
-      if (email) {
-        const assets = {
-          identifier: plate.identifier,
-          plateUrl,
-        } as any;
-
-        const customerPayload = buildCustomerPlateEmailPayload(assets, {
-          customerEmail: email,
-          customerName: customerName ?? undefined,
+      if (duplicateCustomerEmail) {
+        const customerPayload = buildCustomerPlateEmailPayload(duplicateAssets, {
+          customerEmail: duplicateCustomerEmail,
+          customerName: duplicateCustomerName ?? undefined,
           setupToken: "",
         });
 
@@ -364,9 +389,14 @@ const duplicateManufacturingResult = await sendManufacturingEmail(
 
         duplicateCustomerEmailResult = await sendCustomerPlateEmail(customerPayload);
 
-        console.log("[stripe-webhook] customer email result (duplicate path)", duplicateCustomerEmailResult);
+        console.log(
+          "[stripe-webhook] customer email result (duplicate path)",
+          duplicateCustomerEmailResult
+        );
       } else {
-        console.warn("[stripe-webhook] duplicate path customer email skipped - no email on session");
+        console.warn(
+          "[stripe-webhook] duplicate path customer email skipped - no email on session"
+        );
       }
 
       return NextResponse.json({
@@ -474,17 +504,17 @@ const duplicateManufacturingResult = await sendManufacturingEmail(
     }
 
     const { error: designErr } = await sb.from("plate_designs").insert({
-  plate_id: plate.id,
-  text_line_1: "",
-  text_line_2: "",
-  logo_url: logoUrl,
-  qr_url: savedAssets.qrPublicUrl,
-  proof_approved: false,
-  plate_width_mm: 90,
-  plate_height_mm: 90,
-  qr_size_mm: 50,
-  hole_diameter_mm: 5.2,
-});
+      plate_id: plate.id,
+      text_line_1: "",
+      text_line_2: "",
+      logo_url: logoUrl,
+      qr_url: savedAssets.qrPublicUrl,
+      proof_approved: false,
+      plate_width_mm: 90,
+      plate_height_mm: 90,
+      qr_size_mm: 50,
+      hole_diameter_mm: 5.2,
+    });
 
     console.log("[stripe-webhook] design insert", {
       plateId: plate.id,
@@ -561,31 +591,36 @@ const duplicateManufacturingResult = await sendManufacturingEmail(
     });
 
     const manufacturingPayload = buildManufacturingEmailPayload({
-  to: MANUFACTURING_EMAIL_TO,
-  identifier: plate.identifier,
-  customerName: customerName ?? null,
-  customerEmail: email,
-  customerPhone: customerPhone,
-  shippingName: customerName ?? null,
-  shippingLine1: addr?.line1 ?? null,
-  shippingLine2: addr?.line2 ?? null,
-  shippingCity: addr?.city ?? null,
-  shippingState: addr?.state ?? null,
-  shippingPostcode: addr?.postal_code ?? null,
-  shippingCountry: addr?.country ?? null,
-  paymentStatus: session.payment_status ?? null,
-  amountTotalCents: session.amount_total ?? null,
-  currency: session.currency ?? null,
-  adminUrl: `${baseUrl}/admin/orders`,
-  svgContent: assets.plateSvg,
-  qrPngBuffer: assets.qrPngBuffer,
-  metadata: assets.metadata,
-  svgPublicUrl: savedAssets.svgPublicUrl,
-  qrPublicUrl: savedAssets.qrPublicUrl,
-  metadataPublicUrl: savedAssets.metadataPublicUrl,
-});
+      to: MANUFACTURING_EMAIL_TO,
+      identifier: plate.identifier,
+      customerName: customerName ?? null,
+      customerEmail: email,
+      customerPhone: customerPhone,
+      shippingName: customerName ?? null,
+      shippingLine1: addr?.line1 ?? null,
+      shippingLine2: addr?.line2 ?? null,
+      shippingCity: addr?.city ?? null,
+      shippingState: addr?.state ?? null,
+      shippingPostcode: addr?.postal_code ?? null,
+      shippingCountry: addr?.country ?? null,
+      paymentStatus: session.payment_status ?? null,
+      amountTotalCents: session.amount_total ?? null,
+      currency: session.currency ?? null,
+      adminUrl: `${baseUrl}/admin/orders?search=${encodeURIComponent(
+        plate.identifier
+      )}`,
+      svgContent: assets.plateSvg,
+      qrPngBuffer: assets.qrPngBuffer,
+      metadata: assets.metadata,
+      svgPublicUrl: savedAssets.svgPublicUrl,
+      qrPublicUrl: savedAssets.qrPublicUrl,
+      metadataPublicUrl: savedAssets.metadataPublicUrl,
+    });
 
-    console.log("[stripe-webhook] sending manufacturing email", manufacturingPayload);
+    console.log("[stripe-webhook] sending manufacturing email", {
+      ...manufacturingPayload,
+      attachments: manufacturingPayload.attachments.map((a) => a.filename),
+    });
 
     const manufacturingEmailResult = await sendManufacturingEmail(
       manufacturingPayload
@@ -602,7 +637,13 @@ const duplicateManufacturingResult = await sendManufacturingEmail(
     }
 
     let customerEmailResult:
-      | { ok: boolean; skipped?: boolean; reason?: string; result?: unknown; error?: string }
+      | {
+          ok: boolean;
+          skipped?: boolean;
+          reason?: string;
+          result?: unknown;
+          error?: string;
+        }
       | null = null;
 
     if (email) {
