@@ -312,19 +312,24 @@ export async function POST(req: Request) {
       const duplicateManufacturingPayload = buildManufacturingEmailPayload({
   to: MANUFACTURING_EMAIL_TO,
   identifier: plate.identifier,
-  customerName: customerName ?? null,
-  customerEmail: email,
+
+  // ✅ pull directly from session (no scope issue)
+  customerName: session.customer_details?.name ?? null,
+  customerEmail: session.customer_details?.email ?? null,
   customerPhone: session.customer_details?.phone ?? null,
-  shippingName: customerName ?? null,
+
+  shippingName: session.customer_details?.name ?? null,
   shippingLine1: session.customer_details?.address?.line1 ?? null,
   shippingLine2: session.customer_details?.address?.line2 ?? null,
   shippingCity: session.customer_details?.address?.city ?? null,
   shippingState: session.customer_details?.address?.state ?? null,
   shippingPostcode: session.customer_details?.address?.postal_code ?? null,
   shippingCountry: session.customer_details?.address?.country ?? null,
+
   paymentStatus: session.payment_status ?? null,
   amountTotalCents: session.amount_total ?? null,
   currency: session.currency ?? null,
+
   adminUrl: `${baseUrl}/admin/orders`,
 });
 
