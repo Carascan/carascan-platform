@@ -45,12 +45,51 @@ export default function AdminOrdersPage() {
   const [searchDigits, setSearchDigits] = useState("");
   const [busy, setBusy] = useState(false);
   const [rows, setRows] = useState<OrderRow[]>([]);
+  const [summaryRows, setSummaryRows] = useState<OrderRow[]>([]);
   const [message, setMessage] = useState("");
 
   const [token, setToken] = useState("");
   const [loginInput, setLoginInput] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [booted, setBooted] = useState(false);
+
+  async function fetchOrders(
+    tokenToUse: string,
+    queryValue: string
+  ): Promise<OrderRow[] | null> {
+    const r = await fetch(
+      `/api/admin/orders?q=${encodeURIComponent(queryValue)}`,
+      {
+        headers: {
+          "x-admin-secret": tokenToUse,
+        },
+        cache: "no-store",
+      }
+    );
+
+    const j = await r.json();
+
+    if (!r.ok) {
+      throw new Error(j?.error ?? "Failed to load orders.");
+    }
+
+    return Array.isArray(j.items) ? j.items : [];
+  }
+
+  async function loadSummary(tokenOverride?: string) {
+    const tokenToUse = (tokenOverride ?? token).trim();
+
+    if (!tokenToUse) return false;
+
+    try {
+      const items = await fetchOrders(tokenToUse, "");
+      setSummaryRows(items ?? []);
+      return true;
+    } catch {
+      setSummaryRows([]);
+      return false;
+    }
+  }
 
   async function loadOrders(tokenOverride?: string, digitsOverride?: string) {
     const tokenToUse = (tokenOverride ?? token).trim();
@@ -67,35 +106,16 @@ export default function AdminOrdersPage() {
     setMessage("");
 
     try {
-      const r = await fetch(
-        `/api/admin/orders?q=${encodeURIComponent(queryValue)}`,
-        {
-          headers: {
-            "x-admin-secret": tokenToUse,
-          },
-          cache: "no-store",
-        }
-      );
-
-      const j = await r.json();
-
-      if (!r.ok) {
-        setMessage(j?.error ?? "Failed to load orders.");
-        setRows([]);
-        return false;
-      }
-
-      const items = Array.isArray(j.items) ? j.items : [];
-      setRows(items);
+      const items = await fetchOrders(tokenToUse, queryValue);
+      setRows(items ?? []);
       setMessage(
         queryValue
-          ? `Loaded ${items.length} order(s) for ${queryValue}.`
-          : `Loaded ${items.length} order(s).`
+          ? `Loaded ${items?.length ?? 0} order(s) for ${queryValue}.`
+          : `Loaded ${items?.length ?? 0} order(s).`
       );
-
       return true;
-    } catch {
-      setMessage("Failed to load orders.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to load orders.");
       setRows([]);
       return false;
     } finally {
@@ -133,6 +153,7 @@ export default function AdminOrdersPage() {
     setBooted(true);
 
     if (initialToken) {
+      void loadSummary(initialToken);
       void loadOrders(initialToken, initialDigits);
     }
   }, []);
@@ -144,8 +165,10 @@ export default function AdminOrdersPage() {
       return;
     }
 
-    const ok = await loadOrders(candidate, searchDigits);
-    if (!ok) {
+    const summaryOk = await loadSummary(candidate);
+    const rowsOk = await loadOrders(candidate, searchDigits);
+
+    if (!summaryOk && !rowsOk) {
       setIsAuthenticated(false);
       setToken("");
       window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
@@ -162,6 +185,7 @@ export default function AdminOrdersPage() {
     setToken("");
     setLoginInput("");
     setRows([]);
+    setSummaryRows([]);
     setMessage("");
     setSearchDigits("");
     window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
@@ -205,7 +229,7 @@ export default function AdminOrdersPage() {
       setup_pending: 0,
     };
 
-    for (const row of rows) {
+    for (const row of summaryRows) {
       if (row.status === "paid") counts.paid += 1;
       if (row.status === "pack_generated") counts.pack_generated += 1;
       if (row.status === "sent_to_manufacturing") counts.sent_to_manufacturing += 1;
@@ -214,7 +238,7 @@ export default function AdminOrdersPage() {
     }
 
     return counts;
-  }, [rows]);
+  }, [summaryRows]);
 
   if (!booted) {
     return (
