@@ -77,9 +77,7 @@ async function generateNextIdentifier(sb: ReturnType<typeof supabaseAdmin>) {
 function readMountingHoles(session: any): boolean {
   const method = session?.metadata?.mounting_method;
 
-  // Default safe fallback = rivet (holes)
   if (!method) return true;
-
   return method === "rivet";
 }
 
@@ -191,14 +189,14 @@ export async function POST(req: Request) {
   const sb = supabaseAdmin();
 
   const sig = req.headers.get("stripe-signature");
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  const secret = ENV.STRIPE_WEBHOOK_SECRET;
 
   console.log("[stripe-webhook] env check", {
     hasStripeSignature: Boolean(sig),
     hasWebhookSecret: Boolean(secret),
-    hasAppBaseUrl: Boolean(process.env.APP_BASE_URL),
-    hasResendApiKey: Boolean(process.env.RESEND_API_KEY),
-    hasFromEmail: Boolean(process.env.FROM_EMAIL),
+    hasAppBaseUrl: Boolean(ENV.APP_BASE_URL),
+    hasResendApiKey: Boolean(ENV.RESEND_API_KEY),
+    hasFromEmail: Boolean(ENV.FROM_EMAIL),
     manufacturingEmailTo: MANUFACTURING_EMAIL_TO || null,
     assetsBucket: ASSETS_BUCKET,
   });
@@ -255,10 +253,7 @@ export async function POST(req: Request) {
     }
 
     const baseUrl = ENV.APP_BASE_URL;
-const logoUrl = ENV.PLATE_LOGO_SVG_URL ?? LOGO_URL_FALLBACK;
-    }
-
-    const logoUrl = process.env.PLATE_LOGO_SVG_URL ?? LOGO_URL_FALLBACK;
+    const logoUrl = ENV.PLATE_LOGO_SVG_URL ?? LOGO_URL_FALLBACK;
 
     const { data: existingOrder, error: existingOrderErr } = await sb
       .from("orders")
@@ -278,7 +273,6 @@ const logoUrl = ENV.PLATE_LOGO_SVG_URL ?? LOGO_URL_FALLBACK;
       throw new Error(`Existing order check failed: ${existingOrderErr.message}`);
     }
 
-    // retry path for Stripe replays
     if (existingOrder) {
       console.log("[stripe-webhook] duplicate order detected - retrying emails");
 
@@ -304,7 +298,7 @@ const logoUrl = ENV.PLATE_LOGO_SVG_URL ?? LOGO_URL_FALLBACK;
       const duplicateCustomerName = session.customer_details?.name ?? null;
       const duplicateCustomerPhone = session.customer_details?.phone ?? null;
       const duplicateAddress = session.customer_details?.address ?? null;
-      const duplicateLogoUrl = process.env.PLATE_LOGO_SVG_URL ?? LOGO_URL_FALLBACK;
+      const duplicateLogoUrl = ENV.PLATE_LOGO_SVG_URL ?? LOGO_URL_FALLBACK;
       const duplicateLogoImageHref = await loadLogoSvgDataUrl(duplicateLogoUrl);
       const duplicateMountingHoles = readMountingHoles(session);
 
@@ -315,11 +309,11 @@ const logoUrl = ENV.PLATE_LOGO_SVG_URL ?? LOGO_URL_FALLBACK;
       });
 
       const duplicateAssets = await buildPlateAssets({
-  identifier: plate.identifier,
-  slug: plate.slug,
-  mountingMethod: duplicateMountingHoles ? "rivet" : "adhesive",
-  logoImageHref: duplicateLogoImageHref,
-});
+        identifier: plate.identifier,
+        slug: plate.slug,
+        mountingMethod: duplicateMountingHoles ? "rivet" : "adhesive",
+        logoImageHref: duplicateLogoImageHref,
+      });
 
       console.log("[stripe-webhook] duplicate assets built", {
         identifier: duplicateAssets.identifier,
@@ -409,19 +403,19 @@ const logoUrl = ENV.PLATE_LOGO_SVG_URL ?? LOGO_URL_FALLBACK;
     }
 
     const email = session.customer_details?.email ?? null;
-const customerName = session.customer_details?.name ?? null;
-const customerPhone = session.customer_details?.phone ?? null;
-const mountingHoles = readMountingHoles(session);
-const emergencyPlan =
-  session?.metadata?.emergency_plan === "10" ? "10" : "3";
+    const customerName = session.customer_details?.name ?? null;
+    const customerPhone = session.customer_details?.phone ?? null;
+    const mountingHoles = readMountingHoles(session);
+    const emergencyPlan =
+      session?.metadata?.emergency_plan === "10" ? "10" : "3";
 
     console.log("[stripe-webhook] customer/session values", {
-  email,
-  customerName,
-  customerPhone,
-  mountingHoles,
-  emergencyPlan,
-});
+      email,
+      customerName,
+      customerPhone,
+      mountingHoles,
+      emergencyPlan,
+    });
 
     const identifier = await generateNextIdentifier(sb);
     const slug = await generateUniqueSlug(sb);
@@ -468,14 +462,15 @@ const emergencyPlan =
       identifier,
       slug,
       mountingHoles,
+      emergencyPlan,
     });
 
     const assets = await buildPlateAssets({
-  identifier,
-  slug,
-  mountingMethod: mountingHoles ? "rivet" : "adhesive",
-  logoImageHref,
-});
+      identifier,
+      slug,
+      mountingMethod: mountingHoles ? "rivet" : "adhesive",
+      logoImageHref,
+    });
 
     console.log("[stripe-webhook] assets built", {
       identifier: assets.identifier,
@@ -593,29 +588,32 @@ const emergencyPlan =
       status: "setup_pending",
     });
 
-    const duplicateManufacturingPayload = buildManufacturingEmailPayload({
-  to: MANUFACTURING_EMAIL_TO,
-  identifier: plate.identifier,
-  customerName: duplicateCustomerName,
-  customerEmail: duplicateCustomerEmail,
-  customerPhone: duplicateCustomerPhone,
-  shippingName: duplicateCustomerName,
-  shippingLine1: duplicateAddress?.line1 ?? null,
-  shippingLine2: duplicateAddress?.line2 ?? null,
-  shippingCity: duplicateAddress?.city ?? null,
-  shippingState: duplicateAddress?.state ?? null,
-  shippingPostcode: duplicateAddress?.postal_code ?? null,
-  shippingCountry: duplicateAddress?.country ?? null,
-  paymentStatus: session.payment_status ?? null,
-  amountTotalCents: session.amount_total ?? null,
-  currency: session.currency ?? null,
-  adminUrl: `${baseUrl}/admin/orders?search=${encodeURIComponent(
-    plate.identifier
-  )}`,
-  svgContent: duplicateAssets.plateSvg,
-  qrPngBuffer: duplicateAssets.qrPngBuffer,
-  metadata: duplicateAssets.metadata,
-});
+    const manufacturingPayload = buildManufacturingEmailPayload({
+      to: MANUFACTURING_EMAIL_TO,
+      identifier: plate.identifier,
+      customerName: customerName ?? null,
+      customerEmail: email,
+      customerPhone: customerPhone,
+      shippingName: customerName ?? null,
+      shippingLine1: addr?.line1 ?? null,
+      shippingLine2: addr?.line2 ?? null,
+      shippingCity: addr?.city ?? null,
+      shippingState: addr?.state ?? null,
+      shippingPostcode: addr?.postal_code ?? null,
+      shippingCountry: addr?.country ?? null,
+      paymentStatus: session.payment_status ?? null,
+      amountTotalCents: session.amount_total ?? null,
+      currency: session.currency ?? null,
+      adminUrl: `${baseUrl}/admin/orders?search=${encodeURIComponent(
+        plate.identifier
+      )}`,
+      svgContent: assets.plateSvg,
+      qrPngBuffer: assets.qrPngBuffer,
+      metadata: assets.metadata,
+      svgPublicUrl: savedAssets.svgPublicUrl,
+      qrPublicUrl: savedAssets.qrPublicUrl,
+      metadataPublicUrl: savedAssets.metadataPublicUrl,
+    });
 
     console.log("[stripe-webhook] sending manufacturing email", {
       ...manufacturingPayload,
