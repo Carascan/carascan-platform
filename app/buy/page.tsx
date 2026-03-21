@@ -389,7 +389,7 @@ export default function Buy() {
                     color: "#111827",
                   }}
                 >
-                  $2.00 / month ($24 per year unless cancelled)
+                  $2.00 / month ($48 per year unless cancelled)
                 </div>
               </label>
 
@@ -472,7 +472,7 @@ export default function Buy() {
                   gap: 16,
                 }}
               >
-                <span>Plate</span>
+                <span>90x90mm Aluminium Carascan plate with laser engraved unique QR code</span>
                 <strong>$35.00</strong>
               </div>
 
