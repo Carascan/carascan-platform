@@ -309,10 +309,28 @@ export async function POST(req: Request) {
         identifier: plate.identifier,
       });
 
-      const duplicateManufacturingResult = await sendManufacturingEmail({
-        to: MANUFACTURING_EMAIL_TO,
-        identifier: plate.identifier,
-      });
+      const duplicateManufacturingPayload = buildManufacturingEmailPayload({
+  to: MANUFACTURING_EMAIL_TO,
+  identifier: plate.identifier,
+  customerName: customerName ?? null,
+  customerEmail: email,
+  customerPhone: session.customer_details?.phone ?? null,
+  shippingName: customerName ?? null,
+  shippingLine1: session.customer_details?.address?.line1 ?? null,
+  shippingLine2: session.customer_details?.address?.line2 ?? null,
+  shippingCity: session.customer_details?.address?.city ?? null,
+  shippingState: session.customer_details?.address?.state ?? null,
+  shippingPostcode: session.customer_details?.address?.postal_code ?? null,
+  shippingCountry: session.customer_details?.address?.country ?? null,
+  paymentStatus: session.payment_status ?? null,
+  amountTotalCents: session.amount_total ?? null,
+  currency: session.currency ?? null,
+  adminUrl: `${baseUrl}/admin/orders`,
+});
+
+const duplicateManufacturingResult = await sendManufacturingEmail(
+  duplicateManufacturingPayload
+);
 
       console.log("[stripe-webhook] manufacturing email result (duplicate path)", duplicateManufacturingResult);
 
