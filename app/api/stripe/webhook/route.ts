@@ -11,15 +11,13 @@ import { buildManufacturingEmailPayload } from "@/lib/buildManufacturingEmailPay
 import { buildCustomerPlateEmailPayload } from "@/lib/buildCustomerPlateEmailPayload";
 import { sendManufacturingEmail } from "@/lib/notifyEmail";
 import { sendCustomerPlateEmail } from "@/lib/sendCustomerPlateEmail";
+import { ENV } from "@/lib/env";
 
 const LOGO_URL_FALLBACK =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
-const ASSETS_BUCKET = process.env.PLATE_ASSETS_BUCKET ?? "assets";
-const MANUFACTURING_EMAIL_TO =
-  process.env.MANUFACTURING_EMAIL?.trim() ||
-  process.env.MANUFACTURING_EMAIL_TO?.trim() ||
-  "manufacture@carascan.com.au";
+const ASSETS_BUCKET = ENV.PLATE_ASSETS_BUCKET;
+const MANUFACTURING_EMAIL_TO = ENV.MANUFACTURING_EMAIL;
 
 function randSlug(len = 10) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -256,9 +254,8 @@ export async function POST(req: Request) {
       throw new Error("Missing Stripe session id");
     }
 
-    const baseUrl = process.env.APP_BASE_URL;
-    if (!baseUrl) {
-      throw new Error("Missing APP_BASE_URL");
+    const baseUrl = ENV.APP_BASE_URL;
+const logoUrl = ENV.PLATE_LOGO_SVG_URL ?? LOGO_URL_FALLBACK;
     }
 
     const logoUrl = process.env.PLATE_LOGO_SVG_URL ?? LOGO_URL_FALLBACK;

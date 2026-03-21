@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { ENV } from "@/lib/env";
 
 function isAuthorised(req: Request) {
-  const envSecret = process.env.ADMIN_ACTION_SECRET;
-  if (!envSecret) return false;
-
+  const envSecret = ENV.ADMIN_ACTION_SECRET;
   const url = new URL(req.url);
   const headerSecret = req.headers.get("x-admin-secret");
   const querySecret = url.searchParams.get("token");

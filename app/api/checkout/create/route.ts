@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { stripeClient } from "@/lib/stripe";
+import { ENV } from "@/lib/env";
 
 function readMountingMethod(value: FormDataEntryValue | null) {
   return value === "adhesive" ? "adhesive" : "rivet";
@@ -17,21 +18,10 @@ export async function POST(req: Request) {
   const mountingMethod = readMountingMethod(formData.get("mounting_method"));
   const emergencyPlan = readEmergencyPlan(formData.get("emergency_plan"));
 
-  const platePriceId =
-    process.env.STRIPE_PRICE_ID_PLATE ?? process.env.STRIPE_PRICE_ID;
-  const subscription3PriceId = process.env.STRIPE_PRICE_ID_SUBSCRIPTION_3;
-  const subscription10PriceId = process.env.STRIPE_PRICE_ID_SUBSCRIPTION_10;
-  const baseUrl = process.env.APP_BASE_URL;
-
-  if (!platePriceId || !subscription3PriceId || !subscription10PriceId || !baseUrl) {
-    return NextResponse.json(
-      {
-        error:
-          "Missing STRIPE_PRICE_ID_PLATE (or STRIPE_PRICE_ID), STRIPE_PRICE_ID_SUBSCRIPTION_3, STRIPE_PRICE_ID_SUBSCRIPTION_10, or APP_BASE_URL",
-      },
-      { status: 500 }
-    );
-  }
+  const platePriceId = ENV.STRIPE_PRICE_ID_PLATE!;
+  const subscription3PriceId = ENV.STRIPE_PRICE_ID_SUBSCRIPTION_3!;
+  const subscription10PriceId = ENV.STRIPE_PRICE_ID_SUBSCRIPTION_10!;
+  const baseUrl = ENV.APP_BASE_URL;
 
   const subscriptionPriceId =
     emergencyPlan === "10" ? subscription10PriceId : subscription3PriceId;
