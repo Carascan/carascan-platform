@@ -52,28 +52,48 @@ export default function AdminOrdersPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [booted, setBooted] = useState(false);
 
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    const tokenFromUrl = (url.searchParams.get("token") ?? "").trim();
-    const tokenFromStorage =
-      window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)?.trim() ?? "";
+ useEffect(() => {
+  const url = new URL(window.location.href);
 
-    const initialToken = tokenFromUrl || tokenFromStorage || "";
+  const tokenFromUrl = (url.searchParams.get("token") ?? "").trim();
+  const tokenFromStorage =
+    window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)?.trim() ?? "";
 
+  const searchParam = (url.searchParams.get("search") ?? "").trim();
+
+  const initialToken = tokenFromUrl || tokenFromStorage || "";
+
+  if (initialToken) {
+    setToken(initialToken);
+    setLoginInput(initialToken);
+    setIsAuthenticated(true);
+    window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, initialToken);
+  }
+
+  // 🔧 NEW: hydrate search from URL
+  if (searchParam) {
+    const digits = searchParam.replace(/\D/g, "").slice(0, 6);
+    setSearchDigits(digits);
+  }
+
+  // clean URL (remove token only)
+  if (tokenFromUrl) {
+    url.searchParams.delete("token");
+    window.history.replaceState({}, "", url.toString());
+  }
+
+  setBooted(true);
+
+  // 🔧 NEW: auto-load after init
+  setTimeout(() => {
     if (initialToken) {
-      setToken(initialToken);
-      setLoginInput(initialToken);
-      setIsAuthenticated(true);
-      window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, initialToken);
-
-      if (tokenFromUrl) {
-        url.searchParams.delete("token");
-        window.history.replaceState({}, "", url.toString());
-      }
+      const digits = searchParam
+        ? searchParam.replace(/\D/g, "").slice(0, 6)
+        : "";
+      void loadOrders(initialToken, digits);
     }
-
-    setBooted(true);
-  }, []);
+  }, 0);
+}, []);
 
   async function loadOrders(tokenOverride?: string, digitsOverride?: string) {
     const tokenToUse = (tokenOverride ?? token).trim();
