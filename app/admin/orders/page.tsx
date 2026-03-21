@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AdminHeader from "@/components/AdminHeader";
 
 type OrderRow = {
@@ -53,6 +53,9 @@ export default function AdminOrdersPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [booted, setBooted] = useState(false);
 
+  const initialSearchRef = useRef("");
+  const autoLoadedRef = useRef(false);
+
   async function fetchOrders(
     tokenToUse: string,
     queryValue: string
@@ -78,7 +81,6 @@ export default function AdminOrdersPage() {
 
   async function loadSummary(tokenOverride?: string) {
     const tokenToUse = (tokenOverride ?? token).trim();
-
     if (!tokenToUse) return false;
 
     try {
@@ -143,6 +145,7 @@ export default function AdminOrdersPage() {
 
     if (initialDigits) {
       setSearchDigits(initialDigits);
+      initialSearchRef.current = initialDigits;
     }
 
     if (tokenFromUrl) {
@@ -151,12 +154,16 @@ export default function AdminOrdersPage() {
     }
 
     setBooted(true);
-
-    if (initialToken) {
-      void loadSummary(initialToken);
-      void loadOrders(initialToken, initialDigits);
-    }
   }, []);
+
+  useEffect(() => {
+    if (!booted || !isAuthenticated || autoLoadedRef.current) return;
+
+    autoLoadedRef.current = true;
+
+    void loadSummary(token);
+    void loadOrders(token, initialSearchRef.current);
+  }, [booted, isAuthenticated, token]);
 
   async function handleLogin() {
     const candidate = loginInput.trim();
@@ -188,6 +195,8 @@ export default function AdminOrdersPage() {
     setSummaryRows([]);
     setMessage("");
     setSearchDigits("");
+    initialSearchRef.current = "";
+    autoLoadedRef.current = false;
     window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
   }
 
@@ -242,23 +251,9 @@ export default function AdminOrdersPage() {
 
   if (!booted) {
     return (
-      <main
-        style={{
-          minHeight: "100vh",
-          background: "#f7f7f8",
-          padding: "32px 20px",
-        }}
-      >
+      <main style={{ minHeight: "100vh", background: "#f7f7f8", padding: "32px 20px" }}>
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
-          <div
-            style={{
-              background: "#fff",
-              border: "1px solid #e5e7eb",
-              borderRadius: 18,
-              padding: 24,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
-            }}
-          >
+          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 18, padding: 24, boxShadow: "0 10px 30px rgba(0,0,0,0.05)" }}>
             Loading admin…
           </div>
         </div>
@@ -268,32 +263,16 @@ export default function AdminOrdersPage() {
 
   if (!isAuthenticated) {
     return (
-      <main
-        style={{
-          minHeight: "100vh",
-          background: "#f7f7f8",
-          padding: "32px 20px",
-        }}
-      >
+      <main style={{ minHeight: "100vh", background: "#f7f7f8", padding: "32px 20px" }}>
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
-          <div
-            style={{
-              background: "#fff",
-              border: "1px solid #e5e7eb",
-              borderRadius: 18,
-              padding: 24,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
-            }}
-          >
+          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 18, padding: 24, boxShadow: "0 10px 30px rgba(0,0,0,0.05)" }}>
             <AdminHeader
               title="Carascan admin login"
               subtitle="Enter the admin password to access orders and manufacturing previews."
             />
 
             <div style={{ marginTop: 18 }}>
-              <label
-                style={{ display: "block", fontWeight: 600, marginBottom: 6 }}
-              >
+              <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
                 Admin password
               </label>
               <input
@@ -335,15 +314,7 @@ export default function AdminOrdersPage() {
             </div>
 
             {message && (
-              <div
-                style={{
-                  marginTop: 16,
-                  padding: "12px 14px",
-                  borderRadius: 10,
-                  background: "#f9fafb",
-                  border: "1px solid #e5e7eb",
-                }}
-              >
+              <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 10, background: "#f9fafb", border: "1px solid #e5e7eb" }}>
                 {message}
               </div>
             )}
@@ -354,33 +325,10 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#f7f7f8",
-        padding: "32px 20px",
-      }}
-    >
+    <main style={{ minHeight: "100vh", background: "#f7f7f8", padding: "32px 20px" }}>
       <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-        <div
-          style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
-            borderRadius: 18,
-            padding: 24,
-            boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
-            marginBottom: 20,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 16,
-              alignItems: "flex-start",
-              flexWrap: "wrap",
-            }}
-          >
+        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 18, padding: 24, boxShadow: "0 10px 30px rgba(0,0,0,0.05)", marginBottom: 20 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
             <AdminHeader
               title="Carascan admin dashboard"
               subtitle="Search orders, inspect plate status, resend setup links, open the customer plate page, and review secure manufacturing SVG files."
@@ -403,54 +351,21 @@ export default function AdminOrdersPage() {
             </button>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "260px auto",
-              gap: 12,
-              alignItems: "end",
-            }}
-          >
+          <div style={{ display: "grid", gridTemplateColumns: "260px auto", gap: 12, alignItems: "end" }}>
             <div>
               <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
                 Search identifier
               </label>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  border: "1px solid #d1d5db",
-                  borderRadius: 8,
-                  background: "#fff",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    padding: "10px 12px",
-                    background: "#f3f4f6",
-                    borderRight: "1px solid #d1d5db",
-                    fontWeight: 700,
-                    color: "#111827",
-                    whiteSpace: "nowrap",
-                  }}
-                >
+              <div style={{ display: "flex", alignItems: "center", border: "1px solid #d1d5db", borderRadius: 8, background: "#fff", overflow: "hidden" }}>
+                <div style={{ padding: "10px 12px", background: "#f3f4f6", borderRight: "1px solid #d1d5db", fontWeight: 700, color: "#111827", whiteSpace: "nowrap" }}>
                   CSN-
                 </div>
                 <input
                   value={searchDigits}
-                  onChange={(e) =>
-                    setSearchDigits(e.target.value.replace(/\D/g, "").slice(0, 6))
-                  }
+                  onChange={(e) => setSearchDigits(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="000029"
                   inputMode="numeric"
-                  style={{
-                    width: "100%",
-                    padding: 10,
-                    border: 0,
-                    outline: "none",
-                    fontFamily: "inherit",
-                  }}
+                  style={{ width: "100%", padding: 10, border: 0, outline: "none", fontFamily: "inherit" }}
                 />
               </div>
             </div>
@@ -498,28 +413,13 @@ export default function AdminOrdersPage() {
           </div>
 
           {message && (
-            <div
-              style={{
-                marginTop: 16,
-                padding: "12px 14px",
-                borderRadius: 10,
-                background: "#f9fafb",
-                border: "1px solid #e5e7eb",
-              }}
-            >
+            <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 10, background: "#f9fafb", border: "1px solid #e5e7eb" }}>
               {message}
             </div>
           )}
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-            gap: 12,
-            marginBottom: 20,
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 12, marginBottom: 20 }}>
           {[
             ["Paid", summary.paid],
             ["Pack generated", summary.pack_generated],
@@ -527,18 +427,8 @@ export default function AdminOrdersPage() {
             ["Setup pending", summary.setup_pending],
             ["Active", summary.active],
           ].map(([label, value]) => (
-            <div
-              key={label}
-              style={{
-                background: "#fff",
-                border: "1px solid #e5e7eb",
-                borderRadius: 14,
-                padding: 16,
-              }}
-            >
-              <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 6 }}>
-                {label}
-              </div>
+            <div key={label} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: 16 }}>
+              <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 6 }}>{label}</div>
               <div style={{ fontSize: 28, fontWeight: 700 }}>{value}</div>
             </div>
           ))}
@@ -551,9 +441,7 @@ export default function AdminOrdersPage() {
               : null;
 
             const svgPreviewUrl = row.plate?.identifier
-              ? `/plates/${encodeURIComponent(row.plate.identifier)}/svg?token=${encodeURIComponent(
-                  token
-                )}`
+              ? `/plates/${encodeURIComponent(row.plate.identifier)}/svg?token=${encodeURIComponent(token)}`
               : null;
 
             return (
@@ -583,11 +471,7 @@ export default function AdminOrdersPage() {
                           href={svgPreviewUrl}
                           target="_blank"
                           rel="noreferrer"
-                          style={{
-                            color: "#111827",
-                            fontWeight: 700,
-                            textDecoration: "underline",
-                          }}
+                          style={{ color: "#111827", fontWeight: 700, textDecoration: "underline" }}
                         >
                           {row.plate?.identifier ?? "—"}
                         </a>
