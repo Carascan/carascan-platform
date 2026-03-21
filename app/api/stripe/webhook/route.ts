@@ -235,9 +235,56 @@ export async function POST(req: Request) {
       throw new Error(`Existing order check failed: ${existingOrderErr.message}`);
     }
 
-    if (existingOrder) {
-      return NextResponse.json({ received: true, duplicate: true });
-    }
+   // 🔧 FIX: Allow webhook retries to re-trigger email sending (do NOT exit early)
+if (existingOrder) {
+  console.log("Duplicate order detected — re-triggering email flow");
+
+  const plateId = existingOrder.plate_id;
+
+  const { data: plate } = await sb
+    .from("plates")
+    .select("identifier, slug")
+    .eq("id", plateId)
+    .single();
+
+  if (!plate) {
+    throw new Error("Plate not found for existing order");
+  }
+
+  const baseUrl = process.env.APP_BASE_URL!;
+  const plateUrl = `${baseUrl}/p/${plate.slug}`;
+
+  // Manufacturing email
+  await sendManufacturingEmail({
+    to: MANUFACTURING_EMAIL_TO,
+    identifier: plate.identifier,
+  });
+
+  // Customer email retry
+  const email = session.customer_details?.email ?? null;
+  const customerName = session.customer_details?.name ?? null;
+
+  if (email) {
+    const assets = {
+      identifier: plate.identifier,
+      plateUrl,
+    } as any;
+
+    const customerPayload = buildCustomerPlateEmailPayload(assets, {
+      customerEmail: email,
+      customerName: customerName ?? undefined,
+      setupToken: "",
+    });
+
+    await sendCustomerPlateEmail(customerPayload);
+  }
+
+  return NextResponse.json({
+    received: true,
+    duplicate: true,
+    emailsRetried: true,
+  });
+}
 
     const email = session.customer_details?.email ?? null;
     const customerName = session.customer_details?.name ?? null;
