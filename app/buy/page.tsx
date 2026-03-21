@@ -252,7 +252,7 @@ export default function Buy() {
                   style={{ marginRight: 10 }}
                 />
                 <span style={{ fontWeight: 700, color: "#111827" }}>
-                  Adhesive mounting option - clean look to compliment finish (FREE)
+                  Adhesive mounting 
                 </span>
                 <div
                   style={{
@@ -262,7 +262,7 @@ export default function Buy() {
                     lineHeight: 1.5,
                   }}
                 >
-                  Plate supplied without holes for adhesive fixing.
+                  Adhesive mounting option - clean look to compliment finish (FREE)
                 </div>
               </label>
             </div>
@@ -472,7 +472,7 @@ export default function Buy() {
                   gap: 16,
                 }}
               >
-                <span>90x90mm Aluminium Carascan plate with laser engraved unique QR code</span>
+                <span>90x90mm Weatherproof anodised aluminium Carascan plate with laser engraved customer unique QR code</span>
                 <strong>$35.00</strong>
               </div>
 
