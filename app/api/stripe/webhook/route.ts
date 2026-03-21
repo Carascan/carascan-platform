@@ -1,6 +1,7 @@
 function formatIdentifier(num: number) {
   return `CSN-${String(num).padStart(6, "0")}`;
 }
+
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { stripeClient } from "@/lib/stripe";
@@ -8,7 +9,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { buildPlateAssets } from "@/lib/buildPlateAssets";
 import { buildManufacturingEmailPayload } from "@/lib/buildManufacturingEmailPayload";
 import { buildCustomerPlateEmailPayload } from "@/lib/buildCustomerPlateEmailPayload";
-import { sendManufacturingEmail, sendEmail } from "@/lib/notifyEmail";
+import { sendManufacturingEmail } from "@/lib/notifyEmail";
 import { sendCustomerPlateEmail } from "@/lib/sendCustomerPlateEmail";
 
 const LOGO_URL_FALLBACK =
@@ -181,13 +182,26 @@ async function updatePlateStatus(
 }
 
 export async function POST(req: Request) {
+  console.log("[stripe-webhook] POST received");
+
   const stripe = stripeClient();
   const sb = supabaseAdmin();
 
   const sig = req.headers.get("stripe-signature");
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
 
+  console.log("[stripe-webhook] env check", {
+    hasStripeSignature: Boolean(sig),
+    hasWebhookSecret: Boolean(secret),
+    hasAppBaseUrl: Boolean(process.env.APP_BASE_URL),
+    hasResendApiKey: Boolean(process.env.RESEND_API_KEY),
+    hasFromEmail: Boolean(process.env.FROM_EMAIL),
+    manufacturingEmailTo: MANUFACTURING_EMAIL_TO || null,
+    assetsBucket: ASSETS_BUCKET,
+  });
+
   if (!sig || !secret) {
+    console.error("[stripe-webhook] missing webhook config");
     return NextResponse.json(
       { error: "Missing webhook config" },
       { status: 400 }
@@ -195,11 +209,19 @@ export async function POST(req: Request) {
   }
 
   const rawBody = await req.text();
+  console.log("[stripe-webhook] raw body length", rawBody.length);
 
   let event: any;
   try {
     event = stripe.webhooks.constructEvent(rawBody, sig, secret);
+    console.log("[stripe-webhook] event constructed", {
+      type: event?.type,
+      id: event?.id,
+      livemode: event?.livemode,
+      created: event?.created,
+    });
   } catch (err: any) {
+    console.error("[stripe-webhook] signature failed", err);
     return NextResponse.json(
       { error: `Webhook signature failed: ${err?.message ?? "unknown"}` },
       { status: 400 }
@@ -207,12 +229,23 @@ export async function POST(req: Request) {
   }
 
   if (event.type !== "checkout.session.completed") {
+    console.log("[stripe-webhook] ignored event type", event.type);
     return NextResponse.json({ received: true });
   }
 
   try {
     const session = event.data.object as any;
     const sessionId = session.id as string;
+
+    console.log("[stripe-webhook] checkout.session.completed", {
+      sessionId,
+      paymentStatus: session?.payment_status,
+      status: session?.status,
+      customerEmail: session?.customer_details?.email ?? null,
+      customerName: session?.customer_details?.name ?? null,
+      livemode: session?.livemode,
+      metadata: session?.metadata ?? null,
+    });
 
     if (!sessionId) {
       throw new Error("Missing Stripe session id");
@@ -231,65 +264,104 @@ export async function POST(req: Request) {
       .eq("stripe_checkout_session_id", sessionId)
       .maybeSingle();
 
+    console.log("[stripe-webhook] existing order check", {
+      sessionId,
+      hasExistingOrder: Boolean(existingOrder),
+      existingOrderId: existingOrder?.id ?? null,
+      existingPlateId: existingOrder?.plate_id ?? null,
+      existingOrderErr: existingOrderErr?.message ?? null,
+    });
+
     if (existingOrderErr) {
       throw new Error(`Existing order check failed: ${existingOrderErr.message}`);
     }
 
-   // 🔧 FIX: Allow webhook retries to re-trigger email sending (do NOT exit early)
-if (existingOrder) {
-  console.log("Duplicate order detected — re-triggering email flow");
+    // 🔧 retry path for Stripe replays
+    if (existingOrder) {
+      console.log("[stripe-webhook] duplicate order detected - retrying emails");
 
-  const plateId = existingOrder.plate_id;
+      const plateId = existingOrder.plate_id;
 
-  const { data: plate } = await sb
-    .from("plates")
-    .select("identifier, slug")
-    .eq("id", plateId)
-    .single();
+      const { data: plate, error: plateLookupErr } = await sb
+        .from("plates")
+        .select("identifier, slug")
+        .eq("id", plateId)
+        .single();
 
-  if (!plate) {
-    throw new Error("Plate not found for existing order");
-  }
+      console.log("[stripe-webhook] duplicate plate lookup", {
+        plateId,
+        plateFound: Boolean(plate),
+        plateLookupErr: plateLookupErr?.message ?? null,
+      });
 
-  const baseUrl = process.env.APP_BASE_URL!;
-  const plateUrl = `${baseUrl}/p/${plate.slug}`;
+      if (!plate) {
+        throw new Error("Plate not found for existing order");
+      }
 
-  // Manufacturing email
-  await sendManufacturingEmail({
-    to: MANUFACTURING_EMAIL_TO,
-    identifier: plate.identifier,
-  });
+      const plateUrl = `${baseUrl}/p/${plate.slug}`;
 
-  // Customer email retry
-  const email = session.customer_details?.email ?? null;
-  const customerName = session.customer_details?.name ?? null;
+      console.log("[stripe-webhook] sending manufacturing email (duplicate path)", {
+        to: MANUFACTURING_EMAIL_TO,
+        identifier: plate.identifier,
+      });
 
-  if (email) {
-    const assets = {
-      identifier: plate.identifier,
-      plateUrl,
-    } as any;
+      const duplicateManufacturingResult = await sendManufacturingEmail({
+        to: MANUFACTURING_EMAIL_TO,
+        identifier: plate.identifier,
+      });
 
-    const customerPayload = buildCustomerPlateEmailPayload(assets, {
-      customerEmail: email,
-      customerName: customerName ?? undefined,
-      setupToken: "",
-    });
+      console.log("[stripe-webhook] manufacturing email result (duplicate path)", duplicateManufacturingResult);
 
-    await sendCustomerPlateEmail(customerPayload);
-  }
+      const email = session.customer_details?.email ?? null;
+      const customerName = session.customer_details?.name ?? null;
 
-  return NextResponse.json({
-    received: true,
-    duplicate: true,
-    emailsRetried: true,
-  });
-}
+      let duplicateCustomerEmailResult: unknown = null;
+
+      if (email) {
+        const assets = {
+          identifier: plate.identifier,
+          plateUrl,
+        } as any;
+
+        const customerPayload = buildCustomerPlateEmailPayload(assets, {
+          customerEmail: email,
+          customerName: customerName ?? undefined,
+          setupToken: "",
+        });
+
+        console.log("[stripe-webhook] sending customer email (duplicate path)", {
+          to: customerPayload.to,
+          subject: customerPayload.subject,
+          identifier: plate.identifier,
+        });
+
+        duplicateCustomerEmailResult = await sendCustomerPlateEmail(customerPayload);
+
+        console.log("[stripe-webhook] customer email result (duplicate path)", duplicateCustomerEmailResult);
+      } else {
+        console.warn("[stripe-webhook] duplicate path customer email skipped - no email on session");
+      }
+
+      return NextResponse.json({
+        received: true,
+        duplicate: true,
+        emailsRetried: true,
+        duplicateManufacturingResult,
+        duplicateCustomerEmailResult,
+      });
+    }
 
     const email = session.customer_details?.email ?? null;
     const customerName = session.customer_details?.name ?? null;
     const customerPhone = session.customer_details?.phone ?? null;
     const mountingHoles = readMountingHoles(session);
+
+    console.log("[stripe-webhook] customer/session values", {
+      email,
+      customerName,
+      customerPhone,
+      mountingHoles,
+    });
 
     const identifier = await generateNextIdentifier(sb);
     const slug = await generateUniqueSlug(sb);
@@ -297,6 +369,15 @@ if (existingOrder) {
     const plateUrl = `${baseUrl}/p/${slug}`;
     const setupUrl = `${baseUrl}/setup/${setupToken}`;
     const logoImageHref = await loadLogoSvgDataUrl(logoUrl);
+
+    console.log("[stripe-webhook] generated values", {
+      identifier,
+      slug,
+      setupTokenPreview: `${setupToken.slice(0, 8)}...`,
+      plateUrl,
+      setupUrl,
+      hasLogoImageHref: Boolean(logoImageHref),
+    });
 
     const { data: plate, error: plateErr } = await sb
       .from("plates")
@@ -312,9 +393,22 @@ if (existingOrder) {
       .select("id, identifier, slug")
       .single();
 
+    console.log("[stripe-webhook] plate insert", {
+      plateId: plate?.id ?? null,
+      identifier: plate?.identifier ?? null,
+      slug: plate?.slug ?? null,
+      plateErr: plateErr?.message ?? null,
+    });
+
     if (plateErr || !plate) {
       throw new Error(plateErr?.message ?? "Plate insert failed");
     }
+
+    console.log("[stripe-webhook] building plate assets", {
+      identifier,
+      slug,
+      mountingHoles,
+    });
 
     const assets = await buildPlateAssets({
       identifier,
@@ -323,13 +417,29 @@ if (existingOrder) {
       logoImageHref,
     });
 
+    console.log("[stripe-webhook] assets built", {
+      identifier: assets.identifier,
+      plateUrl: assets.plateUrl,
+      hasQrPngBuffer: Boolean(assets.qrPngBuffer),
+      qrPngBufferLength: assets.qrPngBuffer?.length ?? 0,
+      plateSvgLength: assets.plateSvg?.length ?? 0,
+      metadataKeys: assets.metadata ? Object.keys(assets.metadata) : [],
+    });
+
     const savedAssets = await uploadPlateAssets(sb, assets);
+
+    console.log("[stripe-webhook] assets uploaded", savedAssets);
 
     const { error: profileErr } = await sb.from("plate_profiles").insert({
       plate_id: plate.id,
       caravan_name: "",
       bio: null,
       owner_photo_url: null,
+    });
+
+    console.log("[stripe-webhook] profile insert", {
+      plateId: plate.id,
+      profileErr: profileErr?.message ?? null,
     });
 
     if (profileErr) {
@@ -348,6 +458,11 @@ if (existingOrder) {
       qr_size_mm: 50,
       hole_diameter_mm: 5.2,
       mounting_holes: mountingHoles,
+    });
+
+    console.log("[stripe-webhook] design insert", {
+      plateId: plate.id,
+      designErr: designErr?.message ?? null,
     });
 
     if (designErr) {
@@ -376,6 +491,11 @@ if (existingOrder) {
       .select("id")
       .single();
 
+    console.log("[stripe-webhook] order insert", {
+      orderId: order?.id ?? null,
+      orderErr: orderErr?.message ?? null,
+    });
+
     if (orderErr || !order) {
       throw new Error(orderErr?.message ?? "orders insert failed");
     }
@@ -391,24 +511,48 @@ if (existingOrder) {
       expires_at: expiresAt,
     });
 
+    console.log("[stripe-webhook] setup token insert", {
+      plateId: plate.id,
+      email,
+      expiresAt,
+      tokenErr: tokenErr?.message ?? null,
+    });
+
     if (tokenErr) {
       throw new Error(`plate_setup_tokens insert failed: ${tokenErr.message}`);
     }
 
     await updateOrderStatus(sb, order.id, "pack_generated");
+    console.log("[stripe-webhook] order status updated", {
+      orderId: order.id,
+      status: "pack_generated",
+    });
+
     await updatePlateStatus(sb, plate.id, "setup_pending");
+    console.log("[stripe-webhook] plate status updated", {
+      plateId: plate.id,
+      status: "setup_pending",
+    });
 
     const manufacturingPayload = buildManufacturingEmailPayload({
       to: MANUFACTURING_EMAIL_TO,
       identifier: plate.identifier,
     });
 
+    console.log("[stripe-webhook] sending manufacturing email", manufacturingPayload);
+
     const manufacturingEmailResult = await sendManufacturingEmail(
       manufacturingPayload
     );
 
+    console.log("[stripe-webhook] manufacturing email result", manufacturingEmailResult);
+
     if (manufacturingEmailResult.ok && !manufacturingEmailResult.skipped) {
       await updateOrderStatus(sb, order.id, "sent_to_manufacturing");
+      console.log("[stripe-webhook] order status updated", {
+        orderId: order.id,
+        status: "sent_to_manufacturing",
+      });
     }
 
     let customerEmailResult:
@@ -422,8 +566,25 @@ if (existingOrder) {
         setupToken,
       });
 
+      console.log("[stripe-webhook] sending customer email", {
+        to: customerPayload.to,
+        subject: customerPayload.subject,
+        identifier: assets.identifier,
+      });
+
       customerEmailResult = await sendCustomerPlateEmail(customerPayload);
+
+      console.log("[stripe-webhook] customer email result", customerEmailResult);
+    } else {
+      console.warn("[stripe-webhook] customer email skipped - no email on session");
     }
+
+    console.log("[stripe-webhook] success", {
+      identifier,
+      slug,
+      plateUrl,
+      setupUrl,
+    });
 
     return NextResponse.json({
       received: true,
@@ -436,7 +597,12 @@ if (existingOrder) {
       customerEmail: customerEmailResult,
     });
   } catch (e: any) {
-    console.error("Webhook failed:", e);
+    console.error("[stripe-webhook] failed", {
+      message: e?.message ?? "Webhook failed",
+      stack: e?.stack ?? null,
+      error: e,
+    });
+
     return NextResponse.json(
       { error: e?.message ?? "Webhook failed" },
       { status: 500 }
