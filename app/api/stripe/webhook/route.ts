@@ -447,18 +447,17 @@ export async function POST(req: Request) {
     }
 
     const { error: designErr } = await sb.from("plate_designs").insert({
-      plate_id: plate.id,
-      text_line_1: "",
-      text_line_2: "",
-      logo_url: logoUrl,
-      qr_url: savedAssets.qrPublicUrl,
-      proof_approved: false,
-      plate_width_mm: 90,
-      plate_height_mm: 90,
-      qr_size_mm: 50,
-      hole_diameter_mm: 5.2,
-      mounting_holes: mountingHoles,
-    });
+  plate_id: plate.id,
+  text_line_1: "",
+  text_line_2: "",
+  logo_url: logoUrl,
+  qr_url: savedAssets.qrPublicUrl,
+  proof_approved: false,
+  plate_width_mm: 90,
+  plate_height_mm: 90,
+  qr_size_mm: 50,
+  hole_diameter_mm: 5.2,
+});
 
     console.log("[stripe-webhook] design insert", {
       plateId: plate.id,
