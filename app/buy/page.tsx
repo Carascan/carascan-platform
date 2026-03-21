@@ -225,7 +225,7 @@ export default function Buy() {
                     lineHeight: 1.5,
                   }}
                 >
-                  Plate supplied with mounting holes for pop rivets.
+                  Rivet option for mechanical fixing - 4 x 5mm Aluminium rivets to mount (FREE)
                 </div>
               </label>
 
@@ -252,7 +252,7 @@ export default function Buy() {
                   style={{ marginRight: 10 }}
                 />
                 <span style={{ fontWeight: 700, color: "#111827" }}>
-                  Adhesive mounting
+                  Adhesive mounting option - clean look to compliment finish (FREE)
                 </span>
                 <div
                   style={{
