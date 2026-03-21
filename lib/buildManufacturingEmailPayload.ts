@@ -71,10 +71,10 @@ export function buildManufacturingEmailPayload(input: {
   paymentStatus?: string | null;
   amountTotalCents?: number | null;
   currency?: string | null;
-  adminUrl: string;
-  svgContent: string;
-  qrPngBuffer: Buffer;
-  metadata: unknown;
+  adminUrl?: string | null;
+  svgContent?: string | null;
+  qrPngBuffer?: Buffer | null;
+  metadata?: unknown;
   svgPublicUrl?: string | null;
   qrPublicUrl?: string | null;
   metadataPublicUrl?: string | null;
@@ -87,7 +87,7 @@ export function buildManufacturingEmailPayload(input: {
   const orderValue = formatMoney(input.amountTotalCents, input.currency);
   const shippingAddress = buildAddress(input);
   const safeIdentifier = escapeHtml(input.identifier);
-  const safeAdminUrl = input.adminUrl;
+  const safeAdminUrl = input.adminUrl?.trim() || "";
   const safeCustomerName = escapeHtml(customerName);
   const safeCustomerEmail = escapeHtml(customerEmail);
   const safeCustomerPhone = escapeHtml(customerPhone);
@@ -96,14 +96,45 @@ export function buildManufacturingEmailPayload(input: {
   const safePaymentStatus = escapeHtml(paymentStatus);
   const safeOrderValue = escapeHtml(orderValue);
 
+  const attachments: ManufacturingEmailAttachment[] = [];
+
+  if (input.svgContent) {
+    attachments.push({
+      filename: `${input.identifier}-plate.svg`,
+      content: Buffer.from(input.svgContent, "utf8").toString("base64"),
+      contentType: "image/svg+xml",
+    });
+  }
+
+  if (input.qrPngBuffer) {
+    attachments.push({
+      filename: `${input.identifier}-qr.png`,
+      content: input.qrPngBuffer.toString("base64"),
+      contentType: "image/png",
+    });
+  }
+
+  if (input.metadata !== undefined) {
+    attachments.push({
+      filename: `${input.identifier}-metadata.json`,
+      content: Buffer.from(
+        JSON.stringify(input.metadata, null, 2),
+        "utf8"
+      ).toString("base64"),
+      contentType: "application/json",
+    });
+  }
+
   const text = [
     `Hi team,`,
     ``,
     `A new Carascan plate order is ready for manufacturing.`,
-    `The laser-ready files are attached so you can drag the SVG straight into LightBurn.`,
+    attachments.length > 0
+      ? `The laser-ready files are attached so you can drag the SVG straight into LightBurn.`
+      : `The production reference is ready below.`,
     ``,
     `Identifier: ${input.identifier}`,
-    `Admin: ${input.adminUrl}`,
+    safeAdminUrl ? `Admin: ${safeAdminUrl}` : null,
     `Payment status: ${paymentStatus}`,
     `Order value: ${orderValue}`,
     ``,
@@ -116,16 +147,15 @@ export function buildManufacturingEmailPayload(input: {
     `Recipient: ${shippingName}`,
     `Address: ${shippingAddress || "Not provided"}`,
     ``,
-    `Attached files`,
-    `- ${input.identifier}-plate.svg`,
-    `- ${input.identifier}-qr.png`,
-    `- ${input.identifier}-metadata.json`,
-    ``,
+    attachments.length > 0 ? `Attached production pack` : `Linked production files`,
+    input.svgContent ? `- ${input.identifier}-plate.svg` : null,
+    input.qrPngBuffer ? `- ${input.identifier}-qr.png` : null,
+    input.metadata !== undefined ? `- ${input.identifier}-metadata.json` : null,
     input.svgPublicUrl ? `SVG public URL: ${input.svgPublicUrl}` : null,
     input.qrPublicUrl ? `QR public URL: ${input.qrPublicUrl}` : null,
     input.metadataPublicUrl ? `Metadata public URL: ${input.metadataPublicUrl}` : null,
     ``,
-    `Please manufacture and process this order proactively.`,
+    `Please process this order proactively.`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -134,20 +164,25 @@ export function buildManufacturingEmailPayload(input: {
     <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111827;">
       <h2 style="margin:0 0 16px 0;">New Carascan Plate Ready for Manufacturing</h2>
 
-      <p style="margin:0 0 14px 0;">
-        Hi team,
-      </p>
+      <p style="margin:0 0 14px 0;">Hi team,</p>
 
       <p style="margin:0 0 14px 0;">
-        A new Carascan plate order is ready for manufacturing. The laser-ready files are attached so you can drag the SVG straight into LightBurn and proceed without delay.
+        A new Carascan plate order is ready for manufacturing.
+        ${
+          attachments.length > 0
+            ? ` The laser-ready files are attached so you can drag the SVG straight into LightBurn and proceed without delay.`
+            : ` The production details are below so the order can be processed promptly.`
+        }
       </p>
 
       <div style="margin:18px 0;padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:#f9fafb;">
         <p style="margin:0 0 10px 0;">
           <strong>Identifier:</strong>
-          <a href="${safeAdminUrl}" style="color:#2563eb;text-decoration:none;">
-            ${safeIdentifier}
-          </a>
+          ${
+            safeAdminUrl
+              ? `<a href="${safeAdminUrl}" style="color:#2563eb;text-decoration:none;">${safeIdentifier}</a>`
+              : safeIdentifier
+          }
         </p>
         <p style="margin:0 0 10px 0;"><strong>Payment status:</strong> ${safePaymentStatus}</p>
         <p style="margin:0;"><strong>Order value:</strong> ${safeOrderValue}</p>
@@ -166,12 +201,18 @@ export function buildManufacturingEmailPayload(input: {
         <p style="margin:0;"><strong>Address:</strong> ${safeShippingAddress}</p>
       </div>
 
-      <div style="margin:18px 0;padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:#ffffff;">
-        <div style="font-size:15px;font-weight:700;margin:0 0 10px 0;">Attached production pack</div>
-        <p style="margin:0 0 8px 0;">• ${escapeHtml(input.identifier)}-plate.svg</p>
-        <p style="margin:0 0 8px 0;">• ${escapeHtml(input.identifier)}-qr.png</p>
-        <p style="margin:0;">• ${escapeHtml(input.identifier)}-metadata.json</p>
-      </div>
+      ${
+        attachments.length > 0
+          ? `
+        <div style="margin:18px 0;padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:#ffffff;">
+          <div style="font-size:15px;font-weight:700;margin:0 0 10px 0;">Attached production pack</div>
+          ${input.svgContent ? `<p style="margin:0 0 8px 0;">• ${escapeHtml(input.identifier)}-plate.svg</p>` : ""}
+          ${input.qrPngBuffer ? `<p style="margin:0 0 8px 0;">• ${escapeHtml(input.identifier)}-qr.png</p>` : ""}
+          ${input.metadata !== undefined ? `<p style="margin:0;">• ${escapeHtml(input.identifier)}-metadata.json</p>` : ""}
+        </div>
+      `
+          : ""
+      }
 
       ${
         input.svgPublicUrl || input.qrPublicUrl || input.metadataPublicUrl
@@ -199,7 +240,7 @@ export function buildManufacturingEmailPayload(input: {
       }
 
       <p style="margin:18px 0 0 0;">
-        Please process this order proactively and use the attached SVG as the manufacturing source file.
+        Please process this order proactively.
       </p>
     </div>
   `;
@@ -210,22 +251,6 @@ export function buildManufacturingEmailPayload(input: {
     subject: `Manufacturing ready – ${input.identifier}`,
     text,
     html,
-    attachments: [
-      {
-        filename: `${input.identifier}-plate.svg`,
-        content: Buffer.from(input.svgContent, "utf8").toString("base64"),
-        contentType: "image/svg+xml",
-      },
-      {
-        filename: `${input.identifier}-qr.png`,
-        content: input.qrPngBuffer.toString("base64"),
-        contentType: "image/png",
-      },
-      {
-        filename: `${input.identifier}-metadata.json`,
-        content: Buffer.from(JSON.stringify(input.metadata, null, 2), "utf8").toString("base64"),
-        contentType: "application/json",
-      },
-    ],
+    attachments,
   };
 }
