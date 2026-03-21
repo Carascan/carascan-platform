@@ -9,9 +9,19 @@ export default function Buy() {
   const [mountingMethod, setMountingMethod] = useState<"rivet" | "adhesive">(
     "rivet"
   );
+  const [emergencyPlan, setEmergencyPlan] = useState<"3" | "10">("3");
   const [showMountingInfo, setShowMountingInfo] = useState(false);
   const [showIncludedInfo, setShowIncludedInfo] = useState(false);
   const [showUpgradeInfo, setShowUpgradeInfo] = useState(false);
+
+  const platePrice = 35;
+  const standardSubscription = 24;
+  const upgradeDelta = 2;
+  const subscriptionPrice =
+    emergencyPlan === "10"
+      ? standardSubscription + upgradeDelta
+      : standardSubscription;
+  const totalToday = platePrice + subscriptionPrice;
 
   return (
     <main
@@ -100,6 +110,90 @@ export default function Buy() {
             <div>• Unique Carascan QR code</div>
             <div>• Laser engraved for durable outdoor use</div>
             <div>• Customer contact personalisation completed after purchase</div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            border: "1px solid #e5e7eb",
+            borderRadius: 14,
+            padding: 22,
+            marginBottom: 20,
+            background: "#ffffff",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: "#111827",
+              marginBottom: 14,
+            }}
+          >
+            Pricing
+          </div>
+
+          <div style={{ display: "grid", gap: 10, color: "#374151" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 16,
+              }}
+            >
+              <span>Plate</span>
+              <strong>$35.00</strong>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 16,
+              }}
+            >
+              <span>3 x Emergency contact subscription</span>
+              <strong>$24.00 / year</strong>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 16,
+              }}
+            >
+              <span>10 x Emergency contact option</span>
+              <strong>+$2.00 / year</strong>
+            </div>
+
+            <div
+              style={{
+                marginTop: 8,
+                paddingTop: 12,
+                borderTop: "1px solid #e5e7eb",
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 16,
+                color: "#111827",
+                fontSize: 18,
+              }}
+            >
+              <span>
+                Total today
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "#6b7280",
+                    marginTop: 4,
+                  }}
+                >
+                  Includes plate + selected annual subscription
+                </div>
+              </span>
+              <strong>${totalToday}.00</strong>
+            </div>
           </div>
         </div>
 
@@ -276,6 +370,7 @@ export default function Buy() {
                 gap: 12,
                 alignItems: "center",
                 flexWrap: "wrap",
+                marginBottom: 12,
               }}
             >
               <div>
@@ -286,17 +381,17 @@ export default function Buy() {
                     color: "#111827",
                   }}
                 >
-                  3 x Emergency contact subscription
+                  Emergency contact subscription
                 </div>
                 <div
                   style={{
                     marginTop: 4,
-                    color: "#16a34a",
+                    color: "#6b7280",
                     fontWeight: 600,
                     fontSize: 14,
                   }}
                 >
-                  Included with purchase
+                  Choose your contact capacity
                 </div>
               </div>
 
@@ -320,7 +415,7 @@ export default function Buy() {
             {showIncludedInfo && (
               <div
                 style={{
-                  marginTop: 14,
+                  marginBottom: 16,
                   padding: 14,
                   borderRadius: 12,
                   background: "#f9fafb",
@@ -329,11 +424,109 @@ export default function Buy() {
                   lineHeight: 1.6,
                 }}
               >
-                Your Carascan purchase includes support for up to 3 emergency
-                contacts. This is part of the included subscription and does not
-                need to be selected separately during checkout.
+                The standard Carascan subscription supports up to 3 emergency
+                contacts.
+                <br />
+                If you would like more than 3 emergency contacts, up to 10
+                contacts can be purchased.
+                <br />
+                Subscription renews annually.
               </div>
             )}
+
+            <div style={{ display: "grid", gap: 12 }}>
+              <label
+                style={{
+                  display: "block",
+                  border:
+                    emergencyPlan === "3"
+                      ? "2px solid #111827"
+                      : "1px solid #d1d5db",
+                  borderRadius: 14,
+                  padding: 16,
+                  cursor: "pointer",
+                  background: emergencyPlan === "3" ? "#f9fafb" : "#ffffff",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="emergency_plan"
+                  value="3"
+                  checked={emergencyPlan === "3"}
+                  onChange={() => setEmergencyPlan("3")}
+                  style={{ marginRight: 10 }}
+                />
+                <span style={{ fontWeight: 700, color: "#111827" }}>
+                  3 x Emergency contacts
+                </span>
+                <div
+                  style={{
+                    marginTop: 6,
+                    marginLeft: 24,
+                    color: "#4b5563",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Standard annual subscription included in checkout pricing.
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    marginLeft: 24,
+                    fontWeight: 700,
+                    color: "#111827",
+                  }}
+                >
+                  $24.00 / year
+                </div>
+              </label>
+
+              <label
+                style={{
+                  display: "block",
+                  border:
+                    emergencyPlan === "10"
+                      ? "2px solid #111827"
+                      : "1px solid #d1d5db",
+                  borderRadius: 14,
+                  padding: 16,
+                  cursor: "pointer",
+                  background: emergencyPlan === "10" ? "#f9fafb" : "#ffffff",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="emergency_plan"
+                  value="10"
+                  checked={emergencyPlan === "10"}
+                  onChange={() => setEmergencyPlan("10")}
+                  style={{ marginRight: 10 }}
+                />
+                <span style={{ fontWeight: 700, color: "#111827" }}>
+                  10 x Emergency contacts
+                </span>
+                <div
+                  style={{
+                    marginTop: 6,
+                    marginLeft: 24,
+                    color: "#4b5563",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Expanded annual subscription for up to 10 emergency contacts.
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    marginLeft: 24,
+                    fontWeight: 700,
+                    color: "#111827",
+                  }}
+                >
+                  $26.00 / year
+                </div>
+              </label>
+            </div>
           </div>
 
           <div
@@ -362,7 +555,7 @@ export default function Buy() {
                     color: "#111827",
                   }}
                 >
-                  10 x Emergency contact upgrade subscription
+                  Future subscription expansion
                 </div>
                 <div
                   style={{
@@ -372,7 +565,7 @@ export default function Buy() {
                     fontSize: 14,
                   }}
                 >
-                  Expansion ready for future release
+                  Page structure kept ready for later additions
                 </div>
               </div>
 
@@ -405,10 +598,9 @@ export default function Buy() {
                   lineHeight: 1.6,
                 }}
               >
-                This section is being kept ready for future subscription
-                expansion. It is not currently a separate live purchase option,
-                but the buy page structure is prepared so additional tiers can be
-                added cleanly later.
+                This buy page is being structured so additional product and
+                subscription options can be added cleanly later without
+                rebuilding the full page flow.
               </div>
             )}
           </div>
