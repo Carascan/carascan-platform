@@ -12,13 +12,26 @@ function isAuthorised(req: Request) {
   return headerSecret === envSecret || querySecret === envSecret;
 }
 
+function normaliseIdentifierSearch(value: string) {
+  const trimmed = value.trim().toUpperCase();
+  const digits = trimmed.replace(/\D/g, "").slice(0, 6);
+
+  if (!digits) return "";
+  return `CSN-${digits.padStart(6, "0")}`;
+}
+
 export async function GET(req: Request) {
   if (!isAuthorised(req)) {
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   }
 
   const url = new URL(req.url);
-  const q = (url.searchParams.get("q") ?? "").trim();
+  const rawQ = (url.searchParams.get("q") ?? "").trim();
+  const q = rawQ.toLowerCase();
+  const exactIdentifier =
+    rawQ.toUpperCase().startsWith("CSN-") || /^\d+$/.test(rawQ)
+      ? normaliseIdentifierSearch(rawQ)
+      : "";
 
   const sb = supabaseAdmin();
 
@@ -60,7 +73,11 @@ export async function GET(req: Request) {
   }
 
   const rows = (data ?? []).filter((row: any) => {
-    if (!q) return true;
+    if (!rawQ) return true;
+
+    if (exactIdentifier) {
+      return (row.plate?.identifier ?? "").toUpperCase() === exactIdentifier;
+    }
 
     const haystack = [
       row.id,
@@ -83,7 +100,7 @@ export async function GET(req: Request) {
       .join(" ")
       .toLowerCase();
 
-    return haystack.includes(q.toLowerCase());
+    return haystack.includes(q);
   });
 
   return NextResponse.json({
