@@ -1,109 +1,111 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { ENV } from "@/lib/env";
+import { requireAdminActionSecret } from "@/lib/env";
 
-function isAuthorised(req: Request) {
-  const envSecret = ENV.ADMIN_ACTION_SECRET;
-  const url = new URL(req.url);
-  const headerSecret = req.headers.get("x-admin-secret");
-  const querySecret = url.searchParams.get("token");
-
-  return headerSecret === envSecret || querySecret === envSecret;
+function unauthorised() {
+  return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 }
 
 function normaliseIdentifierSearch(value: string) {
   const trimmed = value.trim().toUpperCase();
-  const digits = trimmed.replace(/\D/g, "").slice(0, 6);
-
-  if (!digits) return "";
+  if (!trimmed) return "";
+  const digits = trimmed.replace(/\D/g, "");
+  if (!digits) return trimmed;
   return `CSN-${digits.padStart(6, "0")}`;
 }
 
 export async function GET(req: Request) {
-  if (!isAuthorised(req)) {
-    return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
-  }
+  try {
+    const provided = req.headers.get("x-admin-secret")?.trim() ?? "";
+    const expected = requireAdminActionSecret();
 
-  const url = new URL(req.url);
-  const rawQ = (url.searchParams.get("q") ?? "").trim();
-  const q = rawQ.toLowerCase();
-  const exactIdentifier =
-    rawQ.toUpperCase().startsWith("CSN-") || /^\d+$/.test(rawQ)
-      ? normaliseIdentifierSearch(rawQ)
-      : "";
+    if (!provided || provided !== expected) {
+      return unauthorised();
+    }
 
-  const sb = supabaseAdmin();
+    const url = new URL(req.url);
+    const q = normaliseIdentifierSearch(url.searchParams.get("q") ?? "");
 
-  const { data, error } = await sb
-    .from("orders")
-    .select(
-      `
-      id,
-      status,
-      stripe_checkout_session_id,
-      stripe_payment_intent_id,
-      amount_total_cents,
-      currency,
-      shipping_name,
-      shipping_line1,
-      shipping_line2,
-      shipping_city,
-      shipping_state,
-      shipping_postcode,
-      shipping_country,
-      created_at,
-      plate:plate_id (
-        id,
-        identifier,
-        slug,
-        status,
-        sku
-      )
-    `
-    )
-    .order("created_at", { ascending: false })
-    .limit(100);
+    const sb = supabaseAdmin();
 
-  if (error) {
+    let platesQuery = sb
+      .from("plates")
+      .select("id, identifier, slug, status, sku")
+      .order("identifier", { ascending: false });
+
+    if (q) {
+      platesQuery = platesQuery.ilike("identifier", `%${q}%`);
+    }
+
+    const { data: plates, error: platesError } = await platesQuery;
+
+    if (platesError) {
+      return NextResponse.json(
+        { error: `Failed to load plates: ${platesError.message}` },
+        { status: 500 }
+      );
+    }
+
+    const plateIds = (plates ?? []).map((p) => p.id);
+
+    let orders: any[] = [];
+
+    if (plateIds.length > 0) {
+      const { data: ordersData, error: ordersError } = await sb
+        .from("orders")
+        .select(
+          "id, plate_id, status, stripe_checkout_session_id, stripe_payment_intent_id, amount_total_cents, currency, shipping_name, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_postcode, shipping_country, created_at"
+        )
+        .in("plate_id", plateIds)
+        .order("created_at", { ascending: false });
+
+      if (ordersError) {
+        return NextResponse.json(
+          { error: `Failed to load orders: ${ordersError.message}` },
+          { status: 500 }
+        );
+      }
+
+      orders = ordersData ?? [];
+    }
+
+    const plateMap = new Map((plates ?? []).map((plate) => [plate.id, plate]));
+
+    const items = orders.map((order) => ({
+      ...order,
+      plate: plateMap.get(order.plate_id) ?? null,
+    }));
+
+    if (!q && items.length === 0 && (plates?.length ?? 0) > 0) {
+      const plateOnlyItems = (plates ?? []).map((plate) => ({
+        id: `plate-${plate.id}`,
+        status: null,
+        stripe_checkout_session_id: null,
+        stripe_payment_intent_id: null,
+        amount_total_cents: null,
+        currency: null,
+        shipping_name: null,
+        shipping_line1: null,
+        shipping_line2: null,
+        shipping_city: null,
+        shipping_state: null,
+        shipping_postcode: null,
+        shipping_country: null,
+        created_at: null,
+        plate,
+      }));
+
+      return NextResponse.json({ items: plateOnlyItems });
+    }
+
+    return NextResponse.json({ items });
+  } catch (error) {
     return NextResponse.json(
-      { error: `Orders fetch failed: ${error.message}` },
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to load admin orders.",
+      },
       { status: 500 }
     );
   }
-
-  const rows = (data ?? []).filter((row: any) => {
-    if (!rawQ) return true;
-
-    if (exactIdentifier) {
-      return (row.plate?.identifier ?? "").toUpperCase() === exactIdentifier;
-    }
-
-    const haystack = [
-      row.id,
-      row.status,
-      row.stripe_checkout_session_id,
-      row.stripe_payment_intent_id,
-      row.shipping_name,
-      row.shipping_line1,
-      row.shipping_city,
-      row.shipping_state,
-      row.shipping_postcode,
-      row.shipping_country,
-      row.plate?.id,
-      row.plate?.identifier,
-      row.plate?.slug,
-      row.plate?.status,
-      row.plate?.sku,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    return haystack.includes(q);
-  });
-
-  return NextResponse.json({
-    ok: true,
-    items: rows,
-  });
 }

@@ -1,167 +1,159 @@
-import crypto from "crypto";
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { buildSetupLinkEmailPayload } from "@/lib/buildSetupLinkEmailPayload";
-import { sendSetupLinkEmail } from "@/lib/sendSetupLinkEmail";
+import { requireAdminActionSecret, ENV } from "@/lib/env";
+import { sendEmail } from "@/lib/notifyEmail";
 
-function randToken(len = 48) {
-  return crypto.randomBytes(Math.ceil(len / 2)).toString("hex").slice(0, len);
+function unauthorised() {
+  return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 }
 
-function isAuthorised(req: Request, bodySecret?: string) {
-  const envSecret = process.env.ADMIN_ACTION_SECRET;
-  if (!envSecret) {
-    return false;
-  }
-
-  const headerSecret = req.headers.get("x-admin-secret");
-  return headerSecret === envSecret || bodySecret === envSecret;
+function addDays(date: Date, days: number) {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + days);
+  return copy;
 }
 
 export async function POST(req: Request) {
-  let body: { plateId?: string; email?: string; adminSecret?: string };
-
   try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+    const provided = req.headers.get("x-admin-secret")?.trim() ?? "";
+    const expected = requireAdminActionSecret();
 
-  if (!isAuthorised(req, body.adminSecret)) {
-    return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
-  }
+    if (!provided || provided !== expected) {
+      return unauthorised();
+    }
 
-  const plateId = typeof body.plateId === "string" ? body.plateId.trim() : "";
-  const overrideEmail =
-    typeof body.email === "string" ? body.email.trim() : "";
+    const body = await req.json().catch(() => null);
+    const plateId = String(body?.plateId ?? "").trim();
 
-  if (!plateId) {
-    return NextResponse.json({ error: "Missing plateId" }, { status: 400 });
-  }
+    if (!plateId) {
+      return NextResponse.json({ error: "Missing plateId" }, { status: 400 });
+    }
 
-  const sb = supabaseAdmin();
+    const sb = supabaseAdmin();
 
-  const { data: plate, error: plateError } = await sb
-    .from("plates")
-    .select("id, identifier, status")
-    .eq("id", plateId)
-    .maybeSingle();
+    const { data: plate, error: plateError } = await sb
+      .from("plates")
+      .select("id, identifier, slug")
+      .eq("id", plateId)
+      .maybeSingle();
 
-  if (plateError) {
-    return NextResponse.json(
-      { error: `Plate lookup failed: ${plateError.message}` },
-      { status: 500 },
-    );
-  }
+    if (plateError) {
+      return NextResponse.json(
+        { error: `Plate lookup failed: ${plateError.message}` },
+        { status: 500 }
+      );
+    }
 
-  if (!plate) {
-    return NextResponse.json({ error: "Plate not found" }, { status: 404 });
-  }
+    if (!plate) {
+      return NextResponse.json({ error: "Plate not found." }, { status: 404 });
+    }
 
-  const { data: order, error: orderError } = await sb
-    .from("orders")
-    .select("shipping_name")
-    .eq("plate_id", plateId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    const { data: latestTokenRow, error: latestTokenError } = await sb
+      .from("plate_setup_tokens")
+      .select("email")
+      .eq("plate_id", plate.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  if (orderError) {
-    return NextResponse.json(
-      { error: `Order lookup failed: ${orderError.message}` },
-      { status: 500 },
-    );
-  }
+    if (latestTokenError) {
+      return NextResponse.json(
+        { error: `Setup recipient lookup failed: ${latestTokenError.message}` },
+        { status: 500 }
+      );
+    }
 
-  const { data: latestToken, error: latestTokenError } = await sb
-    .from("plate_setup_tokens")
-    .select("email")
-    .eq("plate_id", plateId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    const recipientEmail = String(latestTokenRow?.email ?? "").trim();
 
-  if (latestTokenError) {
-    return NextResponse.json(
-      { error: `Token lookup failed: ${latestTokenError.message}` },
-      { status: 500 },
-    );
-  }
+    if (!recipientEmail) {
+      return NextResponse.json(
+        { error: "No recipient email found for this plate." },
+        { status: 404 }
+      );
+    }
 
-  const targetEmail = overrideEmail || latestToken?.email || "";
+    const { error: revokeError } = await sb
+      .from("plate_setup_tokens")
+      .update({ revoked_at: new Date().toISOString() })
+      .eq("plate_id", plate.id)
+      .is("used_at", null)
+      .is("revoked_at", null);
 
-  if (!targetEmail) {
-    return NextResponse.json(
-      { error: "No email available for this plate" },
-      { status: 400 },
-    );
-  }
+    if (revokeError) {
+      return NextResponse.json(
+        { error: `Failed to revoke old setup links: ${revokeError.message}` },
+        { status: 500 }
+      );
+    }
 
-  const revokeOldTokens = await sb
-    .from("plate_setup_tokens")
-    .update({
-      revoked_at: new Date().toISOString(),
-    })
-    .eq("plate_id", plateId)
-    .is("used_at", null)
-    .is("revoked_at", null);
+    const token = randomUUID().replace(/-/g, "");
+    const expiresAt = addDays(new Date(), 7).toISOString();
 
-  if (revokeOldTokens.error) {
-    return NextResponse.json(
-      { error: `Old token revoke failed: ${revokeOldTokens.error.message}` },
-      { status: 500 },
-    );
-  }
-
-  const token = randToken(48);
-  const expiresAt = new Date(
-    Date.now() + 1000 * 60 * 60 * 24 * 14,
-  ).toISOString();
-
-  const { error: insertTokenError } = await sb
-    .from("plate_setup_tokens")
-    .insert({
+    const { error: insertError } = await sb.from("plate_setup_tokens").insert({
+      plate_id: plate.id,
       token,
-      plate_id: plateId,
-      email: targetEmail,
+      email: recipientEmail,
       expires_at: expiresAt,
     });
 
-  if (insertTokenError) {
-    return NextResponse.json(
-      { error: `Token insert failed: ${insertTokenError.message}` },
-      { status: 500 },
-    );
-  }
-
-  const emailPayload = buildSetupLinkEmailPayload({
-    to: targetEmail,
-    customerName: order?.shipping_name ?? null,
-    identifier: plate.identifier ?? null,
-    setupToken: token,
-  });
-
-  const emailResult = await sendSetupLinkEmail(emailPayload);
-
-  if (plate.status !== "active") {
-    const { error: plateStatusError } = await sb
-      .from("plates")
-      .update({ status: "setup_pending" })
-      .eq("id", plateId);
-
-    if (plateStatusError) {
+    if (insertError) {
       return NextResponse.json(
-        { error: `Plate status update failed: ${plateStatusError.message}` },
-        { status: 500 },
+        { error: `Failed to create setup link: ${insertError.message}` },
+        { status: 500 }
       );
     }
-  }
 
-  return NextResponse.json({
-    ok: true,
-    plateId,
-    identifier: plate.identifier ?? null,
-    email: targetEmail,
-    emailResult,
-  });
+    const setupUrl = `${ENV.APP_BASE_URL}/setup/${encodeURIComponent(token)}`;
+
+    const html = `
+      <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111827;">
+        <h2 style="margin:0 0 16px 0;">Your Carascan setup link</h2>
+        <p style="margin:0 0 8px 0;"><strong>Plate:</strong> ${plate.identifier}</p>
+        <p style="margin:0 0 16px 0;">
+          Your setup link has been reissued. Use the button below to continue setup.
+        </p>
+        <p style="margin:0 0 16px 0;">
+          <a
+            href="${setupUrl}"
+            target="_blank"
+            rel="noopener noreferrer"
+            style="display:inline-block;padding:12px 16px;border-radius:10px;background:#111827;color:#ffffff;text-decoration:none;font-weight:700;"
+          >
+            Open setup page
+          </a>
+        </p>
+        <p style="margin:0 0 8px 0;color:#6b7280;font-size:13px;word-break:break-all;">
+          Direct link:<br />
+          <a href="${setupUrl}" target="_blank" rel="noopener noreferrer">${setupUrl}</a>
+        </p>
+        <p style="margin:16px 0 0 0;color:#6b7280;font-size:13px;">
+          This link expires in 7 days.
+        </p>
+      </div>
+    `;
+
+    await sendEmail(
+      [recipientEmail],
+      `Carascan setup link - ${plate.identifier}`,
+      html
+    );
+
+    return NextResponse.json({
+      ok: true,
+      identifier: plate.identifier,
+      email: recipientEmail,
+      setupUrl,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to resend setup link.",
+      },
+      { status: 500 }
+    );
+  }
 }

@@ -18,7 +18,8 @@ export const ENV = {
   FROM_EMAIL: requireEnv("FROM_EMAIL"),
   RESEND_API_KEY: requireEnv("RESEND_API_KEY"),
   STRIPE_WEBHOOK_SECRET: requireEnv("STRIPE_WEBHOOK_SECRET"),
-  ADMIN_ACTION_SECRET: requireEnv("ADMIN_ACTION_SECRET"),
+
+  ADMIN_ACTION_SECRET: optionalEnv("ADMIN_ACTION_SECRET"),
 
   MANUFACTURING_EMAIL: requireEnv("MANUFACTURING_EMAIL"),
 
@@ -36,6 +37,16 @@ export const ENV = {
   TWILIO_AUTH_TOKEN: optionalEnv("TWILIO_AUTH_TOKEN"),
   TWILIO_FROM_NUMBER: optionalEnv("TWILIO_FROM_NUMBER"),
 };
+
+export function requireAdminActionSecret(): string {
+  const value = ENV.ADMIN_ACTION_SECRET?.trim();
+
+  if (!value) {
+    throw new Error("Missing required environment variable: ADMIN_ACTION_SECRET");
+  }
+
+  return value;
+}
 
 if (!ENV.STRIPE_PRICE_ID_PLATE) {
   throw new Error(
