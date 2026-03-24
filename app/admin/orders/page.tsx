@@ -244,11 +244,11 @@ export default function AdminOrdersPage() {
     );
   }
 
-  function openCustomerPage(identifier?: string | null, slug?: string | null) {
-    const publicKey = (identifier ?? "").trim() || (slug ?? "").trim();
+  function openCustomerPage(slug?: string | null) {
+    const publicKey = (slug ?? "").trim();
 
     if (!publicKey) {
-      alert("No customer page key found for this plate.");
+      alert("No public page slug found for this plate.");
       return;
     }
 
@@ -568,10 +568,8 @@ export default function AdminOrdersPage() {
 
                     <button
                       type="button"
-                      onClick={() =>
-                        openCustomerPage(row.plate?.identifier, row.plate?.slug)
-                      }
-                      disabled={!row.plate?.identifier && !row.plate?.slug}
+                      onClick={() => openCustomerPage(row.plate?.slug)}
+                      disabled={!row.plate?.slug}
                       style={{
                         border: 0,
                         borderRadius: 10,
@@ -579,12 +577,8 @@ export default function AdminOrdersPage() {
                         fontWeight: 700,
                         background: "#e5e7eb",
                         color: "#111827",
-                        cursor:
-                          row.plate?.identifier || row.plate?.slug
-                            ? "pointer"
-                            : "not-allowed",
-                        opacity:
-                          row.plate?.identifier || row.plate?.slug ? 1 : 0.6,
+                        cursor: row.plate?.slug ? "pointer" : "not-allowed",
+                        opacity: row.plate?.slug ? 1 : 0.6,
                       }}
                     >
                       Open customer page
