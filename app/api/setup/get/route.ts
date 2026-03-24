@@ -49,11 +49,13 @@ export async function GET(req: Request) {
       )
       .eq("id", plateId)
       .maybeSingle(),
+
     sb
       .from("plate_profiles")
       .select("plate_id, caravan_name, bio, owner_photo_url")
       .eq("plate_id", plateId)
       .maybeSingle(),
+
     sb
       .from("plate_designs")
       .select(
@@ -61,6 +63,7 @@ export async function GET(req: Request) {
       )
       .eq("plate_id", plateId)
       .maybeSingle(),
+
     sb
       .from("emergency_contacts")
       .select("id, name, relationship, phone, email, enabled")
