@@ -229,6 +229,14 @@ export default function AdminOrdersPage() {
     }
   }
 
+  function openSetupPage(plateId: string) {
+    window.open(
+      `/api/admin/get-setup-link?plateId=${encodeURIComponent(plateId)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
   const summary = useMemo(() => {
     const counts = {
       paid: 0,
@@ -331,7 +339,7 @@ export default function AdminOrdersPage() {
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
             <AdminHeader
               title="Carascan admin dashboard"
-              subtitle="Search orders, inspect plate status, resend setup links, open the customer plate page, and review secure manufacturing SVG files."
+              subtitle="Search orders, inspect plate status, resend setup links, open the customer plate page, open the setup page, and review secure manufacturing SVG files."
             />
 
             <button
@@ -517,6 +525,24 @@ export default function AdminOrdersPage() {
                       }}
                     >
                       Resend setup link
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => row.plate?.id && openSetupPage(row.plate.id)}
+                      disabled={!row.plate?.id}
+                      style={{
+                        border: 0,
+                        borderRadius: 10,
+                        padding: "10px 14px",
+                        fontWeight: 700,
+                        background: "#fbbf24",
+                        color: "#111827",
+                        cursor: row.plate?.id ? "pointer" : "not-allowed",
+                        opacity: row.plate?.id ? 1 : 0.6,
+                      }}
+                    >
+                      Open setup page
                     </button>
 
                     {publicUrl ? (
