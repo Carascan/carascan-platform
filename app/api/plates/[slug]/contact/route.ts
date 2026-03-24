@@ -3,22 +3,31 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { sendEmail } from "@/lib/notifyEmail";
 import { sendSmsMany } from "@/lib/notifySms";
 
-function normalizePhone(v: string) {
-  return v.replace(/\s+/g, "");
+function normalizePhone(value: string) {
+  return value.replace(/[^\d+]/g, "").trim();
 }
 
 type Mode = "email" | "sms" | "both";
 
-function useEmail(m: Mode) {
-  return m === "email" || m === "both";
+function useEmail(mode: Mode) {
+  return mode === "email" || mode === "both";
 }
 
-function useSms(m: Mode) {
-  return m === "sms" || m === "both";
+function useSms(mode: Mode) {
+  return mode === "sms" || mode === "both";
 }
 
-function clean(m: unknown): Mode {
-  return m === "sms" || m === "both" ? m : "email";
+function cleanMode(value: unknown): Mode {
+  return value === "sms" || value === "both" ? value : "email";
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 export async function POST(
@@ -29,55 +38,158 @@ export async function POST(
     const { slug } = await params;
     const body = await req.json();
 
+    const reporterName = String(body?.reporter_name ?? "").trim();
+    const reporterPhone = normalizePhone(
+      String(body?.reporter_phone ?? "").trim()
+    );
+    const reporterEmail = String(body?.reporter_email ?? "").trim();
+    const message = String(body?.message ?? "").trim();
+
+    if (!message) {
+      return NextResponse.json(
+        { error: "Message is required." },
+        { status: 400 }
+      );
+    }
+
     const sb = supabaseAdmin();
 
-    const { data: plate } = await sb
+    const { data: plate, error: plateError } = await sb
       .from("plates")
-      .select("id, identifier, preferred_contact_channel")
+      .select(
+        "id, identifier, slug, contact_enabled, preferred_contact_channel"
+      )
       .eq("slug", slug)
       .maybeSingle();
 
-    if (!plate) {
-      return NextResponse.json({ error: "Plate not found" }, { status: 404 });
+    if (plateError) {
+      return NextResponse.json(
+        { error: `Plate lookup failed: ${plateError.message}` },
+        { status: 500 }
+      );
     }
 
-    const mode = clean(plate.preferred_contact_channel);
+    if (!plate) {
+      return NextResponse.json({ error: "Plate not found." }, { status: 404 });
+    }
 
-    const { data: tokenRows } = await sb
+    if (!plate.contact_enabled) {
+      return NextResponse.json(
+        { error: "Public contact is disabled for this plate." },
+        { status: 400 }
+      );
+    }
+
+    const mode = cleanMode(plate.preferred_contact_channel);
+
+    const { data: tokenRows, error: tokenError } = await sb
       .from("plate_setup_tokens")
       .select("email")
       .eq("plate_id", plate.id);
 
-    const { data: phoneRows } = await sb
+    if (tokenError) {
+      return NextResponse.json(
+        { error: `Owner email lookup failed: ${tokenError.message}` },
+        { status: 500 }
+      );
+    }
+
+    const { data: phoneRows, error: phoneError } = await sb
       .from("emergency_contacts")
-      .select("phone")
+      .select("phone, enabled")
       .eq("plate_id", plate.id)
       .eq("enabled", true);
 
-    const emails = (tokenRows ?? [])
-      .map((r) => r.email)
-      .filter(Boolean);
+    if (phoneError) {
+      return NextResponse.json(
+        { error: `SMS recipient lookup failed: ${phoneError.message}` },
+        { status: 500 }
+      );
+    }
 
-    const phones = (phoneRows ?? [])
-      .map((r) => normalizePhone(r.phone))
-      .filter(Boolean);
+    const emails = Array.from(
+      new Set(
+        (tokenRows ?? [])
+          .map((r) => String(r.email ?? "").trim())
+          .filter(Boolean)
+      )
+    );
 
-    const msg = body?.message ?? "New contact";
+    const phones = Array.from(
+      new Set(
+        (phoneRows ?? [])
+          .map((r) => normalizePhone(String(r.phone ?? "").trim()))
+          .filter(Boolean)
+      )
+    );
+
+    const html = `
+      <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111827;">
+        <h2 style="margin:0 0 16px 0;">Contact request</h2>
+        <p style="margin:0 0 8px 0;"><strong>Plate:</strong> ${escapeHtml(
+          plate.identifier
+        )}</p>
+        <hr style="margin:20px 0;" />
+        <p style="margin:0 0 8px 0;"><strong>Name:</strong> ${escapeHtml(
+          reporterName || "Not provided"
+        )}</p>
+        <p style="margin:0 0 8px 0;"><strong>Phone:</strong> ${escapeHtml(
+          reporterPhone || "Not provided"
+        )}</p>
+        <p style="margin:0 0 8px 0;"><strong>Email:</strong> ${escapeHtml(
+          reporterEmail || "Not provided"
+        )}</p>
+        <p style="margin:12px 0 0 0;"><strong>Message:</strong><br/>${escapeHtml(
+          message
+        ).replace(/\n/g, "<br/>")}</p>
+      </div>
+    `;
+
+    const smsBody = [
+      `CARASCAN CONTACT`,
+      `Plate ${plate.identifier}`,
+      reporterName ? `From ${reporterName}` : "",
+      reporterPhone ? `Phone ${reporterPhone}` : "",
+      reporterEmail ? `Email ${reporterEmail}` : "",
+      `Message ${message}`,
+    ]
+      .filter(Boolean)
+      .join(" | ");
 
     const tasks: Promise<any>[] = [];
 
     if (useEmail(mode) && emails.length) {
-      tasks.push(sendEmail(emails, "Contact", `<p>${msg}</p>`));
+      tasks.push(sendEmail(emails, `Contact - ${plate.identifier}`, html));
     }
 
     if (useSms(mode) && phones.length) {
-      tasks.push(sendSmsMany(phones, msg));
+      tasks.push(sendSmsMany(phones, smsBody));
+    }
+
+    if (!tasks.length) {
+      return NextResponse.json(
+        {
+          error:
+            "No recipients found for the selected contact delivery mode. Check email setup or enabled phone contacts.",
+        },
+        { status: 400 }
+      );
     }
 
     await Promise.all(tasks);
 
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Failed" }, { status: 500 });
+    return NextResponse.json({
+      ok: true,
+      email_recipient_count: useEmail(mode) ? emails.length : 0,
+      sms_recipient_count: useSms(mode) ? phones.length : 0,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to send contact request.",
+      },
+      { status: 500 }
+    );
   }
 }

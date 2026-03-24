@@ -11,7 +11,7 @@ export async function GET(
   const { data: plate, error: plateError } = await supabase
     .from("plates")
     .select(
-      "id, slug, identifier, contact_enabled, emergency_enabled, preferred_contact_channel"
+      "id, slug, identifier, contact_enabled, emergency_enabled, preferred_contact_channel, report_channel"
     )
     .eq("slug", slug)
     .maybeSingle();
@@ -32,7 +32,7 @@ export async function GET(
       .maybeSingle(),
     supabase
       .from("plate_designs")
-      .select("qr_url, logo_url")
+      .select("qr_url, logo_url, mounting_holes")
       .eq("plate_id", plate.id)
       .maybeSingle(),
   ]);
