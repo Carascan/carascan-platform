@@ -30,6 +30,11 @@ export const ENV = {
   PLATE_ASSETS_BUCKET: optionalEnv("PLATE_ASSETS_BUCKET") ?? "assets",
   PLATE_LOGO_SVG_URL: optionalEnv("PLATE_LOGO_SVG_URL"),
   GOOGLE_MAPS_API_KEY: optionalEnv("GOOGLE_MAPS_API_KEY"),
+
+  SMS_PROVIDER: (optionalEnv("SMS_PROVIDER") ?? "twilio").toLowerCase(),
+  TWILIO_ACCOUNT_SID: optionalEnv("TWILIO_ACCOUNT_SID"),
+  TWILIO_AUTH_TOKEN: optionalEnv("TWILIO_AUTH_TOKEN"),
+  TWILIO_FROM_NUMBER: optionalEnv("TWILIO_FROM_NUMBER"),
 };
 
 if (!ENV.STRIPE_PRICE_ID_PLATE) {
