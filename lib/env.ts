@@ -48,20 +48,47 @@ export function requireAdminActionSecret(): string {
   return value;
 }
 
-if (!ENV.STRIPE_PRICE_ID_PLATE) {
-  throw new Error(
-    "Missing required environment variable: STRIPE_PRICE_ID_PLATE (or STRIPE_PRICE_ID)"
-  );
+export function requireStripePriceIdPlate(): string {
+  const value = ENV.STRIPE_PRICE_ID_PLATE?.trim();
+
+  if (!value) {
+    throw new Error(
+      "Missing required environment variable: STRIPE_PRICE_ID_PLATE (or STRIPE_PRICE_ID)"
+    );
+  }
+
+  return value;
 }
 
-if (!ENV.STRIPE_PRICE_ID_SUBSCRIPTION_3) {
-  throw new Error(
-    "Missing required environment variable: STRIPE_PRICE_ID_SUBSCRIPTION_3"
-  );
+export function requireStripePriceIdSubscription3(): string {
+  const value = ENV.STRIPE_PRICE_ID_SUBSCRIPTION_3?.trim();
+
+  if (!value) {
+    throw new Error(
+      "Missing required environment variable: STRIPE_PRICE_ID_SUBSCRIPTION_3"
+    );
+  }
+
+  return value;
 }
 
-if (!ENV.STRIPE_PRICE_ID_SUBSCRIPTION_10) {
-  throw new Error(
-    "Missing required environment variable: STRIPE_PRICE_ID_SUBSCRIPTION_10"
-  );
+export function requireStripePriceIdSubscription10(): string {
+  const value = ENV.STRIPE_PRICE_ID_SUBSCRIPTION_10?.trim();
+
+  if (!value) {
+    throw new Error(
+      "Missing required environment variable: STRIPE_PRICE_ID_SUBSCRIPTION_10"
+    );
+  }
+
+  return value;
+}
+
+export function getSmsDebugEnv() {
+  return {
+    provider: ENV.SMS_PROVIDER,
+    hasTwilioAccountSid: !!ENV.TWILIO_ACCOUNT_SID,
+    hasTwilioAuthToken: !!ENV.TWILIO_AUTH_TOKEN,
+    twilioFromNumber: ENV.TWILIO_FROM_NUMBER ?? "",
+  };
 }
