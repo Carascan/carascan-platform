@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { sendEmail } from "@/lib/notifyEmail";
 import { sendSmsMany } from "@/lib/notifySms";
-import { ENV } from "@/lib/env";
 
 function normalizePhone(value: string) {
-  return value.replace(/\s+/g, "");
+  return value.replace(/[^\d+]/g, "").trim();
 }
 
 function buildMapsUrl(lat: number, lng: number) {
@@ -38,11 +37,18 @@ export async function POST(
 
     const sb = supabaseAdmin();
 
-    const { data: plate } = await sb
+    const { data: plate, error: plateError } = await sb
       .from("plates")
       .select("id, identifier, emergency_enabled")
       .eq("slug", slug)
       .maybeSingle();
+
+    if (plateError) {
+      return NextResponse.json(
+        { error: `Plate lookup failed: ${plateError.message}` },
+        { status: 500 }
+      );
+    }
 
     if (!plate) {
       return NextResponse.json({ error: "Plate not found." }, { status: 404 });
@@ -55,38 +61,64 @@ export async function POST(
       );
     }
 
-    const { data: tokenRows } = await sb
+    const { data: tokenRows, error: tokenError } = await sb
       .from("plate_setup_tokens")
       .select("email")
       .eq("plate_id", plate.id);
 
-    const { data: contacts } = await sb
+    if (tokenError) {
+      return NextResponse.json(
+        { error: `Token email lookup failed: ${tokenError.message}` },
+        { status: 500 }
+      );
+    }
+
+    const { data: contacts, error: contactsError } = await sb
       .from("emergency_contacts")
-      .select("phone, email")
+      .select("phone, email, enabled")
       .eq("plate_id", plate.id)
       .eq("enabled", true);
 
+    if (contactsError) {
+      return NextResponse.json(
+        { error: `Emergency contact lookup failed: ${contactsError.message}` },
+        { status: 500 }
+      );
+    }
+
     const emails = Array.from(
-      new Set([
-        ...(tokenRows ?? []).map((r) => r.email),
-        ...(contacts ?? []).map((c) => c.email),
-      ])
-    ).filter(Boolean);
+      new Set(
+        [
+          ...(tokenRows ?? []).map((r) => String(r.email ?? "").trim()),
+          ...(contacts ?? []).map((c) => String(c.email ?? "").trim()),
+        ].filter(Boolean)
+      )
+    );
 
     const phones = Array.from(
       new Set(
         (contacts ?? [])
-          .map((c) => normalizePhone(c.phone ?? ""))
+          .map((c) => normalizePhone(String(c.phone ?? "").trim()))
           .filter(Boolean)
       )
     );
+
+    if (!emails.length && !phones.length) {
+      return NextResponse.json(
+        {
+          error:
+            "No emergency recipients found. Add at least one enabled emergency contact with a phone or email.",
+        },
+        { status: 400 }
+      );
+    }
 
     const map = buildMapsUrl(lat, lng);
 
     const emailHtml = `
       <h2>🚨 Emergency Alert</h2>
       <p><strong>Plate:</strong> ${plate.identifier}</p>
-      <p><a href="${map}" target="_blank">Open location</a></p>
+      <p><a href="${map}" target="_blank" rel="noopener noreferrer">Open location</a></p>
       <p><strong>Coordinates:</strong> ${lat}, ${lng}</p>
       <p><strong>Reporter:</strong> ${reporterName || "Unknown"}</p>
       <p><strong>Phone:</strong> ${reporterPhone || "Unknown"}</p>
@@ -109,10 +141,19 @@ export async function POST(
 
     await Promise.all(tasks);
 
-    return NextResponse.json({ ok: true });
-  } catch {
+    return NextResponse.json({
+      ok: true,
+      email_recipient_count: emails.length,
+      sms_recipient_count: phones.length,
+    });
+  } catch (error) {
     return NextResponse.json(
-      { error: "Failed to send emergency alert." },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to send emergency alert.",
+      },
       { status: 500 }
     );
   }

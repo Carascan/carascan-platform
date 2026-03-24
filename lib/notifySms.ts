@@ -14,7 +14,23 @@ function requireSmsEnv(
 }
 
 function normalizePhone(value: string) {
-  return value.replace(/\s+/g, "");
+  const cleaned = value.replace(/[^\d+]/g, "").trim();
+
+  if (!cleaned) return "";
+
+  if (cleaned.startsWith("+")) {
+    return cleaned;
+  }
+
+  if (cleaned.startsWith("04") && cleaned.length === 10) {
+    return `+61${cleaned.slice(1)}`;
+  }
+
+  if (cleaned.startsWith("61") && cleaned.length >= 11) {
+    return `+${cleaned}`;
+  }
+
+  return cleaned;
 }
 
 export async function sendSms(to: string, body: string) {
@@ -27,13 +43,18 @@ export async function sendSms(to: string, body: string) {
   const sid = requireSmsEnv("TWILIO_ACCOUNT_SID");
   const token = requireSmsEnv("TWILIO_AUTH_TOKEN");
   const from = normalizePhone(requireSmsEnv("TWILIO_FROM_NUMBER"));
+  const normalizedTo = normalizePhone(to);
+
+  if (!normalizedTo) {
+    throw new Error("SMS recipient number is empty after normalization.");
+  }
 
   const client = Twilio(sid, token);
 
   await client.messages.create({
-    to: normalizePhone(to),
+    to: normalizedTo,
     from,
-    body,
+    body: String(body ?? "").trim(),
   });
 }
 
@@ -46,7 +67,9 @@ export async function sendSmsMany(recipients: string[], body: string) {
     )
   );
 
-  if (!uniqueRecipients.length) return;
+  if (!uniqueRecipients.length) {
+    throw new Error("No SMS recipients found.");
+  }
 
   await Promise.all(uniqueRecipients.map((to) => sendSms(to, body)));
 }
