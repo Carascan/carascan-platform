@@ -18,6 +18,8 @@ type OrderRow = {
   shipping_postcode?: string | null;
   shipping_country?: string | null;
   created_at?: string | null;
+  setup_token?: string | null;
+  setup_token_created_at?: string | null;
   plate?: {
     id: string;
     identifier?: string | null;
@@ -229,9 +231,29 @@ export default function AdminOrdersPage() {
     }
   }
 
-  function openSetupPage(plateId: string) {
+  function openSetupPage(setupToken?: string | null) {
+    if (!setupToken) {
+      alert("No setup token found for this plate.");
+      return;
+    }
+
     window.open(
-      `/api/admin/get-setup-link?plateId=${encodeURIComponent(plateId)}`,
+      `/setup/${encodeURIComponent(setupToken)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+  function openCustomerPage(identifier?: string | null, slug?: string | null) {
+    const publicKey = (identifier ?? "").trim() || (slug ?? "").trim();
+
+    if (!publicKey) {
+      alert("No customer page key found for this plate.");
+      return;
+    }
+
+    window.open(
+      `/p/${encodeURIComponent(publicKey)}`,
       "_blank",
       "noopener,noreferrer"
     );
@@ -339,7 +361,7 @@ export default function AdminOrdersPage() {
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
             <AdminHeader
               title="Carascan admin dashboard"
-              subtitle="Search orders, inspect plate status, resend setup links, open the customer plate page, open the setup page, and review secure manufacturing SVG files."
+              subtitle="Search by CSN, inspect plate status, resend setup links, open the customer plate page, open the setup page, and review secure manufacturing SVG files."
             />
 
             <button
@@ -444,9 +466,7 @@ export default function AdminOrdersPage() {
 
         <div style={{ display: "grid", gap: 16 }}>
           {rows.map((row) => {
-            const publicUrl = row.plate?.slug
-              ? `/p/${encodeURIComponent(row.plate.slug)}`
-              : null;
+            const customerPageLabel = row.plate?.identifier ?? row.plate?.slug ?? "—";
 
             const svgPreviewUrl = row.plate?.identifier
               ? `/plates/${encodeURIComponent(row.plate.identifier)}/svg?token=${encodeURIComponent(token)}`
@@ -489,6 +509,7 @@ export default function AdminOrdersPage() {
                     </div>
                     <div><strong>Plate ID:</strong> {row.plate?.id ?? "—"}</div>
                     <div><strong>Slug:</strong> {row.plate?.slug ?? "—"}</div>
+                    <div><strong>Setup token:</strong> {row.setup_token ?? "—"}</div>
                     <div><strong>Order status:</strong> {row.status ?? "—"}</div>
                     <div><strong>Plate status:</strong> {row.plate?.status ?? "—"}</div>
                     <div><strong>Shipping name:</strong> {row.shipping_name ?? "—"}</div>
@@ -529,8 +550,8 @@ export default function AdminOrdersPage() {
 
                     <button
                       type="button"
-                      onClick={() => row.plate?.id && openSetupPage(row.plate.id)}
-                      disabled={!row.plate?.id}
+                      onClick={() => openSetupPage(row.setup_token)}
+                      disabled={!row.setup_token}
                       style={{
                         border: 0,
                         borderRadius: 10,
@@ -538,32 +559,36 @@ export default function AdminOrdersPage() {
                         fontWeight: 700,
                         background: "#fbbf24",
                         color: "#111827",
-                        cursor: row.plate?.id ? "pointer" : "not-allowed",
-                        opacity: row.plate?.id ? 1 : 0.6,
+                        cursor: row.setup_token ? "pointer" : "not-allowed",
+                        opacity: row.setup_token ? 1 : 0.6,
                       }}
                     >
                       Open setup page
                     </button>
 
-                    {publicUrl ? (
-                      <a
-                        href={publicUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          display: "inline-block",
-                          textAlign: "center",
-                          textDecoration: "none",
-                          borderRadius: 10,
-                          padding: "10px 14px",
-                          fontWeight: 700,
-                          background: "#e5e7eb",
-                          color: "#111827",
-                        }}
-                      >
-                        Open customer page
-                      </a>
-                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openCustomerPage(row.plate?.identifier, row.plate?.slug)
+                      }
+                      disabled={!row.plate?.identifier && !row.plate?.slug}
+                      style={{
+                        border: 0,
+                        borderRadius: 10,
+                        padding: "10px 14px",
+                        fontWeight: 700,
+                        background: "#e5e7eb",
+                        color: "#111827",
+                        cursor:
+                          row.plate?.identifier || row.plate?.slug
+                            ? "pointer"
+                            : "not-allowed",
+                        opacity:
+                          row.plate?.identifier || row.plate?.slug ? 1 : 0.6,
+                      }}
+                    >
+                      Open customer page
+                    </button>
 
                     {svgPreviewUrl ? (
                       <a
@@ -584,6 +609,10 @@ export default function AdminOrdersPage() {
                         Open SVG preview
                       </a>
                     ) : null}
+
+                    <div style={{ fontSize: 12, color: "#6b7280" }}>
+                      Customer page key: {customerPageLabel}
+                    </div>
                   </div>
                 </div>
               </div>
