@@ -46,8 +46,10 @@ export async function GET(req: Request) {
       );
     }
 
-    const plateIds = (plates ?? []).map((p) => p.id);
+    const safePlates = plates ?? [];
+    const plateIds = safePlates.map((p) => p.id);
 
+    const plateMap = new Map(safePlates.map((plate) => [plate.id, plate]));
     let orders: any[] = [];
 
     if (plateIds.length > 0) {
@@ -69,16 +71,22 @@ export async function GET(req: Request) {
       orders = ordersData ?? [];
     }
 
-    const plateMap = new Map((plates ?? []).map((plate) => [plate.id, plate]));
-
-    const items = orders.map((order) => ({
+    const itemsFromOrders = orders.map((order) => ({
       ...order,
       plate: plateMap.get(order.plate_id) ?? null,
     }));
 
-    if (!q && items.length === 0 && (plates?.length ?? 0) > 0) {
-      const plateOnlyItems = (plates ?? []).map((plate) => ({
+    const orderedPlateIds = new Set(
+      orders
+        .map((order) => String(order.plate_id ?? "").trim())
+        .filter(Boolean)
+    );
+
+    const plateOnlyItems = safePlates
+      .filter((plate) => !orderedPlateIds.has(String(plate.id)))
+      .map((plate) => ({
         id: `plate-${plate.id}`,
+        plate_id: plate.id,
         status: null,
         stripe_checkout_session_id: null,
         stripe_payment_intent_id: null,
@@ -95,8 +103,7 @@ export async function GET(req: Request) {
         plate,
       }));
 
-      return NextResponse.json({ items: plateOnlyItems });
-    }
+    const items = [...itemsFromOrders, ...plateOnlyItems];
 
     return NextResponse.json({ items });
   } catch (error) {
