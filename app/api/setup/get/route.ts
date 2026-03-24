@@ -22,13 +22,16 @@ export async function GET(req: Request) {
   }
 
   if (tokenRow.revoked_at) {
-    return NextResponse.json({ error: "Token has been revoked" }, { status: 410 });
+    return NextResponse.json(
+      { error: "Token has been revoked" },
+      { status: 410 }
+    );
   }
 
   if (tokenRow.used_at) {
     return NextResponse.json(
       { error: "This setup link has already been used" },
-      { status: 410 },
+      { status: 410 }
     );
   }
 
@@ -42,7 +45,7 @@ export async function GET(req: Request) {
     sb
       .from("plates")
       .select(
-        "id, identifier, slug, status, contact_enabled, emergency_enabled, preferred_contact_channel, sku",
+        "id, identifier, slug, status, contact_enabled, emergency_enabled, preferred_contact_channel, report_channel, sku"
       )
       .eq("id", plateId)
       .maybeSingle(),
@@ -54,7 +57,7 @@ export async function GET(req: Request) {
     sb
       .from("plate_designs")
       .select(
-        "plate_id, text_line_1, text_line_2, logo_url, qr_url, proof_approved, plate_width_mm, plate_height_mm, qr_size_mm, hole_diameter_mm",
+        "plate_id, text_line_1, text_line_2, logo_url, qr_url, proof_approved, plate_width_mm, plate_height_mm, qr_size_mm, hole_diameter_mm, mounting_holes"
       )
       .eq("plate_id", plateId)
       .maybeSingle(),
@@ -68,7 +71,7 @@ export async function GET(req: Request) {
   if (plateRes.error) {
     return NextResponse.json(
       { error: `Plate fetch failed: ${plateRes.error.message}` },
-      { status: 500 },
+      { status: 500 }
     );
   }
 
@@ -79,21 +82,21 @@ export async function GET(req: Request) {
   if (profileRes.error) {
     return NextResponse.json(
       { error: `Profile fetch failed: ${profileRes.error.message}` },
-      { status: 500 },
+      { status: 500 }
     );
   }
 
   if (designRes.error) {
     return NextResponse.json(
       { error: `Design fetch failed: ${designRes.error.message}` },
-      { status: 500 },
+      { status: 500 }
     );
   }
 
   if (contactsRes.error) {
     return NextResponse.json(
       { error: `Contacts fetch failed: ${contactsRes.error.message}` },
-      { status: 500 },
+      { status: 500 }
     );
   }
 

@@ -2,151 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { buildPlatePreviewData } from "@/lib/platePreview";
+import { buildPlateSvg } from "@/lib/laserSvg";
 
 const LOGO_URL =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
-
-function esc(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
-type PreviewSvgInput = {
-  identifier: string;
-  qrImageHref: string;
-  mountingHoles: boolean;
-  logoUrl?: string;
-};
-
-function buildPreviewSvg({
-  identifier,
-  qrImageHref,
-  mountingHoles,
-  logoUrl,
-}: PreviewSvgInput): string {
-  const widthMm = 90;
-  const heightMm = 90;
-  const cornerRadiusMm = 3;
-  const holeDiameterMm = 5.2;
-
-  const holes = [
-    { x: 5, y: 5 },
-    { x: 85, y: 5 },
-    { x: 5, y: 85 },
-    { x: 85, y: 85 },
-  ];
-
-  const logoWidth = 84;
-  const logoHeight = 9.2;
-  const logoCenterX = 45;
-  const logoCenterY = 16;
-  const logoX = logoCenterX - logoWidth / 2;
-  const logoY = logoCenterY - logoHeight / 2;
-
-  const qrSize = 50;
-  const qrCenterX = 45;
-  const qrCenterY = 51;
-  const qrX = qrCenterX - qrSize / 2;
-  const qrY = qrCenterY - qrSize / 2;
-
-  const textX = 45;
-  const textY = 82;
-  const textFontSize = 4.2;
-
-  const holeMarkup = mountingHoles
-    ? `
-      <g id="holes" fill="none" stroke="#111827" stroke-width="0.35">
-        ${holes
-          .map(
-            (h) =>
-              `<circle cx="${h.x}" cy="${h.y}" r="${holeDiameterMm / 2}" />`,
-          )
-          .join("\n")}
-      </g>
-    `
-    : "";
-
-  const logoMarkup = logoUrl
-    ? `
-      <image
-        href="${esc(logoUrl)}"
-        x="${logoX}"
-        y="${logoY}"
-        width="${logoWidth}"
-        height="${logoHeight}"
-        preserveAspectRatio="xMidYMid meet"
-      />
-    `
-    : "";
-
-  return `
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="100%"
-      viewBox="0 0 ${widthMm} ${heightMm}"
-      role="img"
-      aria-label="Carascan plate preview"
-    >
-      <defs>
-        <linearGradient id="plateGradient" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#f7f7f7" />
-          <stop offset="45%" stop-color="#dfdfdf" />
-          <stop offset="100%" stop-color="#cfcfcf" />
-        </linearGradient>
-      </defs>
-
-      <rect
-        x="0"
-        y="0"
-        width="${widthMm}"
-        height="${heightMm}"
-        rx="${cornerRadiusMm}"
-        ry="${cornerRadiusMm}"
-        fill="url(#plateGradient)"
-      />
-
-      <rect
-        x="0.25"
-        y="0.25"
-        width="${widthMm - 0.5}"
-        height="${heightMm - 0.5}"
-        rx="${cornerRadiusMm}"
-        ry="${cornerRadiusMm}"
-        fill="none"
-        stroke="#111827"
-        stroke-width="0.35"
-      />
-
-      ${holeMarkup}
-
-      ${logoMarkup}
-
-      <image
-        href="${esc(qrImageHref)}"
-        x="${qrX}"
-        y="${qrY}"
-        width="${qrSize}"
-        height="${qrSize}"
-        preserveAspectRatio="none"
-      />
-
-      <text
-        x="${textX}"
-        y="${textY}"
-        text-anchor="middle"
-        dominant-baseline="middle"
-        font-family="Arial, Helvetica, sans-serif"
-        font-size="${textFontSize}"
-        font-weight="500"
-        fill="#111827"
-      >${esc(identifier)}</text>
-    </svg>
-  `;
-}
 
 export default function PlatePreviewGenerator() {
   const [mountingHoles, setMountingHoles] = useState(true);
@@ -187,11 +46,13 @@ export default function PlatePreviewGenerator() {
 
   const svgMarkup = useMemo(() => {
     if (!qrDataUrl) return "";
-    return buildPreviewSvg({
+
+    return buildPlateSvg({
       identifier: "CSN-XXXXXX",
       qrImageHref: qrDataUrl,
       mountingHoles,
-      logoUrl: LOGO_URL,
+      logoImageHref: LOGO_URL,
+      includeCrosshair: false,
     });
   }, [qrDataUrl, mountingHoles]);
 
@@ -298,8 +159,8 @@ export default function PlatePreviewGenerator() {
               fontSize: 15,
             }}
           >
-            This preview now follows the Fusion layout geometry for the locked
-            Carascan plate format.
+            This preview now uses the same locked SVG layout as the public and
+            manufacturing plate output.
           </p>
 
           <div
@@ -327,13 +188,13 @@ export default function PlatePreviewGenerator() {
             </div>
             <div>
               <strong>Mounting:</strong>{" "}
-              {mountingHoles ? "HOLES - 5mm Aluminium pop rivets" : "NO HOLES - Adhesive required"}
+              {mountingHoles
+                ? "HOLES - 5mm Aluminium pop rivets"
+                : "NO HOLES - Adhesive required"}
             </div>
             <div>
               <strong>Hole diameter:</strong> 5.2 mm
             </div>
-          
-          
           </div>
         </aside>
       </div>

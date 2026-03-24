@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { buildPlateSvg } from "@/lib/laserSvg";
 
 const LOGO_URL =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
@@ -9,15 +10,6 @@ const CONTACT_CHAR_LIMIT = 500;
 const REPORT_CHAR_LIMIT = 500;
 const EMERGENCY_CHAR_LIMIT = 700;
 
-function esc(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
 type PlateResponse = {
   plate: {
     slug: string;
@@ -25,6 +17,7 @@ type PlateResponse = {
     contact_enabled: boolean;
     emergency_enabled: boolean;
     preferred_contact_channel?: string | null;
+    report_channel?: string | null;
   };
   profile?: {
     caravan_name?: string | null;
@@ -38,161 +31,11 @@ type PlateResponse = {
   } | null;
 };
 
-type PreviewSvgInput = {
-  identifier: string;
-  qrImageHref: string;
-  mountingHoles: boolean;
-  logoUrl?: string;
-};
-
 type LocationSnapshot = {
   latitude: number;
   longitude: number;
   accuracy_m: number | null;
 };
-
-function buildPreviewSvg({
-  identifier,
-  qrImageHref,
-  mountingHoles,
-  logoUrl,
-}: PreviewSvgInput): string {
-  const widthMm = 90;
-  const heightMm = 90;
-  const cornerRadiusMm = 3;
-  const holeDiameterMm = 5.2;
-
-  const holes = [
-    { x: 5, y: 5 },
-    { x: 85, y: 5 },
-    { x: 5, y: 85 },
-    { x: 85, y: 85 },
-  ];
-
-  const logoWidth = 84;
-  const logoHeight = 9.2;
-  const logoCenterX = 45;
-  const logoCenterY = 16;
-  const logoX = logoCenterX - logoWidth / 2;
-  const logoY = logoCenterY - logoHeight / 2;
-
-  const qrSize = 58.2;
-  const qrCenterX = 45;
-  const qrTop = 23.6;
-  const qrX = qrCenterX - qrSize / 2;
-  const qrY = qrTop;
-
-  const textX = 45;
-  const textFontSize = 4.2;
-  const textBottom = 88;
-  const textY = textBottom - textFontSize / 2;
-
-  const holeMarkup = mountingHoles
-    ? `
-      <g id="holes" fill="none" stroke="#111827" stroke-width="0.35">
-        ${holes
-          .map(
-            (h) =>
-              `<circle cx="${h.x}" cy="${h.y}" r="${holeDiameterMm / 2}" />`
-          )
-          .join("\n")}
-      </g>
-    `
-    : "";
-
-  const logoMarkup = logoUrl
-    ? `
-      <image
-        href="${esc(logoUrl)}"
-        x="${logoX}"
-        y="${logoY}"
-        width="${logoWidth}"
-        height="${logoHeight}"
-        preserveAspectRatio="xMidYMid meet"
-      />
-    `
-    : "";
-
-  return `
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="100%"
-      viewBox="0 0 ${widthMm} ${heightMm}"
-      role="img"
-      aria-label="Carascan plate preview"
-    >
-      <defs>
-        <linearGradient id="plateGradient" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#f7f7f7" />
-          <stop offset="45%" stop-color="#dfdfdf" />
-          <stop offset="100%" stop-color="#cfcfcf" />
-        </linearGradient>
-      </defs>
-
-      <rect
-        x="0"
-        y="0"
-        width="${widthMm}"
-        height="${heightMm}"
-        rx="${cornerRadiusMm}"
-        ry="${cornerRadiusMm}"
-        fill="url(#plateGradient)"
-      />
-
-      <rect
-        x="0.25"
-        y="0.25"
-        width="${widthMm - 0.5}"
-        height="${heightMm - 0.5}"
-        rx="${cornerRadiusMm}"
-        ry="${cornerRadiusMm}"
-        fill="none"
-        stroke="#111827"
-        stroke-width="0.35"
-      />
-
-      ${holeMarkup}
-
-      ${logoMarkup}
-
-      ${
-        qrImageHref
-          ? `
-      <image
-        href="${esc(qrImageHref)}"
-        x="${qrX}"
-        y="${qrY}"
-        width="${qrSize}"
-        height="${qrSize}"
-        preserveAspectRatio="none"
-      />
-      `
-          : `
-      <rect
-        x="${qrX}"
-        y="${qrY}"
-        width="${qrSize}"
-        height="${qrSize}"
-        fill="#ffffff"
-        stroke="#111827"
-        stroke-width="0.35"
-      />
-      `
-      }
-
-      <text
-        x="${textX}"
-        y="${textY}"
-        text-anchor="middle"
-        dominant-baseline="middle"
-        font-family="Arial, Helvetica, sans-serif"
-        font-size="${textFontSize}"
-        font-weight="500"
-        fill="#111827"
-      >${esc(identifier)}</text>
-    </svg>
-  `;
-}
 
 function mapsLink(loc: LocationSnapshot | null) {
   if (!loc) return "";
@@ -330,11 +173,14 @@ export default function PlatePage({
   const mountingHoles = data?.design?.mounting_holes !== false;
 
   const previewSvg = useMemo(() => {
-    return buildPreviewSvg({
+    if (!identifier) return "";
+
+    return buildPlateSvg({
       identifier,
       qrImageHref: qrUrl,
       mountingHoles,
-      logoUrl,
+      logoImageHref: logoUrl,
+      includeCrosshair: false,
     });
   }, [identifier, qrUrl, mountingHoles, logoUrl]);
 
@@ -348,6 +194,13 @@ export default function PlatePage({
     if (channel === "sms") return "SMS";
     return "email";
   }, [data?.plate.preferred_contact_channel]);
+
+  const reportChannelLabel = useMemo(() => {
+    const channel = data?.plate.report_channel || "email";
+    if (channel === "both") return "email and SMS";
+    if (channel === "sms") return "SMS";
+    return "email";
+  }, [data?.plate.report_channel]);
 
   async function sendContactMessage() {
     if (!slug) return;
@@ -648,6 +501,7 @@ export default function PlatePage({
                 <h3 style={{ marginTop: 0 }}>Report Location</h3>
                 <p style={styles.sub}>
                   Your device will ask for location permission when you send the report.
+                  Current delivery channel: <strong>{reportChannelLabel}</strong>.
                 </p>
 
                 <div style={styles.fieldGrid}>
@@ -975,11 +829,6 @@ const styles: Record<string, React.CSSProperties> = {
   singleButtonWrap: {
     display: "flex",
     justifyContent: "center",
-  },
-  doubleButtonWrap: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 12,
   },
   locationBox: {
     padding: 14,

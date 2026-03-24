@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { buildPlateSvg } from "@/lib/laserSvg";
 
 type SetupClientProps = {
   token: string;
@@ -36,6 +37,7 @@ type Design = {
   plate_height_mm: number;
   qr_size_mm: number;
   hole_diameter_mm: number;
+  mounting_holes?: boolean | null;
 };
 
 type EmergencyContact = {
@@ -59,6 +61,9 @@ type LoadState =
   | { status: "loading" }
   | { status: "error"; error: string; details?: unknown }
   | { status: "ready"; data: SetupResponse };
+
+const DEFAULT_LOGO_URL =
+  "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
 function blankContact(): EmergencyContact {
   return {
@@ -274,6 +279,21 @@ export default function SetupClient({ token }: SetupClientProps) {
   }
 
   const { data } = loadState;
+  const logoUrl = data.design?.logo_url?.trim() || DEFAULT_LOGO_URL;
+  const qrUrl = data.design?.qr_url?.trim() || "";
+  const mountingHoles = data.design?.mounting_holes !== false;
+
+  const plateSvg = useMemo(() => {
+    if (!qrUrl) return "";
+
+    return buildPlateSvg({
+      identifier: data.plate.identifier,
+      qrImageHref: qrUrl,
+      mountingHoles,
+      logoImageHref: logoUrl,
+      includeCrosshair: false,
+    });
+  }, [data.plate.identifier, qrUrl, mountingHoles, logoUrl]);
 
   return (
     <main style={styles.page}>
@@ -291,6 +311,27 @@ export default function SetupClient({ token }: SetupClientProps) {
           <p style={styles.muted}>
             Public plate link: <strong>/p/{data.plate.slug}</strong>
           </p>
+        </div>
+
+        <div style={styles.card}>
+          <h2 style={styles.h2}>Plate preview</h2>
+          <p style={styles.muted}>
+            This preview now uses the same locked SVG layout as the public and
+            manufacturing plate output.
+          </p>
+
+          <div style={styles.previewWrap}>
+            {plateSvg ? (
+              <div
+                style={styles.previewFrame}
+                dangerouslySetInnerHTML={{ __html: plateSvg }}
+              />
+            ) : (
+              <div style={styles.previewPlaceholder}>
+                QR preview not available yet.
+              </div>
+            )}
+          </div>
         </div>
 
         <form style={styles.card} onSubmit={handleSave}>
@@ -548,6 +589,27 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     padding: 16,
     marginBottom: 16,
+  },
+  previewWrap: {
+    display: "flex",
+    justifyContent: "center",
+    marginTop: 8,
+  },
+  previewFrame: {
+    width: "100%",
+    maxWidth: 430,
+  },
+  previewPlaceholder: {
+    width: "100%",
+    maxWidth: 430,
+    minHeight: 220,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "1px solid #e5e7eb",
+    borderRadius: 10,
+    background: "#f8fafc",
+    color: "#6b7280",
   },
   button: {
     padding: "12px 18px",

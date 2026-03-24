@@ -1,13 +1,28 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { sendEmail } from "@/lib/notifyEmail";
+import { sendSmsMany } from "@/lib/notifySms";
+import { ENV } from "@/lib/env";
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function normalizePhone(value: string) {
+  return value.replace(/\s+/g, "");
+}
 
 function buildGoogleMapsUrl(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
 }
 
 function buildStaticMapUrl(lat: number, lng: number) {
-  const key = process.env.GOOGLE_MAPS_API_KEY?.trim();
+  const key = ENV.GOOGLE_MAPS_API_KEY;
   if (!key) return null;
 
   const params = new URLSearchParams({
@@ -25,6 +40,28 @@ function buildStaticMapUrl(lat: number, lng: number) {
   return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
 }
 
+function buildEmergencySms(params: {
+  plateIdentifier: string;
+  lat: number;
+  lng: number;
+  reporterName: string;
+  reporterPhone: string;
+  message: string;
+}) {
+  const mapsUrl = buildGoogleMapsUrl(params.lat, params.lng);
+  const parts = [
+    `CARASCAN EMERGENCY`,
+    `Plate ${params.plateIdentifier}`,
+    `Location ${mapsUrl}`,
+  ];
+
+  if (params.reporterName) parts.push(`Reporter ${params.reporterName}`);
+  if (params.reporterPhone) parts.push(`Phone ${params.reporterPhone}`);
+  if (params.message) parts.push(`Details ${params.message}`);
+
+  return parts.join(" | ");
+}
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
@@ -34,7 +71,7 @@ export async function POST(
     const body = await req.json();
 
     const reporterName = String(body?.reporter_name ?? "").trim();
-    const reporterPhone = String(body?.reporter_phone ?? "").trim();
+    const reporterPhone = normalizePhone(String(body?.reporter_phone ?? "").trim());
     const reporterEmail = String(body?.reporter_email ?? "").trim();
     const message = String(body?.message ?? "").trim();
     const locationSource = String(body?.location_source ?? "device").trim();
@@ -57,7 +94,7 @@ export async function POST(
 
     const { data: plate, error: plateError } = await sb
       .from("plates")
-      .select("id, identifier, slug")
+      .select("id, identifier, slug, emergency_enabled")
       .eq("slug", slug)
       .maybeSingle();
 
@@ -72,10 +109,37 @@ export async function POST(
       return NextResponse.json({ error: "Plate not found." }, { status: 404 });
     }
 
-    const { data: tokenRows } = await sb
+    if (!plate.emergency_enabled) {
+      return NextResponse.json(
+        { error: "Emergency alerts are disabled for this plate." },
+        { status: 400 }
+      );
+    }
+
+    const { data: tokenRows, error: tokenError } = await sb
       .from("plate_setup_tokens")
       .select("email")
       .eq("plate_id", plate.id);
+
+    if (tokenError) {
+      return NextResponse.json(
+        { error: `Owner email lookup failed: ${tokenError.message}` },
+        { status: 500 }
+      );
+    }
+
+    const { data: contacts, error: contactsError } = await sb
+      .from("emergency_contacts")
+      .select("name, email, phone, enabled")
+      .eq("plate_id", plate.id)
+      .eq("enabled", true);
+
+    if (contactsError) {
+      return NextResponse.json(
+        { error: `Emergency contact lookup failed: ${contactsError.message}` },
+        { status: 500 }
+      );
+    }
 
     const ownerEmails = Array.from(
       new Set(
@@ -85,12 +149,6 @@ export async function POST(
       )
     );
 
-    const { data: contacts } = await sb
-      .from("emergency_contacts")
-      .select("email")
-      .eq("plate_id", plate.id)
-      .eq("enabled", true);
-
     const emergencyEmails = Array.from(
       new Set(
         (contacts ?? [])
@@ -99,14 +157,17 @@ export async function POST(
       )
     );
 
-    const recipients = Array.from(new Set([...ownerEmails, ...emergencyEmails]));
+    const emergencyPhones = Array.from(
+      new Set(
+        (contacts ?? [])
+          .map((r) => normalizePhone(String(r.phone ?? "").trim()))
+          .filter(Boolean)
+      )
+    );
 
-    if (!recipients.length) {
-      return NextResponse.json(
-        { error: "No recipients found." },
-        { status: 404 }
-      );
-    }
+    const emailRecipients = Array.from(
+      new Set([...ownerEmails, ...emergencyEmails])
+    );
 
     const mapsUrl = buildGoogleMapsUrl(lat, lng);
     const staticMapUrl = buildStaticMapUrl(lat, lng);
@@ -115,7 +176,9 @@ export async function POST(
       <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111827;">
         <h2 style="margin:0 0 16px 0;color:#dc2626;">EMERGENCY ALERT</h2>
 
-        <p style="margin:0 0 10px 0;"><strong>Plate:</strong> ${plate.identifier}</p>
+        <p style="margin:0 0 10px 0;"><strong>Plate:</strong> ${escapeHtml(
+          plate.identifier
+        )}</p>
 
         ${
           staticMapUrl
@@ -152,17 +215,27 @@ export async function POST(
             ? `<p style="margin:0 0 8px 0;"><strong>Accuracy:</strong> ${accuracyM}m</p>`
             : ""
         }
-        <p style="margin:0 0 16px 0;"><strong>Location source:</strong> ${locationSource}</p>
+        <p style="margin:0 0 16px 0;"><strong>Location source:</strong> ${escapeHtml(
+          locationSource
+        )}</p>
 
         <hr style="margin:20px 0;" />
 
-        <p style="margin:0 0 8px 0;"><strong>Reporter:</strong> ${reporterName || "Not provided"}</p>
-        <p style="margin:0 0 8px 0;"><strong>Phone:</strong> ${reporterPhone || "Not provided"}</p>
-        <p style="margin:0 0 8px 0;"><strong>Email:</strong> ${reporterEmail || "Not provided"}</p>
+        <p style="margin:0 0 8px 0;"><strong>Reporter:</strong> ${escapeHtml(
+          reporterName || "Not provided"
+        )}</p>
+        <p style="margin:0 0 8px 0;"><strong>Phone:</strong> ${escapeHtml(
+          reporterPhone || "Not provided"
+        )}</p>
+        <p style="margin:0 0 8px 0;"><strong>Email:</strong> ${escapeHtml(
+          reporterEmail || "Not provided"
+        )}</p>
 
         ${
           message
-            ? `<p style="margin:12px 0 0 0;"><strong>Details:</strong><br/>${message.replace(/\n/g, "<br/>")}</p>`
+            ? `<p style="margin:12px 0 0 0;"><strong>Details:</strong><br/>${escapeHtml(
+                message
+              ).replace(/\n/g, "<br/>")}</p>`
             : ""
         }
 
@@ -175,9 +248,41 @@ export async function POST(
       </div>
     `;
 
-    await sendEmail(recipients, `🚨 EMERGENCY - ${plate.identifier}`, html);
+    const smsBody = buildEmergencySms({
+      plateIdentifier: plate.identifier,
+      lat,
+      lng,
+      reporterName,
+      reporterPhone,
+      message,
+    });
 
-    return NextResponse.json({ ok: true });
+    if (!emailRecipients.length && !emergencyPhones.length) {
+      return NextResponse.json(
+        { error: "No emergency recipients found." },
+        { status: 404 }
+      );
+    }
+
+    const tasks: Promise<unknown>[] = [];
+
+    if (emailRecipients.length) {
+      tasks.push(
+        sendEmail(emailRecipients, `🚨 EMERGENCY - ${plate.identifier}`, html)
+      );
+    }
+
+    if (emergencyPhones.length) {
+      tasks.push(sendSmsMany(emergencyPhones, smsBody));
+    }
+
+    await Promise.all(tasks);
+
+    return NextResponse.json({
+      ok: true,
+      email_recipient_count: emailRecipients.length,
+      sms_recipient_count: emergencyPhones.length,
+    });
   } catch (error) {
     const message =
       error instanceof Error
