@@ -244,11 +244,14 @@ export default function AdminOrdersPage() {
     );
   }
 
-  function openCustomerPage(slug?: string | null) {
-    const publicKey = (slug ?? "").trim();
+  function openCustomerPage(
+    identifier?: string | null,
+    slug?: string | null
+  ) {
+    const publicKey = (identifier ?? "").trim() || (slug ?? "").trim();
 
     if (!publicKey) {
-      alert("No public page slug found for this plate.");
+      alert("No public page key found for this plate.");
       return;
     }
 
@@ -472,6 +475,9 @@ export default function AdminOrdersPage() {
               ? `/plates/${encodeURIComponent(row.plate.identifier)}/svg?token=${encodeURIComponent(token)}`
               : null;
 
+            const canOpenCustomerPage =
+              !!(row.plate?.identifier ?? "").trim() || !!(row.plate?.slug ?? "").trim();
+
             return (
               <div
                 key={row.id}
@@ -568,8 +574,10 @@ export default function AdminOrdersPage() {
 
                     <button
                       type="button"
-                      onClick={() => openCustomerPage(row.plate?.slug)}
-                      disabled={!row.plate?.slug}
+                      onClick={() =>
+                        openCustomerPage(row.plate?.identifier, row.plate?.slug)
+                      }
+                      disabled={!canOpenCustomerPage}
                       style={{
                         border: 0,
                         borderRadius: 10,
@@ -577,8 +585,8 @@ export default function AdminOrdersPage() {
                         fontWeight: 700,
                         background: "#e5e7eb",
                         color: "#111827",
-                        cursor: row.plate?.slug ? "pointer" : "not-allowed",
-                        opacity: row.plate?.slug ? 1 : 0.6,
+                        cursor: canOpenCustomerPage ? "pointer" : "not-allowed",
+                        opacity: canOpenCustomerPage ? 1 : 0.6,
                       }}
                     >
                       Open customer page
