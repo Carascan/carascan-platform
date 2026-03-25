@@ -109,7 +109,6 @@ export default function SetupClient({ token }: SetupClientProps) {
   const [caravanName, setCaravanName] = useState("");
   const [bio, setBio] = useState("");
   const [contactEnabled, setContactEnabled] = useState(true);
-  const [emergencyEnabled, setEmergencyEnabled] = useState(true);
   const [contactChannel, setContactChannel] = useState("email");
   const [reportChannel, setReportChannel] = useState("email");
   const [mountingHoles, setMountingHoles] = useState(true);
@@ -467,15 +466,6 @@ export default function SetupClient({ token }: SetupClientProps) {
             Enable Virtual Doorknock
           </label>
 
-          <label style={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              checked={emergencyEnabled}
-              onChange={(e) => setEmergencyEnabled(e.target.checked)}
-            />
-            Enable emergency alerts
-          </label>
-
           <h2 style={styles.h2}>
             Emergency contacts - SMS & Email contacted in an emergency scan
           </h2>
@@ -521,16 +511,7 @@ export default function SetupClient({ token }: SetupClientProps) {
                 />
               </label>
 
-              <label style={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  checked={contact.enabled}
-                  onChange={(e) =>
-                    updateContact(index, { enabled: e.target.checked })
-                  }
-                />
-                Enabled
-              </label>
+              
             </div>
           ))}
 
