@@ -74,6 +74,10 @@ export async function POST(req: Request) {
         : null;
 
     const contactEnabled = body.contact_enabled !== false;
+
+// mandatory
+const emergencyEnabled = true;
+const reportChannel = cleanChannel(body.report_channel || "both");
     const emergencyEnabled = body.emergency_enabled !== false;
     const contactChannel = cleanChannel(body.contact_channel);
     const reportChannel = cleanChannel(body.report_channel);
@@ -111,12 +115,12 @@ export async function POST(req: Request) {
     const { error: plateError } = await supabase
       .from("plates")
       .update({
-        contact_enabled: contactEnabled,
-        emergency_enabled: emergencyEnabled,
-        preferred_contact_channel: contactChannel,
-        report_channel: reportChannel,
-        status: "active",
-      })
+  contact_enabled: contactEnabled,
+  emergency_enabled: true,
+  preferred_contact_channel: contactChannel,
+  report_channel: reportChannel,
+  status: "active",
+})
       .eq("id", tokenRow.plate_id);
 
     if (plateError) {
@@ -126,13 +130,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const { error: designError } = await supabase.from("plate_designs").upsert(
-      {
-        plate_id: tokenRow.plate_id,
-        mounting_holes: mountingHoles,
-      },
-      { onConflict: "plate_id" }
-    );
+    const { error: designError } = await supabase
+  .from("plate_designs")
+  .update({
+    mounting_holes: mountingHoles,
+  })
+  .eq("plate_id", tokenRow.plate_id);
 
     if (designError) {
       return NextResponse.json(
