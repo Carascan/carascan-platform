@@ -413,7 +413,7 @@ export default function SetupClient({ token }: SetupClientProps) {
         </div>
 
         <form style={styles.card} onSubmit={handleSave}>
-          <h2 style={styles.h2}>Profile</h2>
+          <h2 style={styles.h2}>Carascan QR Plate Profile</h2>
 
           <label style={styles.label}>
             Caravan name
@@ -426,7 +426,7 @@ export default function SetupClient({ token }: SetupClientProps) {
           </label>
 
           <label style={styles.label}>
-            Bio / notes
+            General Information (Share everything or share nothing - the choice is yours)
             <textarea
               style={styles.textarea}
               value={bio}
@@ -436,7 +436,7 @@ export default function SetupClient({ token }: SetupClientProps) {
             />
           </label>
 
-          <h2 style={styles.h2}>Emergency contacts</h2>
+          <h2 style={styles.h2}>Emergency contacts - SMS & Email contacted in an emergency scan</h2>
           <p style={styles.muted}>
             Add up to 3. All fields are optional. Emergency alerts always send
             via both email and SMS where details are provided.
