@@ -74,14 +74,10 @@ export async function POST(req: Request) {
         : null;
 
     const contactEnabled = body.contact_enabled !== false;
-
-// mandatory
 const emergencyEnabled = true;
+const contactChannel = cleanChannel(body.contact_channel);
 const reportChannel = cleanChannel(body.report_channel || "both");
-    const emergencyEnabled = body.emergency_enabled !== false;
-    const contactChannel = cleanChannel(body.contact_channel);
-    const reportChannel = cleanChannel(body.report_channel);
-    const mountingHoles = body.mounting_holes !== false;
+const mountingHoles = body.mounting_holes !== false;
 
     const emergencyContacts = Array.isArray(body.emergency_contacts)
       ? body.emergency_contacts
