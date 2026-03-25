@@ -88,6 +88,29 @@ async function requestCurrentLocation(): Promise<LocationSnapshot> {
   });
 }
 
+async function imageUrlToDataUrl(url: string): Promise<string> {
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`Failed to load image: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        resolve(result);
+      } else {
+        reject(new Error("Failed to convert image to data URL."));
+      }
+    };
+    reader.onerror = () => reject(new Error("Failed to read image."));
+    reader.readAsDataURL(blob);
+  });
+}
+
 export default function PlatePage({
   params,
 }: {
@@ -97,6 +120,7 @@ export default function PlatePage({
   const [data, setData] = useState<PlateResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [embeddedQrHref, setEmbeddedQrHref] = useState("");
 
   const [openPanel, setOpenPanel] = useState<
     null | "contact" | "report-location" | "emergency"
@@ -172,17 +196,45 @@ export default function PlatePage({
   const logoUrl = data?.design?.logo_url?.trim() || LOGO_URL;
   const mountingHoles = data?.design?.mounting_holes !== false;
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function embedQr() {
+      if (!qrUrl) {
+        setEmbeddedQrHref("");
+        return;
+      }
+
+      try {
+        const dataUrl = await imageUrlToDataUrl(qrUrl);
+        if (!cancelled) {
+          setEmbeddedQrHref(dataUrl);
+        }
+      } catch {
+        if (!cancelled) {
+          setEmbeddedQrHref(qrUrl);
+        }
+      }
+    }
+
+    void embedQr();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [qrUrl]);
+
   const previewSvg = useMemo(() => {
     if (!identifier) return "";
 
     return buildPlateSvg({
       identifier,
-      qrImageHref: qrUrl,
+      qrImageHref: embeddedQrHref || qrUrl,
       mountingHoles,
       logoImageHref: logoUrl,
       includeCrosshair: false,
     });
-  }, [identifier, qrUrl, mountingHoles, logoUrl]);
+  }, [identifier, embeddedQrHref, qrUrl, mountingHoles, logoUrl]);
 
   const contactRemaining = CONTACT_CHAR_LIMIT - contactMessage.length;
   const reportRemaining = REPORT_CHAR_LIMIT - reportNotes.length;
