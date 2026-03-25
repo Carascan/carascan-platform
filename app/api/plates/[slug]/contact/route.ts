@@ -50,14 +50,14 @@ function getClientIp(req: Request): string {
 }
 
 function makeFingerprint(input: {
-  slug: string;
+  key: string;
   ip: string;
   name: string;
   phone: string;
   email: string;
 }) {
   const base = [
-    input.slug.trim().toLowerCase(),
+    input.key.trim().toLowerCase(),
     input.ip.trim().toLowerCase(),
     input.name.trim().toLowerCase(),
     input.phone.trim().toLowerCase(),
@@ -141,7 +141,7 @@ export async function POST(
 
     const ip = getClientIp(req);
     const senderFingerprint = makeFingerprint({
-      slug: plate.slug ?? input,
+      key: plate.slug ?? input,
       ip,
       name: reporterName,
       phone: reporterPhone,

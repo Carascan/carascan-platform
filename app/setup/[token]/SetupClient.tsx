@@ -217,6 +217,39 @@ export default function SetupClient({ token }: SetupClientProps) {
     };
   }, [token]);
 
+  const qrUrl =
+    loadState.status === "ready"
+      ? loadState.data.design?.qr_url?.trim() || ""
+      : "";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function embedQr() {
+      if (!qrUrl) {
+        setEmbeddedQrHref("");
+        return;
+      }
+
+      try {
+        const dataUrl = await imageUrlToDataUrl(qrUrl);
+        if (!cancelled) {
+          setEmbeddedQrHref(dataUrl);
+        }
+      } catch {
+        if (!cancelled) {
+          setEmbeddedQrHref(qrUrl);
+        }
+      }
+    }
+
+    void embedQr();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [qrUrl]);
+
   const activeContacts = useMemo(() => {
     return contacts
       .map((c) => ({
@@ -326,35 +359,6 @@ export default function SetupClient({ token }: SetupClientProps) {
 
   const { data } = loadState;
   const logoUrl = data.design?.logo_url?.trim() || DEFAULT_LOGO_URL;
-  const qrUrl = data.design?.qr_url?.trim() || "";
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function embedQr() {
-      if (!qrUrl) {
-        setEmbeddedQrHref("");
-        return;
-      }
-
-      try {
-        const dataUrl = await imageUrlToDataUrl(qrUrl);
-        if (!cancelled) {
-          setEmbeddedQrHref(dataUrl);
-        }
-      } catch {
-        if (!cancelled) {
-          setEmbeddedQrHref(qrUrl);
-        }
-      }
-    }
-
-    void embedQr();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [qrUrl]);
 
   const plateSvg = useMemo(() => {
     if (!data.plate.identifier || !(embeddedQrHref || qrUrl)) return "";

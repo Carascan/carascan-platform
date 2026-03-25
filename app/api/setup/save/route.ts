@@ -7,10 +7,9 @@ type SetupSaveBody = {
   bio?: string | null;
   contact_enabled?: boolean;
   emergency_enabled?: boolean;
-
   contact_channel?: "email" | "sms" | "both" | string;
   report_channel?: "email" | "sms" | "both" | string;
-
+  mounting_holes?: boolean;
   emergency_contacts?: Array<{
     name?: string;
     phone?: string;
@@ -20,7 +19,7 @@ type SetupSaveBody = {
 };
 
 function normalizePhone(value: string) {
-  return value.replace(/\s+/g, "");
+  return String(value ?? "").replace(/\s+/g, "");
 }
 
 function cleanChannel(value: unknown) {
@@ -38,11 +37,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing token" }, { status: 400 });
     }
 
-    const { data: tokenRow } = await supabase
+    const { data: tokenRow, error: tokenLookupError } = await supabase
       .from("plate_setup_tokens")
       .select("token, plate_id, expires_at, used_at, revoked_at")
       .eq("token", token)
       .maybeSingle();
+
+    if (tokenLookupError) {
+      return NextResponse.json(
+        { error: `Token lookup failed: ${tokenLookupError.message}` },
+        { status: 500 }
+      );
+    }
 
     if (!tokenRow) {
       return NextResponse.json({ error: "Invalid token" }, { status: 404 });
@@ -69,9 +75,9 @@ export async function POST(req: Request) {
 
     const contactEnabled = body.contact_enabled !== false;
     const emergencyEnabled = body.emergency_enabled !== false;
-
     const contactChannel = cleanChannel(body.contact_channel);
     const reportChannel = cleanChannel(body.report_channel);
+    const mountingHoles = body.mounting_holes !== false;
 
     const emergencyContacts = Array.isArray(body.emergency_contacts)
       ? body.emergency_contacts
@@ -86,7 +92,7 @@ export async function POST(req: Request) {
           .filter((c) => c.name || c.phone || c.email)
       : [];
 
-    await supabase.from("plate_profiles").upsert(
+    const { error: profileError } = await supabase.from("plate_profiles").upsert(
       {
         plate_id: tokenRow.plate_id,
         caravan_name: caravanName,
@@ -95,39 +101,89 @@ export async function POST(req: Request) {
       { onConflict: "plate_id" }
     );
 
-    await supabase
+    if (profileError) {
+      return NextResponse.json(
+        { error: `Profile save failed: ${profileError.message}` },
+        { status: 500 }
+      );
+    }
+
+    const { error: plateError } = await supabase
       .from("plates")
       .update({
         contact_enabled: contactEnabled,
         emergency_enabled: emergencyEnabled,
-
-        // NEW STRUCTURE
         preferred_contact_channel: contactChannel,
         report_channel: reportChannel,
-
         status: "active",
       })
       .eq("id", tokenRow.plate_id);
 
-    await supabase
+    if (plateError) {
+      return NextResponse.json(
+        { error: `Plate update failed: ${plateError.message}` },
+        { status: 500 }
+      );
+    }
+
+    const { error: designError } = await supabase.from("plate_designs").upsert(
+      {
+        plate_id: tokenRow.plate_id,
+        mounting_holes: mountingHoles,
+      },
+      { onConflict: "plate_id" }
+    );
+
+    if (designError) {
+      return NextResponse.json(
+        { error: `Design update failed: ${designError.message}` },
+        { status: 500 }
+      );
+    }
+
+    const { error: deleteContactsError } = await supabase
       .from("emergency_contacts")
       .delete()
       .eq("plate_id", tokenRow.plate_id);
 
-    if (emergencyContacts.length > 0) {
-      await supabase.from("emergency_contacts").insert(emergencyContacts);
+    if (deleteContactsError) {
+      return NextResponse.json(
+        { error: `Emergency contact reset failed: ${deleteContactsError.message}` },
+        { status: 500 }
+      );
     }
 
-    await supabase
+    if (emergencyContacts.length > 0) {
+      const { error: insertContactsError } = await supabase
+        .from("emergency_contacts")
+        .insert(emergencyContacts);
+
+      if (insertContactsError) {
+        return NextResponse.json(
+          { error: `Emergency contact save failed: ${insertContactsError.message}` },
+          { status: 500 }
+        );
+      }
+    }
+
+    const { error: tokenUpdateError } = await supabase
       .from("plate_setup_tokens")
       .update({ used_at: new Date().toISOString() })
       .eq("token", token);
 
+    if (tokenUpdateError) {
+      return NextResponse.json(
+        { error: `Token finalisation failed: ${tokenUpdateError.message}` },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       ok: true,
       plate_id: tokenRow.plate_id,
+      mounting_holes: mountingHoles,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Unexpected server error" },
       { status: 500 }
