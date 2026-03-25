@@ -430,6 +430,52 @@ export default function SetupClient({ token }: SetupClientProps) {
             />
           </label>
 
+          <div style={styles.channelGrid}>
+            <label style={styles.label}>
+              Virtual Doorknock
+              <select
+                style={styles.input}
+                value={contactChannel}
+                onChange={(e) => setContactChannel(e.target.value)}
+              >
+                <option value="email">Email</option>
+                <option value="sms">SMS</option>
+                <option value="both">Both</option>
+              </select>
+            </label>
+
+            <label style={styles.label}>
+              Report Location
+              <select
+                style={styles.input}
+                value={reportChannel}
+                onChange={(e) => setReportChannel(e.target.value)}
+              >
+                <option value="email">Email</option>
+                <option value="sms">SMS</option>
+                <option value="both">Both</option>
+              </select>
+            </label>
+          </div>
+
+          <label style={styles.checkboxRow}>
+            <input
+              type="checkbox"
+              checked={contactEnabled}
+              onChange={(e) => setContactEnabled(e.target.checked)}
+            />
+            Enable Virtual Doorknock
+          </label>
+
+          <label style={styles.checkboxRow}>
+            <input
+              type="checkbox"
+              checked={emergencyEnabled}
+              onChange={(e) => setEmergencyEnabled(e.target.checked)}
+            />
+            Enable emergency alerts
+          </label>
+
           <h2 style={styles.h2}>
             Emergency contacts - SMS & Email contacted in an emergency scan
           </h2>
@@ -620,6 +666,12 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     gap: 10,
     marginBottom: 14,
+  },
+  channelGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: 16,
+    marginBottom: 8,
   },
   contactBlock: {
     border: "1px solid #e5e7eb",
