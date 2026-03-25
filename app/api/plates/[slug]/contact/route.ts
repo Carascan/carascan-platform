@@ -98,14 +98,28 @@ export async function POST(
     }
 
     const sb = supabaseAdmin();
+    const input = String(slug ?? "").trim();
 
-    const { data: plate, error: plateError } = await sb
+    let { data: plate, error: plateError } = await sb
       .from("plates")
       .select(
         "id, identifier, slug, contact_enabled, preferred_contact_channel"
       )
-      .eq("slug", slug)
+      .eq("identifier", input.toUpperCase())
       .maybeSingle();
+
+    if (!plate) {
+      const fallback = await sb
+        .from("plates")
+        .select(
+          "id, identifier, slug, contact_enabled, preferred_contact_channel"
+        )
+        .eq("slug", input)
+        .maybeSingle();
+
+      plate = fallback.data;
+      plateError = fallback.error;
+    }
 
     if (plateError) {
       return NextResponse.json(
@@ -127,7 +141,7 @@ export async function POST(
 
     const ip = getClientIp(req);
     const senderFingerprint = makeFingerprint({
-      slug,
+      slug: plate.slug ?? input,
       ip,
       name: reporterName,
       phone: reporterPhone,
@@ -150,7 +164,9 @@ export async function POST(
 
     if (recentAttemptError) {
       return NextResponse.json(
-        { error: `Contact cooldown lookup failed: ${recentAttemptError.message}` },
+        {
+          error: `Contact cooldown lookup failed: ${recentAttemptError.message}`,
+        },
         { status: 500 }
       );
     }
@@ -216,14 +232,30 @@ export async function POST(
     const shouldSendSms =
       preferredChannel === "sms" || preferredChannel === "both";
 
-    if (
-      (shouldSendEmail && !emails.length) &&
-      (shouldSendSms && !phones.length)
-    ) {
+    if (shouldSendEmail && !emails.length && shouldSendSms && !phones.length) {
       return NextResponse.json(
         {
           error:
             "No contact recipients found for the selected contact channel.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (shouldSendEmail && !emails.length && !shouldSendSms) {
+      return NextResponse.json(
+        {
+          error:
+            "No email recipients found for the selected contact channel.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (shouldSendSms && !phones.length && !shouldSendEmail) {
+      return NextResponse.json(
+        {
+          error: "No SMS recipients found for the selected contact channel.",
         },
         { status: 400 }
       );
