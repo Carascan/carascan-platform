@@ -380,7 +380,6 @@ export default function SetupClient({ token }: SetupClientProps) {
   }
 
   const { data } = loadState;
-  const publicPlateHref = `/p/${data.plate.slug}`;
 
   return (
     <main style={styles.page}>
@@ -388,40 +387,29 @@ export default function SetupClient({ token }: SetupClientProps) {
         <Header />
 
         <div style={styles.card}>
-          <h1 style={styles.h1}>Customer Configuration Page</h1>
-          <p style={styles.muted}>
+          <h1 style={{ ...styles.h1, textAlign: "center" }}>
+            Customer Configuration Page
+          </h1>
+          <p style={{ ...styles.muted, textAlign: "center" }}>
             Plate: <strong>{data.plate.identifier}</strong>
           </p>
         </div>
 
         <div style={styles.card}>
           <h2 style={styles.h2}>Plate preview</h2>
-          <p style={styles.muted}>Preview plate as public page.</p>
 
           <div style={styles.previewWrap}>
             {plateSvg ? (
-              <a
-                href={publicPlateHref}
-                style={styles.previewLink}
-                aria-label={`Open public page for ${data.plate.identifier}`}
-              >
-                <div
-                  style={styles.previewFrame}
-                  dangerouslySetInnerHTML={{ __html: plateSvg }}
-                />
-              </a>
+              <div
+                style={styles.previewFrame}
+                dangerouslySetInnerHTML={{ __html: plateSvg }}
+              />
             ) : (
               <div style={styles.previewPlaceholder}>
                 QR preview not available yet.
               </div>
             )}
           </div>
-
-          <p style={styles.muted}>
-            <a href={publicPlateHref} style={styles.inlineLink}>
-              Open public page
-            </a>
-          </p>
         </div>
 
         <form style={styles.card} onSubmit={handleSave}>
@@ -446,68 +434,6 @@ export default function SetupClient({ token }: SetupClientProps) {
               placeholder="Optional"
               rows={4}
             />
-          </label>
-
-          <h2 style={styles.h2}>Plate options</h2>
-
-          <label style={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              checked={mountingHoles}
-              onChange={(e) => setMountingHoles(e.target.checked)}
-            />
-            Include mounting holes
-          </label>
-
-          <p style={styles.muted}>
-            Turn this off if you selected the no-holes option and want the plate
-            preview and saved setup to match.
-          </p>
-
-          <h2 style={styles.h2}>Preferences</h2>
-
-          <label style={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              checked={contactEnabled}
-              onChange={(e) => setContactEnabled(e.target.checked)}
-            />
-            Enable public contact
-          </label>
-
-          <label style={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              checked={emergencyEnabled}
-              onChange={(e) => setEmergencyEnabled(e.target.checked)}
-            />
-            Enable emergency alerts
-          </label>
-
-          <label style={styles.label}>
-            Contact method
-            <select
-              style={styles.input}
-              value={contactChannel}
-              onChange={(e) => setContactChannel(e.target.value)}
-            >
-              <option value="email">Email</option>
-              <option value="sms">SMS</option>
-              <option value="both">Both</option>
-            </select>
-          </label>
-
-          <label style={styles.label}>
-            Report location method
-            <select
-              style={styles.input}
-              value={reportChannel}
-              onChange={(e) => setReportChannel(e.target.value)}
-            >
-              <option value="email">Email</option>
-              <option value="sms">SMS</option>
-              <option value="both">Both</option>
-            </select>
           </label>
 
           <h2 style={styles.h2}>Emergency contacts</h2>
