@@ -74,11 +74,37 @@ function blankContact(): EmergencyContact {
   };
 }
 
+async function imageUrlToDataUrl(url: string): Promise<string> {
+  const response = await fetch(url, { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error(`Failed to load image: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Failed to convert image to data URL."));
+      }
+    };
+
+    reader.onerror = () => reject(new Error("Failed to read image."));
+    reader.readAsDataURL(blob);
+  });
+}
+
 export default function SetupClient({ token }: SetupClientProps) {
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [embeddedQrHref, setEmbeddedQrHref] = useState("");
 
   const [caravanName, setCaravanName] = useState("");
   const [bio, setBio] = useState("");
@@ -123,11 +149,11 @@ export default function SetupClient({ token }: SetupClientProps) {
               ? (body as { error: string }).error
               : "invalid_token";
 
-          const params = new URLSearchParams();
-          params.set("reason", errorMessage);
-          params.set("token", token);
-
-          window.location.href = `/support?${params.toString()}`;
+          setLoadState({
+            status: "error",
+            error: errorMessage,
+            details: body,
+          });
           return;
         }
 
@@ -170,18 +196,18 @@ export default function SetupClient({ token }: SetupClientProps) {
         );
 
         setLoadState({ status: "ready", data });
-      } catch {
+      } catch (err) {
         if (cancelled) return;
 
-        const params = new URLSearchParams();
-        params.set("reason", "load_error");
-        params.set("token", token);
-
-        window.location.href = `/support?${params.toString()}`;
+        setLoadState({
+          status: "error",
+          error: "Failed to load setup data.",
+          details: err instanceof Error ? err.message : err,
+        });
       }
     }
 
-    load();
+    void load();
 
     return () => {
       cancelled = true;
@@ -275,7 +301,23 @@ export default function SetupClient({ token }: SetupClientProps) {
   }
 
   if (loadState.status === "error") {
-    return null;
+    return (
+      <main style={styles.page}>
+        <div style={styles.wrapper}>
+          <Header />
+          <div style={styles.card}>
+            <h1 style={styles.h1}>Setup link issue</h1>
+            <p style={styles.error}>{loadState.error}</p>
+            <p style={styles.muted}>
+              This setup link may be invalid, expired, revoked, or already used.
+            </p>
+            <p style={styles.muted}>
+              Use the Help button if you need a new setup link.
+            </p>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   const { data } = loadState;
@@ -283,17 +325,45 @@ export default function SetupClient({ token }: SetupClientProps) {
   const qrUrl = data.design?.qr_url?.trim() || "";
   const mountingHoles = data.design?.mounting_holes !== false;
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function embedQr() {
+      if (!qrUrl) {
+        setEmbeddedQrHref("");
+        return;
+      }
+
+      try {
+        const dataUrl = await imageUrlToDataUrl(qrUrl);
+        if (!cancelled) {
+          setEmbeddedQrHref(dataUrl);
+        }
+      } catch {
+        if (!cancelled) {
+          setEmbeddedQrHref(qrUrl);
+        }
+      }
+    }
+
+    void embedQr();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [qrUrl]);
+
   const plateSvg = useMemo(() => {
-    if (!qrUrl) return "";
+    if (!data.plate.identifier || !(embeddedQrHref || qrUrl)) return "";
 
     return buildPlateSvg({
       identifier: data.plate.identifier,
-      qrImageHref: qrUrl,
+      qrImageHref: embeddedQrHref || qrUrl,
       mountingHoles,
       logoImageHref: logoUrl,
       includeCrosshair: false,
     });
-  }, [data.plate.identifier, qrUrl, mountingHoles, logoUrl]);
+  }, [data.plate.identifier, embeddedQrHref, qrUrl, mountingHoles, logoUrl]);
 
   return (
     <main style={styles.page}>
