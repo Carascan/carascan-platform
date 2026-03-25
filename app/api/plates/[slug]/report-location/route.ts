@@ -138,7 +138,7 @@ export async function POST(
 
     const mapUrl = buildMapsUrl(lat, lng);
 
-    const emailHtml = `
+    const html = `
   <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111827;">
     <h2>📍 Carascan QR Report Location 📍</h2>
     <p><strong>Plate:</strong> ${plate.identifier}</p>
