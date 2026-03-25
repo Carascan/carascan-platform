@@ -379,8 +379,6 @@ export default function SetupClient({ token }: SetupClientProps) {
     );
   }
 
-  const { data } = loadState;
-
   return (
     <main style={styles.page}>
       <div style={styles.wrapper}>
@@ -390,14 +388,9 @@ export default function SetupClient({ token }: SetupClientProps) {
           <h1 style={{ ...styles.h1, textAlign: "center" }}>
             Customer Configuration Page
           </h1>
-          <p style={{ ...styles.muted, textAlign: "center" }}>
-            Plate: <strong>{data.plate.identifier}</strong>
-          </p>
         </div>
 
-        <div style={styles.card}>
-          
-
+        <div style={styles.previewCard}>
           <div style={styles.previewWrap}>
             {plateSvg ? (
               <div
@@ -426,7 +419,8 @@ export default function SetupClient({ token }: SetupClientProps) {
           </label>
 
           <label style={styles.label}>
-            General Information (Share everything or share nothing - the choice is yours)
+            General Information (Share everything or share nothing - the choice
+            is yours)
             <textarea
               style={styles.textarea}
               value={bio}
@@ -436,7 +430,9 @@ export default function SetupClient({ token }: SetupClientProps) {
             />
           </label>
 
-          <h2 style={styles.h2}>Emergency contacts - SMS & Email contacted in an emergency scan</h2>
+          <h2 style={styles.h2}>
+            Emergency contacts - SMS & Email contacted in an emergency scan
+          </h2>
           <p style={styles.muted}>
             Add up to 3. All fields are optional. Emergency alerts always send
             via both email and SMS where details are provided.
@@ -570,6 +566,15 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     padding: 24,
   },
+  previewCard: {
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 12,
+    padding: 24,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   h1: {
     margin: "0 0 8px 0",
     fontSize: 28,
@@ -623,13 +628,19 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 16,
   },
   previewWrap: {
+    width: "100%",
     display: "flex",
     justifyContent: "center",
-    marginTop: 8,
+    alignItems: "center",
+    marginTop: 0,
   },
   previewFrame: {
     width: "100%",
     maxWidth: 430,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    margin: "0 auto",
   },
   previewLink: {
     display: "block",
@@ -649,6 +660,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     background: "#f8fafc",
     color: "#6b7280",
+    margin: "0 auto",
   },
   inlineLink: {
     color: "#111827",
