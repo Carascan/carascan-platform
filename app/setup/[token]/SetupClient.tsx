@@ -112,6 +112,7 @@ export default function SetupClient({ token }: SetupClientProps) {
   const [emergencyEnabled, setEmergencyEnabled] = useState(true);
   const [contactChannel, setContactChannel] = useState("email");
   const [reportChannel, setReportChannel] = useState("email");
+  const [mountingHoles, setMountingHoles] = useState(true);
   const [contacts, setContacts] = useState<EmergencyContact[]>([
     blankContact(),
     blankContact(),
@@ -178,6 +179,8 @@ export default function SetupClient({ token }: SetupClientProps) {
             ? incomingReportChannel
             : "email"
         );
+
+        setMountingHoles(data.design?.mounting_holes !== false);
 
         const existing = Array.isArray(data.contacts)
           ? data.contacts.slice(0, 3)
@@ -247,6 +250,7 @@ export default function SetupClient({ token }: SetupClientProps) {
         emergency_enabled: emergencyEnabled,
         contact_channel: contactChannel,
         report_channel: reportChannel,
+        mounting_holes: mountingHoles,
         emergency_contacts: activeContacts,
       };
 
@@ -323,7 +327,6 @@ export default function SetupClient({ token }: SetupClientProps) {
   const { data } = loadState;
   const logoUrl = data.design?.logo_url?.trim() || DEFAULT_LOGO_URL;
   const qrUrl = data.design?.qr_url?.trim() || "";
-  const mountingHoles = data.design?.mounting_holes !== false;
 
   useEffect(() => {
     let cancelled = false;
@@ -427,6 +430,22 @@ export default function SetupClient({ token }: SetupClientProps) {
               rows={4}
             />
           </label>
+
+          <h2 style={styles.h2}>Plate options</h2>
+
+          <label style={styles.checkboxRow}>
+            <input
+              type="checkbox"
+              checked={mountingHoles}
+              onChange={(e) => setMountingHoles(e.target.checked)}
+            />
+            Include mounting holes
+          </label>
+
+          <p style={styles.muted}>
+            Turn this off if you selected the no-holes option and want the plate
+            preview and saved setup to match.
+          </p>
 
           <h2 style={styles.h2}>Preferences</h2>
 
