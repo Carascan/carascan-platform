@@ -45,7 +45,7 @@ type EmergencyContact = {
   name: string;
   phone: string;
   email: string;
-  enabled: boolean;
+  enabled?: boolean;
 };
 
 type SetupResponse = {
@@ -70,7 +70,6 @@ function blankContact(): EmergencyContact {
     name: "",
     phone: "",
     email: "",
-    enabled: true,
   };
 }
 
@@ -166,7 +165,6 @@ export default function SetupClient({ token }: SetupClientProps) {
         setCaravanName(data.profile?.caravan_name ?? "");
         setBio(data.profile?.bio ?? "");
         setContactEnabled(Boolean(data.plate?.contact_enabled));
-        setEmergencyEnabled(Boolean(data.plate?.emergency_enabled));
 
         const incomingContactChannel =
           data.plate?.preferred_contact_channel || "email";
@@ -197,7 +195,6 @@ export default function SetupClient({ token }: SetupClientProps) {
             name: c.name ?? "",
             phone: c.phone ?? "",
             email: c.email ?? "",
-            enabled: c.enabled ?? true,
           }))
         );
 
@@ -260,7 +257,6 @@ export default function SetupClient({ token }: SetupClientProps) {
         name: c.name.trim(),
         phone: c.phone.trim(),
         email: c.email.trim(),
-        enabled: c.enabled,
       }))
       .filter((c) => c.name || c.phone || c.email);
   }, [contacts]);
@@ -272,7 +268,8 @@ export default function SetupClient({ token }: SetupClientProps) {
 
   const plateSvg = useMemo(() => {
     if (loadState.status !== "ready") return "";
-    if (!loadState.data.plate.identifier || !(embeddedQrHref || qrUrl)) return "";
+    if (!loadState.data.plate.identifier || !(embeddedQrHref || qrUrl))
+      return "";
 
     return buildPlateSvg({
       identifier: loadState.data.plate.identifier,
@@ -301,7 +298,6 @@ export default function SetupClient({ token }: SetupClientProps) {
         caravan_name: caravanName.trim(),
         bio: bio.trim(),
         contact_enabled: contactEnabled,
-        emergency_enabled: emergencyEnabled,
         contact_channel: contactChannel,
         report_channel: reportChannel,
         mounting_holes: mountingHoles,
@@ -510,8 +506,6 @@ export default function SetupClient({ token }: SetupClientProps) {
                   }
                 />
               </label>
-
-              
             </div>
           ))}
 
