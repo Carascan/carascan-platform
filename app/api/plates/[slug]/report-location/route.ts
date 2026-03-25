@@ -138,40 +138,27 @@ export async function POST(
 
     const mapUrl = buildMapsUrl(lat, lng);
 
-    const html = `
-      <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111827;">
-        <h2 style="margin:0 0 16px 0;">Location report</h2>
-        <p style="margin:0 0 8px 0;"><strong>Plate:</strong> ${escapeHtml(
-          plate.identifier
-        )}</p>
-        <p style="margin:0 0 8px 0;">
-          <a href="${mapUrl}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
-        </p>
-        <p style="margin:0 0 8px 0;"><strong>Coordinates:</strong> ${lat}, ${lng}</p>
-        ${
-          accuracyM != null
-            ? `<p style="margin:0 0 8px 0;"><strong>Accuracy:</strong> ${accuracyM}m</p>`
-            : ""
-        }
-        <hr style="margin:20px 0;" />
-        <p style="margin:0 0 8px 0;"><strong>Name:</strong> ${escapeHtml(
-          reporterName || "Not provided"
-        )}</p>
-        <p style="margin:0 0 8px 0;"><strong>Phone:</strong> ${escapeHtml(
-          reporterPhone || "Not provided"
-        )}</p>
-        <p style="margin:0 0 8px 0;"><strong>Email:</strong> ${escapeHtml(
-          reporterEmail || "Not provided"
-        )}</p>
-        ${
-          message
-            ? `<p style="margin:12px 0 0 0;"><strong>Notes:</strong><br/>${escapeHtml(
-                message
-              ).replace(/\n/g, "<br/>")}</p>`
-            : ""
-        }
-      </div>
-    `;
+    const emailHtml = `
+  <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111827;">
+    <h2>📍 Carascan QR Report Location 📍</h2>
+    <p><strong>Plate:</strong> ${plate.identifier}</p>
+    <p><strong>Sender name:</strong> ${reporterName || "Not provided"}</p>
+    <p><strong>Sender phone:</strong> ${reporterPhone || "Not provided"}</p>
+    <p><strong>Sender email:</strong> ${reporterEmail || "Not provided"}</p>
+    <p><strong>Location:</strong></p>
+    <p>
+      <a href="${mapUrl}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
+    </p>
+    <p><strong>Message:</strong></p>
+    <p>${message ? message.replace(/\n/g, "<br />") : "No additional details provided."}</p>
+    <p>Please remember, response is optional.</p>
+    <p>
+      <a href="https://www.carascan.com.au" target="_blank" rel="noopener noreferrer">
+        www.carascan.com.au
+      </a>
+    </p>
+  </div>
+`;
 
     const smsLines = [
   `CARASCAN PUBLIC REPORT LOCATION - ${plate.identifier}`,

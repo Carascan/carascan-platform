@@ -203,15 +203,28 @@ if (!plate) {
     const map = buildMapsUrl(lat, lng);
 
     const emailHtml = `
-      <h2>🚨 Emergency Alert</h2>
-      <p><strong>Plate:</strong> ${plate.identifier}</p>
-      <p><a href="${map}" target="_blank" rel="noopener noreferrer">Open location</a></p>
-      <p><strong>Coordinates:</strong> ${lat}, ${lng}</p>
-      <p><strong>Reporter:</strong> ${reporterName || "Unknown"}</p>
-      <p><strong>Phone:</strong> ${reporterPhone || "Unknown"}</p>
-      ${message ? `<p><strong>Details:</strong> ${message}</p>` : ""}
-    `;
-
+  <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111827;">
+    <h2>🚨 Carascan QR Emergency Alert 🚨</h2>
+    <p><strong>Plate:</strong> ${plate.identifier}</p>
+    <p><strong>Sender name:</strong> ${reporterName || "Not provided"}</p>
+    <p><strong>Sender phone:</strong> ${reporterPhone || "Not provided"}</p>
+    <p><strong>Location:</strong></p>
+    <p>
+      <a href="${map}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
+    </p>
+    ${
+      message
+        ? `<p><strong>Details:</strong></p><p>${message.replace(/\n/g, "<br />")}</p>`
+        : ""
+    }
+    <p>Your details have been provided as an emergency contact.</p>
+    <p>
+      <a href="https://www.carascan.com.au" target="_blank" rel="noopener noreferrer">
+        www.carascan.com.au
+      </a>
+    </p>
+  </div>
+`;
     const smsLines = [
   `🚨CARASCAN QR EMERGENCY ALERT🚨 - ${plate.identifier}`,
   reporterName ? `Name: ${reporterName}` : "",

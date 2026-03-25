@@ -262,15 +262,22 @@ export async function POST(
     }
 
     const emailHtml = `
-      <h2>👋 New Contact Request</h2>
-      <p><strong>Plate:</strong> ${plate.identifier}</p>
-      <p><strong>Sender name:</strong> ${reporterName || "Not provided"}</p>
-      <p><strong>Sender phone:</strong> ${reporterPhone || "Not provided"}</p>
-      <p><strong>Sender email:</strong> ${reporterEmail || "Not provided"}</p>
-      <p><strong>Message:</strong></p>
-      <p>${message.replace(/\n/g, "<br />")}</p>
-    `;
-
+  <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111827;">
+    <h2>👋 Virtual Doorknock - knock, knock</h2>
+    <p><strong>Plate:</strong> ${plate.identifier}</p>
+    <p><strong>Sender name:</strong> ${reporterName || "Not provided"}</p>
+    <p><strong>Sender phone:</strong> ${reporterPhone || "Not provided"}</p>
+    <p><strong>Sender email:</strong> ${reporterEmail || "Not provided"}</p>
+    <p><strong>Message:</strong></p>
+    <p>${message.replace(/\n/g, "<br />")}</p>
+    <p>Please remember, response is optional.</p>
+    <p>
+      <a href="https://www.carascan.com.au" target="_blank" rel="noopener noreferrer">
+        www.carascan.com.au
+      </a>
+    </p>
+  </div>
+`;
     const smsLines = [
   `VIRTUAL DOOR KNOCK - ${plate.identifier}`,
   reporterName ? `Name: ${reporterName}` : "",
