@@ -18,7 +18,7 @@ export async function GET(
 
     const sb = supabaseAdmin();
 
-    let { data: plate, error } = await sb
+    let { data: plate, error: plateError } = await sb
       .from("plates")
       .select("*")
       .eq("identifier", input.toUpperCase())
@@ -32,12 +32,12 @@ export async function GET(
         .maybeSingle();
 
       plate = fallback.data;
-      error = fallback.error;
+      plateError = fallback.error;
     }
 
-    if (error) {
+    if (plateError) {
       return NextResponse.json(
-        { error: `Plate lookup failed: ${error.message}` },
+        { error: `Plate lookup failed: ${plateError.message}` },
         { status: 500 }
       );
     }
@@ -49,10 +49,24 @@ export async function GET(
       );
     }
 
+    const { data: design, error: designError } = await sb
+      .from("plate_designs")
+      .select("*")
+      .eq("plate_id", plate.id)
+      .maybeSingle();
+
+    if (designError) {
+      return NextResponse.json(
+        { error: `Plate design lookup failed: ${designError.message}` },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       ok: true,
-      route_version: "plates-get-v2",
+      route_version: "plates-get-v3",
       plate,
+      design: design ?? null,
     });
   } catch (error) {
     return NextResponse.json(
