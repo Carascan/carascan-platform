@@ -173,16 +173,15 @@ export async function POST(
       </div>
     `;
 
-    const smsBody = [
-      "CARASCAN LOCATION",
-      `Plate ${plate.identifier}`,
-      `Map ${mapUrl}`,
-      reporterName ? `From ${reporterName}` : "",
-      reporterPhone ? `Phone ${reporterPhone}` : "",
-      message ? `Notes ${message}` : "",
-    ]
-      .filter(Boolean)
-      .join(" | ");
+    const smsLines = [
+  `CARASCAN PUBLIC REPORT LOCATION - ${plate.identifier}`,
+  reporterName ? `Name: ${reporterName}` : "",
+  reporterPhone ? `Phone: ${reporterPhone}` : "",
+  reporterEmail ? `Email: ${reporterEmail}` : "",
+  message ? `Msg: ${message}` : "",
+  "",
+  "https://www.carascan.com.au",
+].filter(Boolean);
 
     const tasks: Promise<any>[] = [];
 
