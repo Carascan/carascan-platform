@@ -357,14 +357,9 @@ export default function PlatePage({
       const loc = await requestCurrentLocation();
       setEmergencyLocation(loc);
 
-      const message = [
-        emergencyMessage.trim(),
-        `Emergency location: ${mapsLink(loc)}`,
-        `Coordinates: ${loc.latitude}, ${loc.longitude}`,
-        loc.accuracy_m ? `Accuracy: ${loc.accuracy_m}m` : "",
-      ]
-        .filter(Boolean)
-        .join("\n\n");
+      const message = [emergencyMessage.trim()]
+  .filter(Boolean)
+  .join("\n\n");
 
       const r = await fetch(`/api/plates/${encodeURIComponent(slug)}/emergency`, {
         method: "POST",
