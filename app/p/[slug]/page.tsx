@@ -463,14 +463,14 @@ export default function PlatePage({
             <div style={styles.topButtonGrid}>
               {data.plate.contact_enabled ? (
                 <button
-                  type="button"
-                  onClick={() =>
-                    setOpenPanel(openPanel === "contact" ? null : "contact")
-                  }
-                  style={styles.primaryButton}
-                >
-                  {openPanel === "contact" ? "Hide Contact" : "Contact"}
-                </button>
+  type="button"
+  onClick={() =>
+    setOpenPanel(openPanel === "contact" ? null : "contact")
+  }
+  style={styles.primaryButton}
+>
+  {openPanel === "contact" ? "Hide Virtual Doorknock" : "Virtual Doorknock"}
+</button>
               ) : (
                 <div style={styles.disabledBox}>Contact is disabled</div>
               )}
