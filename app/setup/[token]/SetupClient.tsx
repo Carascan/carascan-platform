@@ -50,7 +50,7 @@ type EmergencyContact = {
 
 type SetupResponse = {
   plateId: string;
-  email: string;
+  email: string | null;
   plate: Plate;
   profile: Profile | null;
   design: Design | null;
@@ -124,6 +124,10 @@ export default function SetupClient({ token }: SetupClientProps) {
 
     async function load() {
       try {
+        setLoadState({ status: "loading" });
+        setSaveMessage("");
+        setSaveError("");
+
         const res = await fetch(
           `/api/setup/get?token=${encodeURIComponent(token)}`,
           {
@@ -148,7 +152,7 @@ export default function SetupClient({ token }: SetupClientProps) {
             "error" in body &&
             typeof (body as { error?: unknown }).error === "string"
               ? (body as { error: string }).error
-              : "invalid_token";
+              : "Failed to load setup data.";
 
           setLoadState({
             status: "error",
@@ -262,6 +266,24 @@ export default function SetupClient({ token }: SetupClientProps) {
       .filter((c) => c.name || c.phone || c.email);
   }, [contacts]);
 
+  const logoUrl =
+    loadState.status === "ready"
+      ? loadState.data.design?.logo_url?.trim() || DEFAULT_LOGO_URL
+      : DEFAULT_LOGO_URL;
+
+  const plateSvg = useMemo(() => {
+    if (loadState.status !== "ready") return "";
+    if (!loadState.data.plate.identifier || !(embeddedQrHref || qrUrl)) return "";
+
+    return buildPlateSvg({
+      identifier: loadState.data.plate.identifier,
+      qrImageHref: embeddedQrHref || qrUrl,
+      mountingHoles,
+      logoImageHref: logoUrl,
+      includeCrosshair: false,
+    });
+  }, [loadState, embeddedQrHref, qrUrl, mountingHoles, logoUrl]);
+
   function updateContact(index: number, patch: Partial<EmergencyContact>) {
     setContacts((prev) =>
       prev.map((c, i) => (i === index ? { ...c, ...patch } : c))
@@ -329,8 +351,8 @@ export default function SetupClient({ token }: SetupClientProps) {
         <div style={styles.wrapper}>
           <Header />
           <div style={styles.card}>
-            <h1 style={styles.h1}>Carascan setup</h1>
-            <p>Loading your setup details...</p>
+            <h1 style={styles.h1}>Complete your Carascan setup</h1>
+            <p style={styles.muted}>Loading your setup details...</p>
           </div>
         </div>
       </main>
@@ -358,19 +380,7 @@ export default function SetupClient({ token }: SetupClientProps) {
   }
 
   const { data } = loadState;
-  const logoUrl = data.design?.logo_url?.trim() || DEFAULT_LOGO_URL;
-
-  const plateSvg = useMemo(() => {
-    if (!data.plate.identifier || !(embeddedQrHref || qrUrl)) return "";
-
-    return buildPlateSvg({
-      identifier: data.plate.identifier,
-      qrImageHref: embeddedQrHref || qrUrl,
-      mountingHoles,
-      logoImageHref: logoUrl,
-      includeCrosshair: false,
-    });
-  }, [data.plate.identifier, embeddedQrHref, qrUrl, mountingHoles, logoUrl]);
+  const publicPlateHref = `/p/${data.plate.slug}`;
 
   return (
     <main style={styles.page}>
@@ -378,37 +388,40 @@ export default function SetupClient({ token }: SetupClientProps) {
         <Header />
 
         <div style={styles.card}>
-          <h1 style={styles.h1}>Complete your Carascan setup</h1>
+          <h1 style={styles.h1}>Customer Configuration Page</h1>
           <p style={styles.muted}>
             Plate: <strong>{data.plate.identifier}</strong>
-          </p>
-          <p style={styles.muted}>
-            Email: <strong>{data.email}</strong>
-          </p>
-          <p style={styles.muted}>
-            Public plate link: <strong>/p/{data.plate.slug}</strong>
           </p>
         </div>
 
         <div style={styles.card}>
           <h2 style={styles.h2}>Plate preview</h2>
-          <p style={styles.muted}>
-            This preview now uses the same locked SVG layout as the public and
-            manufacturing plate output.
-          </p>
+          <p style={styles.muted}>Preview plate as public page.</p>
 
           <div style={styles.previewWrap}>
             {plateSvg ? (
-              <div
-                style={styles.previewFrame}
-                dangerouslySetInnerHTML={{ __html: plateSvg }}
-              />
+              <a
+                href={publicPlateHref}
+                style={styles.previewLink}
+                aria-label={`Open public page for ${data.plate.identifier}`}
+              >
+                <div
+                  style={styles.previewFrame}
+                  dangerouslySetInnerHTML={{ __html: plateSvg }}
+                />
+              </a>
             ) : (
               <div style={styles.previewPlaceholder}>
                 QR preview not available yet.
               </div>
             )}
           </div>
+
+          <p style={styles.muted}>
+            <a href={publicPlateHref} style={styles.inlineLink}>
+              Open public page
+            </a>
+          </p>
         </div>
 
         <form style={styles.card} onSubmit={handleSave}>
@@ -692,6 +705,13 @@ const styles: Record<string, React.CSSProperties> = {
     width: "100%",
     maxWidth: 430,
   },
+  previewLink: {
+    display: "block",
+    width: "100%",
+    maxWidth: 430,
+    textDecoration: "none",
+    color: "inherit",
+  },
   previewPlaceholder: {
     width: "100%",
     maxWidth: 430,
@@ -703,6 +723,11 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     background: "#f8fafc",
     color: "#6b7280",
+  },
+  inlineLink: {
+    color: "#111827",
+    fontWeight: 700,
+    textDecoration: "underline",
   },
   button: {
     padding: "12px 18px",
@@ -721,14 +746,5 @@ const styles: Record<string, React.CSSProperties> = {
   success: {
     color: "#0a7f39",
     fontWeight: 700,
-  },
-  pre: {
-    background: "#f8fafc",
-    borderRadius: 10,
-    padding: 12,
-    overflowX: "auto",
-    whiteSpace: "pre-wrap",
-    wordBreak: "break-word",
-    fontSize: 13,
   },
 };
