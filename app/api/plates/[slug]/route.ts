@@ -49,11 +49,11 @@ export async function GET(
       );
     }
 
-    const { data: design, error: designError } = await sb
-      .from("plate_designs")
-      .select("*")
-      .eq("plate_id", plate.id)
-      .maybeSingle();
+    const [{ data: design, error: designError }, { data: profile, error: profileError }] =
+      await Promise.all([
+        sb.from("plate_designs").select("*").eq("plate_id", plate.id).maybeSingle(),
+        sb.from("plate_profiles").select("*").eq("plate_id", plate.id).maybeSingle(),
+      ]);
 
     if (designError) {
       return NextResponse.json(
@@ -62,19 +62,25 @@ export async function GET(
       );
     }
 
+    if (profileError) {
+      return NextResponse.json(
+        { error: `Plate profile lookup failed: ${profileError.message}` },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       ok: true,
-      route_version: "plates-get-v3",
+      route_version: "plates-get-v4",
       plate,
       design: design ?? null,
+      profile: profile ?? null,
     });
   } catch (error) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error
-            ? error.message
-            : "Failed to load plate.",
+          error instanceof Error ? error.message : "Failed to load plate.",
       },
       { status: 500 }
     );
