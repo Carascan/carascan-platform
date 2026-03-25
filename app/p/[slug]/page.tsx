@@ -438,6 +438,7 @@ export default function PlatePage({
 
             <div style={styles.platePreviewWrap}>
               <div
+                className="plate-svg"
                 style={styles.platePreviewFrame}
                 dangerouslySetInnerHTML={{ __html: previewSvg }}
               />
@@ -721,6 +722,25 @@ export default function PlatePage({
           </p>
         </div>
       </div>
+
+      <style jsx>{`
+        .plate-svg :global(svg) {
+          display: block;
+          width: 100%;
+          max-width: 100%;
+          height: auto;
+        }
+
+        .plate-svg :global(image) {
+          max-width: 100%;
+        }
+
+        @media (max-width: 640px) {
+          .plate-svg {
+            width: 100%;
+          }
+        }
+      `}</style>
     </main>
   );
 }
@@ -746,11 +766,15 @@ const styles: Record<string, React.CSSProperties> = {
   platePreviewWrap: {
     display: "flex",
     justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
     margin: "0 auto 18px",
+    overflow: "hidden",
   },
   platePreviewFrame: {
-    width: 430,
-    maxWidth: "100%",
+    width: "100%",
+    maxWidth: 430,
+    margin: "0 auto",
   },
   sub: {
     margin: 0,
