@@ -396,7 +396,7 @@ export default function SetupClient({ token }: SetupClientProps) {
         </div>
 
         <div style={styles.card}>
-          <h2 style={styles.h2}>Plate preview</h2>
+          
 
           <div style={styles.previewWrap}>
             {plateSvg ? (
