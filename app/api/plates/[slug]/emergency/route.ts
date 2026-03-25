@@ -64,11 +64,22 @@ export async function POST(
 
     const sb = supabaseAdmin();
 
-    const { data: plate, error: plateError } = await sb
-      .from("plates")
-      .select("id, identifier, emergency_enabled")
-      .eq("slug", slug)
-      .maybeSingle();
+    let { data: plate, error: plateError } = await sb
+  .from("plates")
+  .select("id, identifier, slug, emergency_enabled")
+  .eq("identifier", slug.toUpperCase())
+  .maybeSingle();
+
+if (!plate) {
+  const fallback = await sb
+    .from("plates")
+    .select("id, identifier, slug, emergency_enabled")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  plate = fallback.data;
+  plateError = fallback.error;
+}
 
     if (plateError) {
       console.error("[SMS DEBUG][EMERGENCY] plate lookup failed", {
@@ -201,7 +212,21 @@ export async function POST(
       ${message ? `<p><strong>Details:</strong> ${message}</p>` : ""}
     `;
 
-    const sms = `EMERGENCY ${plate.identifier} ${map}`;
+    const smsLines = [
+  `🚨CARASCAN QR EMERGENCY ALERT🚨 - ${plate.identifier}`,
+  reporterName ? `Name: ${reporterName}` : "",
+  reporterPhone ? `Phone: ${reporterPhone}` : "",
+  "",
+  "Location:",
+  map,
+  "",
+  message ? `Details: ${message}` : "",
+  "",
+  "Your details have been provided as an emergency contact",
+  "",
+  "https://www.carascan.com.au",
+].filter(Boolean);
+const sms = smsLines.join("\n");
 
     console.log("[SMS DEBUG][EMERGENCY] dispatch starting", {
       plateId: plate.id,
