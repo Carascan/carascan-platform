@@ -248,7 +248,7 @@ export default function AdminOrdersPage() {
     identifier?: string | null,
     slug?: string | null
   ) {
-    const publicKey = (identifier ?? "").trim() || (slug ?? "").trim();
+    const publicKey = (slug ?? "").trim() || (identifier ?? "").trim();
 
     if (!publicKey) {
       alert("No public page key found for this plate.");
@@ -575,8 +575,8 @@ export default function AdminOrdersPage() {
                     <button
                       type="button"
                       onClick={() =>
-                        openCustomerPage(row.plate?.identifier, row.plate?.slug)
-                      }
+  openCustomerPage(row.plate?.slug, row.plate?.identifier)
+}
                       disabled={!canOpenCustomerPage}
                       style={{
                         border: 0,
