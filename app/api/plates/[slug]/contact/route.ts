@@ -272,13 +272,15 @@ export async function POST(
     `;
 
     const smsLines = [
-      `CONTACT ${plate.identifier}`,
-      reporterName ? `Name: ${reporterName}` : "",
-      reporterPhone ? `Phone: ${reporterPhone}` : "",
-      reporterEmail ? `Email: ${reporterEmail}` : "",
-      `Msg: ${message}`,
-    ].filter(Boolean);
-
+  `VIRTUAL DOOR KNOCK - ${plate.identifier}`,
+  reporterName ? `Name: ${reporterName}` : "",
+  reporterPhone ? `Phone: ${reporterPhone}` : "",
+  reporterEmail ? `Email: ${reporterEmail}` : "",
+  message ? `Msg: ${message}` : "",
+  "",
+  "Please remember, response is optional.",
+  "https://www.carascan.com.au",
+].filter(Boolean);
     const sms = smsLines.join("\n");
 
     const tasks: Promise<any>[] = [];

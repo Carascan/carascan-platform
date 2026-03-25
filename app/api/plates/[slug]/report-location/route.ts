@@ -183,6 +183,8 @@ export async function POST(
   "https://www.carascan.com.au",
 ].filter(Boolean);
 
+const smsBody = smsLines.join("\n");
+
     const tasks: Promise<any>[] = [];
 
     if (useEmail(mode) && emails.length) {
