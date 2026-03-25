@@ -6,7 +6,6 @@ type SetupClientProps = {
   token: string;
 };
 
-// --- TYPES (unchanged)
 type Plate = {
   id: string;
   identifier: string;
@@ -23,9 +22,20 @@ type Profile = {
   plate_id: string;
   caravan_name: string;
   bio: string | null;
+  owner_photo_url: string | null;
 };
 
 type Design = {
+  plate_id: string;
+  text_line_1: string;
+  text_line_2: string;
+  logo_url: string | null;
+  qr_url: string | null;
+  proof_approved: boolean;
+  plate_width_mm: number;
+  plate_height_mm: number;
+  qr_size_mm: number;
+  hole_diameter_mm: number;
   mounting_holes?: boolean | null;
 };
 
@@ -48,11 +58,16 @@ type SetupResponse = {
 
 type LoadState =
   | { status: "loading" }
-  | { status: "error"; error: string }
+  | { status: "error"; error: string; details?: unknown }
   | { status: "ready"; data: SetupResponse };
 
 function blankContact(): EmergencyContact {
-  return { name: "", phone: "", email: "", enabled: true };
+  return {
+    name: "",
+    phone: "",
+    email: "",
+    enabled: true,
+  };
 }
 
 export default function SetupClient({ token }: SetupClientProps) {
@@ -68,56 +83,125 @@ export default function SetupClient({ token }: SetupClientProps) {
   const [contactChannel, setContactChannel] = useState("email");
   const [reportChannel, setReportChannel] = useState("email");
   const [mountingHoles, setMountingHoles] = useState(true);
-
   const [contacts, setContacts] = useState<EmergencyContact[]>([
     blankContact(),
     blankContact(),
     blankContact(),
   ]);
 
-  // --- LOAD
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
-        const res = await fetch(`/api/setup/get?token=${token}`);
-        const data = await res.json();
+        setLoadState({ status: "loading" });
+        setSaveMessage("");
+        setSaveError("");
 
-        if (!res.ok) {
-          setLoadState({ status: "error", error: data.error });
-          return;
+        const res = await fetch(
+          `/api/setup/get?token=${encodeURIComponent(token)}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
+
+        let body: unknown = null;
+        try {
+          body = await res.json();
+        } catch {
+          body = null;
         }
 
         if (cancelled) return;
 
+        if (!res.ok) {
+          const errorMessage =
+            typeof body === "object" &&
+            body !== null &&
+            "error" in body &&
+            typeof (body as { error?: unknown }).error === "string"
+              ? (body as { error: string }).error
+              : "Failed to load setup data.";
+
+          setLoadState({
+            status: "error",
+            error: errorMessage,
+            details: body,
+          });
+          return;
+        }
+
+        const data = body as SetupResponse;
+
         setCaravanName(data.profile?.caravan_name ?? "");
         setBio(data.profile?.bio ?? "");
-        setContactEnabled(data.plate.contact_enabled);
-        setEmergencyEnabled(data.plate.emergency_enabled);
-        setContactChannel(data.plate.preferred_contact_channel || "email");
-        setReportChannel(data.plate.report_channel || "email");
+        setContactEnabled(Boolean(data.plate?.contact_enabled));
+        setEmergencyEnabled(Boolean(data.plate?.emergency_enabled));
+
+        const incomingContactChannel =
+          data.plate?.preferred_contact_channel || "email";
+        setContactChannel(
+          incomingContactChannel === "sms" || incomingContactChannel === "both"
+            ? incomingContactChannel
+            : "email"
+        );
+
+        const incomingReportChannel = data.plate?.report_channel || "email";
+        setReportChannel(
+          incomingReportChannel === "sms" || incomingReportChannel === "both"
+            ? incomingReportChannel
+            : "email"
+        );
+
         setMountingHoles(data.design?.mounting_holes !== false);
 
-        const padded = [...(data.contacts || [])];
+        const existing = Array.isArray(data.contacts)
+          ? data.contacts.slice(0, 3)
+          : [];
+        const padded = [...existing];
         while (padded.length < 3) padded.push(blankContact());
 
-        setContacts(padded.slice(0, 3));
+        setContacts(
+          padded.map((c) => ({
+            id: c.id,
+            name: c.name ?? "",
+            phone: c.phone ?? "",
+            email: c.email ?? "",
+            enabled: c.enabled ?? true,
+          }))
+        );
 
         setLoadState({ status: "ready", data });
-      } catch {
+      } catch (err) {
+        if (cancelled) return;
+
         setLoadState({
           status: "error",
-          error: "Failed to load setup",
+          error: "Failed to load setup data.",
+          details: err instanceof Error ? err.message : err,
         });
       }
     }
 
-    load();
+    void load();
+
     return () => {
       cancelled = true;
     };
   }, [token]);
+
+  const activeContacts = useMemo(() => {
+    return contacts
+      .map((c) => ({
+        id: c.id,
+        name: c.name.trim(),
+        phone: c.phone.trim(),
+        email: c.email.trim(),
+        enabled: c.enabled,
+      }))
+      .filter((c) => c.name || c.phone || c.email);
+  }, [contacts]);
 
   function updateContact(index: number, patch: Partial<EmergencyContact>) {
     setContacts((prev) =>
@@ -125,51 +209,93 @@ export default function SetupClient({ token }: SetupClientProps) {
     );
   }
 
-  const activeContacts = useMemo(() => {
-    return contacts.filter((c) => c.name || c.phone || c.email);
-  }, [contacts]);
-
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    setSaveError("");
     setSaveMessage("");
+    setSaveError("");
 
-    const res = await fetch("/api/setup/save", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
+    try {
+      const payload = {
         token,
-        caravan_name: caravanName,
-        bio,
+        caravan_name: caravanName.trim(),
+        bio: bio.trim(),
         contact_enabled: contactEnabled,
         emergency_enabled: emergencyEnabled,
         contact_channel: contactChannel,
         report_channel: reportChannel,
         mounting_holes: mountingHoles,
         emergency_contacts: activeContacts,
-      }),
-    });
+      };
 
-    const body = await res.json();
+      const res = await fetch("/api/setup/save", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
-    if (!res.ok) {
-      setSaveError(body.error || "Save failed");
-    } else {
-      setSaveMessage("Setup saved successfully");
+      let body: unknown = null;
+      try {
+        body = await res.json();
+      } catch {
+        body = null;
+      }
+
+      if (!res.ok) {
+        const message =
+          typeof body === "object" &&
+          body !== null &&
+          "error" in body &&
+          typeof (body as { error?: unknown }).error === "string"
+            ? (body as { error: string }).error
+            : `Save failed with status ${res.status}`;
+
+        setSaveError(message);
+        return;
+      }
+
+      setSaveMessage("Setup saved successfully.");
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Unknown save error");
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
   }
 
-  // --- STATES
-
   if (loadState.status === "loading") {
-    return <div style={styles.page}>Loading...</div>;
+    return (
+      <main style={styles.page}>
+        <div style={styles.wrapper}>
+          <Header />
+          <div style={styles.card}>
+            <h1 style={styles.h1}>Complete your Carascan setup</h1>
+            <p style={styles.muted}>Loading your setup details...</p>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   if (loadState.status === "error") {
-    return <div style={styles.page}>{loadState.error}</div>;
+    return (
+      <main style={styles.page}>
+        <div style={styles.wrapper}>
+          <Header />
+          <div style={styles.card}>
+            <h1 style={styles.h1}>Setup link issue</h1>
+            <p style={styles.error}>{loadState.error}</p>
+            <p style={styles.muted}>
+              This setup link may be invalid, expired, revoked, or already used.
+            </p>
+            <p style={styles.muted}>
+              Use the Help button if you need a new setup link.
+            </p>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   const { data } = loadState;
@@ -180,7 +306,7 @@ export default function SetupClient({ token }: SetupClientProps) {
         <Header />
 
         <div style={styles.card}>
-          <h1 style={styles.h1}>Complete your Carascan setup</h1>
+          <h1 style={styles.h1}>Customer Configuration Page</h1>
           <p style={styles.muted}>
             Plate: <strong>{data.plate.identifier}</strong>
           </p>
@@ -189,19 +315,26 @@ export default function SetupClient({ token }: SetupClientProps) {
         <form style={styles.card} onSubmit={handleSave}>
           <h2 style={styles.h2}>Profile</h2>
 
-          <input
-            style={styles.input}
-            value={caravanName}
-            onChange={(e) => setCaravanName(e.target.value)}
-            placeholder="Caravan name"
-          />
+          <label style={styles.label}>
+            Caravan name
+            <input
+              style={styles.input}
+              value={caravanName}
+              onChange={(e) => setCaravanName(e.target.value)}
+              placeholder="Optional"
+            />
+          </label>
 
-          <textarea
-            style={styles.textarea}
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            placeholder="Bio / notes"
-          />
+          <label style={styles.label}>
+            Bio / notes
+            <textarea
+              style={styles.textarea}
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="Optional"
+              rows={4}
+            />
+          </label>
 
           <h2 style={styles.h2}>Plate options</h2>
 
@@ -258,40 +391,65 @@ export default function SetupClient({ token }: SetupClientProps) {
           <h2 style={{ ...styles.h2, textAlign: "center" }}>
             Emergency contacts
           </h2>
+          <p style={{ ...styles.muted, textAlign: "center" }}>
+            Add up to 3. All fields are optional. Emergency alerts always send
+            via both email and SMS where details are provided.
+          </p>
 
-          {contacts.map((c, i) => (
-            <div key={i} style={styles.contactBlock}>
-              <input
-                style={styles.input}
-                placeholder="Name"
-                value={c.name}
-                onChange={(e) =>
-                  updateContact(i, { name: e.target.value })
-                }
-              />
-              <input
-                style={styles.input}
-                placeholder="Phone"
-                value={c.phone}
-                onChange={(e) =>
-                  updateContact(i, { phone: e.target.value })
-                }
-              />
-              <input
-                style={styles.input}
-                placeholder="Email"
-                value={c.email}
-                onChange={(e) =>
-                  updateContact(i, { email: e.target.value })
-                }
-              />
+          {contacts.map((contact, index) => (
+            <div key={index} style={styles.contactBlock}>
+              <h3 style={styles.h3}>Contact {index + 1}</h3>
+
+              <label style={styles.label}>
+                Name
+                <input
+                  style={styles.input}
+                  value={contact.name}
+                  onChange={(e) =>
+                    updateContact(index, { name: e.target.value })
+                  }
+                />
+              </label>
+
+              <label style={styles.label}>
+                Phone
+                <input
+                  style={styles.input}
+                  value={contact.phone}
+                  onChange={(e) =>
+                    updateContact(index, { phone: e.target.value })
+                  }
+                />
+              </label>
+
+              <label style={styles.label}>
+                Email
+                <input
+                  style={styles.input}
+                  value={contact.email}
+                  onChange={(e) =>
+                    updateContact(index, { email: e.target.value })
+                  }
+                />
+              </label>
+
+              <label style={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  checked={contact.enabled}
+                  onChange={(e) =>
+                    updateContact(index, { enabled: e.target.checked })
+                  }
+                />
+                Enabled
+              </label>
             </div>
           ))}
 
           {saveError && <p style={styles.error}>{saveError}</p>}
           {saveMessage && <p style={styles.success}>{saveMessage}</p>}
 
-          <button style={styles.button} disabled={saving}>
+          <button type="submit" style={styles.button} disabled={saving}>
             {saving ? "Saving..." : "Save setup"}
           </button>
         </form>
@@ -303,10 +461,14 @@ export default function SetupClient({ token }: SetupClientProps) {
 function Header() {
   return (
     <div style={styles.header}>
-      <img
-        src="https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg"
-        style={styles.logo}
-      />
+      <a href="/" style={styles.logoWrap}>
+        <img
+          src="https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg"
+          alt="Carascan"
+          style={styles.logo}
+        />
+      </a>
+
       <a href="/help" style={styles.helpButton}>
         Need help?
       </a>
@@ -314,21 +476,126 @@ function Header() {
   );
 }
 
-const styles: any = {
-  page: { padding: 20 },
-  wrapper: { maxWidth: 800, margin: "0 auto" },
-  card: { background: "#fff", padding: 20, marginBottom: 20 },
-  h1: { fontSize: 24 },
-  h2: { fontSize: 18, marginTop: 20 },
-  muted: { color: "#555" },
-  input: { width: "100%", marginBottom: 10 },
-  textarea: { width: "100%", marginBottom: 10 },
-  checkboxRow: { marginBottom: 10 },
-  contactBlock: {
-    maxWidth: 500,
-    margin: "0 auto 20px auto",
+const styles: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: "100vh",
+    background: "#f6f7f9",
+    padding: "32px 16px",
+    fontFamily: "Arial, sans-serif",
   },
-  button: { padding: 10 },
-  error: { color: "red" },
-  success: { color: "green" },
+  wrapper: {
+    maxWidth: 900,
+    margin: "0 auto",
+    display: "grid",
+    gap: 20,
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+    marginBottom: 4,
+  },
+  logoWrap: {
+    display: "inline-flex",
+    alignItems: "center",
+    textDecoration: "none",
+  },
+  logo: {
+    height: 32,
+    width: "auto",
+    display: "block",
+  },
+  helpButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "10px 16px",
+    borderRadius: 10,
+    textDecoration: "none",
+    fontWeight: 700,
+    fontSize: 14,
+    background: "#111827",
+    color: "#ffffff",
+  },
+  card: {
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 12,
+    padding: 24,
+  },
+  h1: {
+    margin: "0 0 8px 0",
+    fontSize: 28,
+  },
+  h2: {
+    margin: "0 0 16px 0",
+    fontSize: 22,
+  },
+  h3: {
+    margin: "0 0 12px 0",
+    fontSize: 18,
+    textAlign: "center",
+  },
+  muted: {
+    color: "#555",
+    margin: "4px 0",
+  },
+  label: {
+    display: "block",
+    marginBottom: 14,
+    fontWeight: 600,
+  },
+  input: {
+    width: "100%",
+    marginTop: 6,
+    padding: 10,
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+    fontSize: 14,
+    boxSizing: "border-box",
+  },
+  textarea: {
+    width: "100%",
+    marginTop: 6,
+    padding: 10,
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+    fontSize: 14,
+    boxSizing: "border-box",
+    resize: "vertical",
+  },
+  checkboxRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 14,
+  },
+  contactBlock: {
+    border: "1px solid #e5e7eb",
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 16,
+    maxWidth: 500,
+    marginLeft: "auto",
+    marginRight: "auto",
+  },
+  button: {
+    padding: "12px 18px",
+    borderRadius: 10,
+    border: "none",
+    cursor: "pointer",
+    fontWeight: 700,
+    fontSize: 14,
+    background: "#111827",
+    color: "#fff",
+  },
+  error: {
+    color: "#b00020",
+    fontWeight: 700,
+  },
+  success: {
+    color: "#0a7f39",
+    fontWeight: 700,
+  },
 };
