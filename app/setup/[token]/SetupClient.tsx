@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { buildPlateSvg } from "@/lib/laserSvg";
 
 type SetupClientProps = {
   token: string;
@@ -61,6 +62,9 @@ type LoadState =
   | { status: "error"; error: string; details?: unknown }
   | { status: "ready"; data: SetupResponse };
 
+const DEFAULT_LOGO_URL =
+  "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
+
 function blankContact(): EmergencyContact {
   return {
     name: "",
@@ -70,11 +74,37 @@ function blankContact(): EmergencyContact {
   };
 }
 
+async function imageUrlToDataUrl(url: string): Promise<string> {
+  const response = await fetch(url, { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error(`Failed to load image: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Failed to convert image to data URL."));
+      }
+    };
+
+    reader.onerror = () => reject(new Error("Failed to read image."));
+    reader.readAsDataURL(blob);
+  });
+}
+
 export default function SetupClient({ token }: SetupClientProps) {
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [embeddedQrHref, setEmbeddedQrHref] = useState("");
 
   const [caravanName, setCaravanName] = useState("");
   const [bio, setBio] = useState("");
@@ -191,6 +221,39 @@ export default function SetupClient({ token }: SetupClientProps) {
     };
   }, [token]);
 
+  const qrUrl =
+    loadState.status === "ready"
+      ? loadState.data.design?.qr_url?.trim() || ""
+      : "";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function embedQr() {
+      if (!qrUrl) {
+        setEmbeddedQrHref("");
+        return;
+      }
+
+      try {
+        const dataUrl = await imageUrlToDataUrl(qrUrl);
+        if (!cancelled) {
+          setEmbeddedQrHref(dataUrl);
+        }
+      } catch {
+        if (!cancelled) {
+          setEmbeddedQrHref(qrUrl);
+        }
+      }
+    }
+
+    void embedQr();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [qrUrl]);
+
   const activeContacts = useMemo(() => {
     return contacts
       .map((c) => ({
@@ -202,6 +265,24 @@ export default function SetupClient({ token }: SetupClientProps) {
       }))
       .filter((c) => c.name || c.phone || c.email);
   }, [contacts]);
+
+  const logoUrl =
+    loadState.status === "ready"
+      ? loadState.data.design?.logo_url?.trim() || DEFAULT_LOGO_URL
+      : DEFAULT_LOGO_URL;
+
+  const plateSvg = useMemo(() => {
+    if (loadState.status !== "ready") return "";
+    if (!loadState.data.plate.identifier || !(embeddedQrHref || qrUrl)) return "";
+
+    return buildPlateSvg({
+      identifier: loadState.data.plate.identifier,
+      qrImageHref: embeddedQrHref || qrUrl,
+      mountingHoles,
+      logoImageHref: logoUrl,
+      includeCrosshair: false,
+    });
+  }, [loadState, embeddedQrHref, qrUrl, mountingHoles, logoUrl]);
 
   function updateContact(index: number, patch: Partial<EmergencyContact>) {
     setContacts((prev) =>
@@ -299,6 +380,7 @@ export default function SetupClient({ token }: SetupClientProps) {
   }
 
   const { data } = loadState;
+  const publicPlateHref = `/p/${data.plate.slug}`;
 
   return (
     <main style={styles.page}>
@@ -309,6 +391,36 @@ export default function SetupClient({ token }: SetupClientProps) {
           <h1 style={styles.h1}>Customer Configuration Page</h1>
           <p style={styles.muted}>
             Plate: <strong>{data.plate.identifier}</strong>
+          </p>
+        </div>
+
+        <div style={styles.card}>
+          <h2 style={styles.h2}>Plate preview</h2>
+          <p style={styles.muted}>Preview plate as public page.</p>
+
+          <div style={styles.previewWrap}>
+            {plateSvg ? (
+              <a
+                href={publicPlateHref}
+                style={styles.previewLink}
+                aria-label={`Open public page for ${data.plate.identifier}`}
+              >
+                <div
+                  style={styles.previewFrame}
+                  dangerouslySetInnerHTML={{ __html: plateSvg }}
+                />
+              </a>
+            ) : (
+              <div style={styles.previewPlaceholder}>
+                QR preview not available yet.
+              </div>
+            )}
+          </div>
+
+          <p style={styles.muted}>
+            <a href={publicPlateHref} style={styles.inlineLink}>
+              Open public page
+            </a>
           </p>
         </div>
 
@@ -338,11 +450,21 @@ export default function SetupClient({ token }: SetupClientProps) {
 
           <h2 style={styles.h2}>Plate options</h2>
 
+          <label style={styles.checkboxRow}>
+            <input
+              type="checkbox"
+              checked={mountingHoles}
+              onChange={(e) => setMountingHoles(e.target.checked)}
+            />
+            Include mounting holes
+          </label>
+
           <p style={styles.muted}>
-            Mounting holes: <strong>{mountingHoles ? "On" : "Off"}</strong>
+            Turn this off if you selected the no-holes option and want the plate
+            preview and saved setup to match.
           </p>
 
-          <h2 style={styles.h2}>Contact preferences</h2>
+          <h2 style={styles.h2}>Preferences</h2>
 
           <label style={styles.checkboxRow}>
             <input
@@ -363,7 +485,7 @@ export default function SetupClient({ token }: SetupClientProps) {
           </label>
 
           <label style={styles.label}>
-            Virtual Doorknock
+            Contact method
             <select
               style={styles.input}
               value={contactChannel}
@@ -376,7 +498,7 @@ export default function SetupClient({ token }: SetupClientProps) {
           </label>
 
           <label style={styles.label}>
-            Report Location
+            Report location method
             <select
               style={styles.input}
               value={reportChannel}
@@ -388,10 +510,8 @@ export default function SetupClient({ token }: SetupClientProps) {
             </select>
           </label>
 
-          <h2 style={{ ...styles.h2, textAlign: "center" }}>
-            Emergency contacts
-          </h2>
-          <p style={{ ...styles.muted, textAlign: "center" }}>
+          <h2 style={styles.h2}>Emergency contacts</h2>
+          <p style={styles.muted}>
             Add up to 3. All fields are optional. Emergency alerts always send
             via both email and SMS where details are provided.
           </p>
@@ -535,7 +655,6 @@ const styles: Record<string, React.CSSProperties> = {
   h3: {
     margin: "0 0 12px 0",
     fontSize: 18,
-    textAlign: "center",
   },
   muted: {
     color: "#555",
@@ -576,9 +695,39 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     padding: 16,
     marginBottom: 16,
-    maxWidth: 500,
-    marginLeft: "auto",
-    marginRight: "auto",
+  },
+  previewWrap: {
+    display: "flex",
+    justifyContent: "center",
+    marginTop: 8,
+  },
+  previewFrame: {
+    width: "100%",
+    maxWidth: 430,
+  },
+  previewLink: {
+    display: "block",
+    width: "100%",
+    maxWidth: 430,
+    textDecoration: "none",
+    color: "inherit",
+  },
+  previewPlaceholder: {
+    width: "100%",
+    maxWidth: 430,
+    minHeight: 220,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "1px solid #e5e7eb",
+    borderRadius: 10,
+    background: "#f8fafc",
+    color: "#6b7280",
+  },
+  inlineLink: {
+    color: "#111827",
+    fontWeight: 700,
+    textDecoration: "underline",
   },
   button: {
     padding: "12px 18px",
