@@ -100,7 +100,7 @@ export async function POST(
     const sb = supabaseAdmin();
     const input = String(slug ?? "").trim();
 
-    let { data: plate } = await sb
+    let { data: plate, error: plateError } = await sb
       .from("plates")
       .select(
         "id, identifier, slug, contact_enabled, preferred_contact_channel"
@@ -118,6 +118,14 @@ export async function POST(
         .maybeSingle();
 
       plate = fallback.data;
+      plateError = fallback.error;
+    }
+
+    if (plateError) {
+      return NextResponse.json(
+        { error: `Plate lookup failed: ${plateError.message}` },
+        { status: 500 }
+      );
     }
 
     if (!plate) {
@@ -144,13 +152,22 @@ export async function POST(
       Date.now() - CONTACT_WINDOW_MINUTES * 60 * 1000
     ).toISOString();
 
-    const { data: recentAttempt } = await sb
+    const { data: recentAttempt, error: recentAttemptError } = await sb
       .from("plate_contact_attempts")
       .select("id")
       .eq("plate_id", plate.id)
       .eq("sender_fingerprint", senderFingerprint)
       .gte("created_at", cutoffIso)
       .maybeSingle();
+
+    if (recentAttemptError) {
+      return NextResponse.json(
+        {
+          error: `Contact cooldown lookup failed: ${recentAttemptError.message}`,
+        },
+        { status: 500 }
+      );
+    }
 
     if (recentAttempt) {
       return NextResponse.json(
@@ -162,20 +179,28 @@ export async function POST(
       );
     }
 
-    // ✅ OWNER ONLY (NEW SOURCE)
-    const { data: owner } = await sb
+    const { data: owner, error: ownerLookupError } = await sb
       .from("plate_owners")
       .select("email, phone_1, phone_2")
       .eq("plate_id", plate.id)
       .maybeSingle();
 
-    const ownerEmails = owner?.email
-      ? [normalizeEmail(owner.email)]
-      : [];
+    if (ownerLookupError) {
+      return NextResponse.json(
+        { error: `Owner lookup failed: ${ownerLookupError.message}` },
+        { status: 500 }
+      );
+    }
 
-    const ownerPhones = [owner?.phone_1, owner?.phone_2]
-      .map((p) => normalizePhone(String(p ?? "")))
-      .filter(Boolean);
+    const ownerEmails = owner?.email ? [normalizeEmail(owner.email)] : [];
+
+    const ownerPhones = Array.from(
+      new Set(
+        [owner?.phone_1, owner?.phone_2]
+          .map((p) => normalizePhone(String(p ?? "")))
+          .filter(Boolean)
+      )
+    );
 
     const preferredChannel = String(
       plate.preferred_contact_channel ?? "email"
@@ -193,9 +218,23 @@ export async function POST(
       );
     }
 
+    if (shouldSendEmail && !ownerEmails.length && !shouldSendSms) {
+      return NextResponse.json(
+        { error: "No email configured for this plate." },
+        { status: 400 }
+      );
+    }
+
+    if (shouldSendSms && !ownerPhones.length && !shouldSendEmail) {
+      return NextResponse.json(
+        { error: "No phone number configured for this plate." },
+        { status: 400 }
+      );
+    }
+
     const emailHtml = `
-      <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">
-        <h2>👋 Virtual Doorknock</h2>
+      <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111827;">
+        <h2>👋 Carascan Virtual Doorknock</h2>
         <p><strong>Plate:</strong> ${plate.identifier}</p>
         <p><strong>Name:</strong> ${reporterName || "Not provided"}</p>
         <p><strong>Phone:</strong> ${reporterPhone || "Not provided"}</p>
@@ -207,11 +246,14 @@ export async function POST(
     `;
 
     const sms = [
-      `DOORKNOCK - ${plate.identifier}`,
+      "CARASCAN VIRTUAL DOORKNOCK",
+      `Plate: ${plate.identifier}`,
       reporterName ? `Name: ${reporterName}` : "",
       reporterPhone ? `Phone: ${reporterPhone}` : "",
       reporterEmail ? `Email: ${reporterEmail}` : "",
       message ? `Msg: ${message}` : "",
+      "",
+      "Response optional.",
     ]
       .filter(Boolean)
       .join("\n");
@@ -220,7 +262,11 @@ export async function POST(
 
     if (shouldSendEmail && ownerEmails.length) {
       tasks.push(
-        sendEmail(ownerEmails, `Contact - ${plate.identifier}`, emailHtml)
+        sendEmail(
+          ownerEmails,
+          `👋 Carascan Virtual Doorknock - ${plate.identifier}`,
+          emailHtml
+        )
       );
     }
 
@@ -230,18 +276,32 @@ export async function POST(
 
     await Promise.all(tasks);
 
-    await sb.from("plate_contact_attempts").insert({
-      plate_id: plate.id,
-      slug: plate.slug,
-      sender_fingerprint: senderFingerprint,
-      sender_name: reporterName || null,
-      sender_phone: reporterPhone || null,
-      sender_email: reporterEmail || null,
-      message,
-    });
+    const { error: insertAttemptError } = await sb
+      .from("plate_contact_attempts")
+      .insert({
+        plate_id: plate.id,
+        slug: plate.slug,
+        sender_fingerprint: senderFingerprint,
+        sender_name: reporterName || null,
+        sender_phone: reporterPhone || null,
+        sender_email: reporterEmail || null,
+        message,
+      });
+
+    if (insertAttemptError) {
+      return NextResponse.json(
+        {
+          error: `Contact sent, but cooldown record failed: ${insertAttemptError.message}`,
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       ok: true,
+      email_recipient_count: shouldSendEmail ? ownerEmails.length : 0,
+      sms_recipient_count: shouldSendSms ? ownerPhones.length : 0,
+      cooldown_minutes: CONTACT_WINDOW_MINUTES,
     });
   } catch (error) {
     return NextResponse.json(
