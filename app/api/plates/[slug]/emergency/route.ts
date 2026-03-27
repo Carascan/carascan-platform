@@ -208,10 +208,10 @@ const mapImage = buildStaticMapUrl(lat, lng);
     const emailHtml = `
 <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111827; max-width: 640px; margin: 0 auto;">
 
-  <h2>🚨 Carascan Emergency Alert</h2>
+  <h2>🚨 Carascan Emergency Alert 🚨</h2>
 
   <p>
-    A location has been shared in an emergency context linked to your Carascan plate.
+    You are a nominated emergency contact. The details from the sender are below
   </p>
 
   <p><strong>Plate:</strong> ${plate.identifier}</p>
@@ -225,7 +225,7 @@ const mapImage = buildStaticMapUrl(lat, lng);
 
   <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;" />
 
-  <p><strong>Reported location</strong></p>
+  <p><strong>Reported emergency location</strong></p>
 
   <a href="${map}" target="_blank">
     <img
@@ -255,8 +255,7 @@ const mapImage = buildStaticMapUrl(lat, lng);
   <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;" />
 
   <p style="font-size: 14px; color: #6b7280;">
-    This alert was sent via Carascan.<br/>
-    Please act if required.
+    Our community look out for each other. This alert was sent from Carascan.<br/>
   </p>
 
 </div>
