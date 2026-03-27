@@ -253,7 +253,7 @@ export async function POST(
       reporterEmail ? `Email: ${reporterEmail}` : "",
       message ? `Msg: ${message}` : "",
       "",
-      "Response optional.",
+      "Please remember, response is optional.",
     ]
       .filter(Boolean)
       .join("\n");
