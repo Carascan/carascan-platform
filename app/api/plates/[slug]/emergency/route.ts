@@ -28,7 +28,9 @@ function normalizePhone(value: string): string {
 function buildMapsUrl(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
 }
-
+function buildStaticMapUrl(lat: number, lng: number) {
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=14&size=640x320&scale=2&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${process.env.GOOGLE_MAPS_STATIC_API_KEY}`;
+}
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
@@ -51,6 +53,7 @@ export async function POST(
     const reporterPhone = normalizePhone(
       String(body?.reporter_phone ?? "").trim()
     );
+    const reporterEmail = String(body?.reporter_email ?? "").trim();
     const message = String(body?.message ?? "").trim();
 
     console.log("[SMS DEBUG][EMERGENCY] request received", {
@@ -201,41 +204,77 @@ if (!plate) {
     }
 
     const map = buildMapsUrl(lat, lng);
-
+const mapImage = buildStaticMapUrl(lat, lng);
     const emailHtml = `
-  <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111827;">
-    <h2>🚨 Carascan QR Emergency Alert 🚨</h2>
-    <p><strong>Plate:</strong> ${plate.identifier}</p>
-    <p><strong>Sender name:</strong> ${reporterName || "Not provided"}</p>
-    <p><strong>Sender phone:</strong> ${reporterPhone || "Not provided"}</p>
-    <p><strong>Location:</strong></p>
-    <p>
-      <a href="${map}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
-    </p>
-    ${
-      message
-        ? `<p><strong>Details:</strong></p><p>${message.replace(/\n/g, "<br />")}</p>`
-        : ""
-    }
-    <p>Your details have been provided as an emergency contact.</p>
-    <p>
-      <a href="https://www.carascan.com.au" target="_blank" rel="noopener noreferrer">
-        www.carascan.com.au
-      </a>
-    </p>
-  </div>
+<div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111827; max-width: 640px; margin: 0 auto;">
+
+  <h2>🚨 Carascan Emergency Alert</h2>
+
+  <p>
+    A location has been shared in an emergency context linked to your Carascan plate.
+  </p>
+
+  <p><strong>Plate:</strong> ${plate.identifier}</p>
+
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;" />
+
+  <p><strong>Sender details</strong></p>
+  <p>Name: ${reporterName || "Not provided"}</p>
+  <p>Phone: ${reporterPhone || "Not provided"}</p>
+  <p>Email: ${reporterEmail || "Not provided"}</p>
+
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;" />
+
+  <p><strong>Reported location</strong></p>
+
+  <a href="${map}" target="_blank">
+    <img
+      src="${mapImage}"
+      alt="Map preview"
+      width="640"
+      style="display:block;width:100%;max-width:640px;border-radius:10px;"
+    />
+  </a>
+
+  <p style="margin-top:10px;">
+    <a href="${map}" target="_blank">
+      View location in Google Maps
+    </a>
+  </p>
+
+  ${
+    message
+      ? `
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;" />
+      <p><strong>Details</strong></p>
+      <p>${message.replace(/\n/g, "<br />")}</p>
+    `
+      : ""
+  }
+
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;" />
+
+  <p style="font-size: 14px; color: #6b7280;">
+    This alert was sent via Carascan.<br/>
+    Please act if required.
+  </p>
+
+</div>
 `;
     const smsLines = [
   `🚨CARASCAN QR EMERGENCY ALERT🚨 - ${plate.identifier}`,
-  reporterName ? `Name: ${reporterName}` : "",
-  reporterPhone ? `Phone: ${reporterPhone}` : "",
+  "",
+  "You are a nominated emergency contact.",
+  "",
+  "Information provided by:",
+reporterName ? `Name: ${reporterName}` : "",
+reporterPhone ? `Phone: ${reporterPhone}` : "",
+reporterEmail ? `Email: ${reporterEmail}` : "",
   "",
   "Location:",
   map,
   "",
   message ? `Details: ${message}` : "",
-  "",
-  "Your details have been provided as an emergency contact",
   "",
   "https://www.carascan.com.au",
 ].filter(Boolean);
