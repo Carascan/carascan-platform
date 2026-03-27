@@ -33,7 +33,9 @@ function escapeHtml(value: string) {
 function buildMapsUrl(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
 }
-
+function buildStaticMapUrl(lat: number, lng: number) {
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=14&size=640x320&scale=2&maptype=roadmap&markers=color:red%7C${lat},${lng}`;
+}
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
@@ -137,7 +139,7 @@ export async function POST(
     );
 
     const mapUrl = buildMapsUrl(lat, lng);
-
+    const mapImageUrl = buildStaticMapUrl(lat, lng);
     const html = `
   <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111827;">
     <h2>📍 Carascan QR Report Location 📍</h2>
@@ -147,16 +149,19 @@ export async function POST(
     <p><strong>Sender email:</strong> ${reporterEmail || "Not provided"}</p>
     <p><strong>Location:</strong></p>
     <p>
-      <a href="${mapUrl}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
-    </p>
-    <p><strong>Message:</strong></p>
-    <p>${message ? message.replace(/\n/g, "<br />") : "No additional details provided."}</p>
-    <p>Please remember, response is optional.</p>
-    <p>
-      <a href="https://www.carascan.com.au" target="_blank" rel="noopener noreferrer">
-        www.carascan.com.au
+      <a href="${mapUrl}" target="_blank" rel="noopener noreferrer">
+        <img
+          src="${mapImageUrl}"
+          alt="Reported location map"
+          style="display:block;width:100%;max-width:640px;height:auto;border:0;border-radius:12px;"
+        />
       </a>
     </p>
+    <p>
+      <a href="${mapUrl}" target="_blank" rel="noopener noreferrer">
+        Open in Google Maps
+    </a>
+</p>
   </div>
 `;
 
