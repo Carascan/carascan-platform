@@ -4,6 +4,8 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 type SetupSaveBody = {
   token?: string;
   caravan_name?: string;
+  owner_phone_1?: string;
+  owner_phone_2?: string;
   bio?: string | null;
   contact_enabled?: boolean;
   emergency_enabled?: boolean;
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
 
     const { data: tokenRow, error: tokenLookupError } = await supabase
       .from("plate_setup_tokens")
-      .select("token, plate_id, expires_at, used_at, revoked_at")
+      .select("token, plate_id, email, expires_at, used_at, revoked_at")
       .eq("token", token)
       .maybeSingle();
 
@@ -74,10 +76,20 @@ export async function POST(req: Request) {
         : null;
 
     const contactEnabled = body.contact_enabled !== false;
-const emergencyEnabled = true;
-const contactChannel = cleanChannel(body.contact_channel);
-const reportChannel = cleanChannel(body.report_channel || "both");
-const mountingHoles = body.mounting_holes !== false;
+    const emergencyEnabled = true;
+    const contactChannel = cleanChannel(body.contact_channel);
+    const reportChannel = cleanChannel(body.report_channel || "both");
+    const mountingHoles = body.mounting_holes !== false;
+
+    const ownerPhone1 =
+      typeof body.owner_phone_1 === "string"
+        ? normalizePhone(body.owner_phone_1)
+        : "";
+
+    const ownerPhone2 =
+      typeof body.owner_phone_2 === "string"
+        ? normalizePhone(body.owner_phone_2)
+        : "";
 
     const emergencyContacts = Array.isArray(body.emergency_contacts)
       ? body.emergency_contacts
@@ -92,14 +104,16 @@ const mountingHoles = body.mounting_holes !== false;
           .filter((c) => c.name || c.phone || c.email)
       : [];
 
-    const { error: profileError } = await supabase.from("plate_profiles").upsert(
-      {
-        plate_id: tokenRow.plate_id,
-        caravan_name: caravanName,
-        bio,
-      },
-      { onConflict: "plate_id" }
-    );
+    const { error: profileError } = await supabase
+      .from("plate_profiles")
+      .upsert(
+        {
+          plate_id: tokenRow.plate_id,
+          caravan_name: caravanName,
+          bio,
+        },
+        { onConflict: "plate_id" }
+      );
 
     if (profileError) {
       return NextResponse.json(
@@ -111,12 +125,12 @@ const mountingHoles = body.mounting_holes !== false;
     const { error: plateError } = await supabase
       .from("plates")
       .update({
-  contact_enabled: contactEnabled,
-  emergency_enabled: true,
-  preferred_contact_channel: contactChannel,
-  report_channel: reportChannel,
-  status: "active",
-})
+        contact_enabled: contactEnabled,
+        emergency_enabled: emergencyEnabled,
+        preferred_contact_channel: contactChannel,
+        report_channel: reportChannel,
+        status: "active",
+      })
       .eq("id", tokenRow.plate_id);
 
     if (plateError) {
@@ -127,15 +141,34 @@ const mountingHoles = body.mounting_holes !== false;
     }
 
     const { error: designError } = await supabase
-  .from("plate_designs")
-  .update({
-    mounting_holes: mountingHoles,
-  })
-  .eq("plate_id", tokenRow.plate_id);
+      .from("plate_designs")
+      .update({
+        mounting_holes: mountingHoles,
+      })
+      .eq("plate_id", tokenRow.plate_id);
 
     if (designError) {
       return NextResponse.json(
         { error: `Design update failed: ${designError.message}` },
+        { status: 500 }
+      );
+    }
+
+    const { error: ownerError } = await supabase
+      .from("plate_owners")
+      .upsert(
+        {
+          plate_id: tokenRow.plate_id,
+          email: tokenRow.email,
+          phone_1: ownerPhone1 || null,
+          phone_2: ownerPhone2 || null,
+        },
+        { onConflict: "plate_id" }
+      );
+
+    if (ownerError) {
+      return NextResponse.json(
+        { error: `Owner save failed: ${ownerError.message}` },
         { status: 500 }
       );
     }
@@ -147,7 +180,9 @@ const mountingHoles = body.mounting_holes !== false;
 
     if (deleteContactsError) {
       return NextResponse.json(
-        { error: `Emergency contact reset failed: ${deleteContactsError.message}` },
+        {
+          error: `Emergency contact reset failed: ${deleteContactsError.message}`,
+        },
         { status: 500 }
       );
     }
