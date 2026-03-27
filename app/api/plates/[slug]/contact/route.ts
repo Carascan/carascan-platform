@@ -100,7 +100,7 @@ export async function POST(
     const sb = supabaseAdmin();
     const input = String(slug ?? "").trim();
 
-    let { data: plate, error: plateError } = await sb
+    let { data: plate } = await sb
       .from("plates")
       .select(
         "id, identifier, slug, contact_enabled, preferred_contact_channel"
@@ -118,14 +118,6 @@ export async function POST(
         .maybeSingle();
 
       plate = fallback.data;
-      plateError = fallback.error;
-    }
-
-    if (plateError) {
-      return NextResponse.json(
-        { error: `Plate lookup failed: ${plateError.message}` },
-        { status: 500 }
-      );
     }
 
     if (!plate) {
@@ -152,24 +144,13 @@ export async function POST(
       Date.now() - CONTACT_WINDOW_MINUTES * 60 * 1000
     ).toISOString();
 
-    const { data: recentAttempt, error: recentAttemptError } = await sb
+    const { data: recentAttempt } = await sb
       .from("plate_contact_attempts")
-      .select("id, created_at")
+      .select("id")
       .eq("plate_id", plate.id)
       .eq("sender_fingerprint", senderFingerprint)
       .gte("created_at", cutoffIso)
-      .order("created_at", { ascending: false })
-      .limit(1)
       .maybeSingle();
-
-    if (recentAttemptError) {
-      return NextResponse.json(
-        {
-          error: `Contact cooldown lookup failed: ${recentAttemptError.message}`,
-        },
-        { status: 500 }
-      );
-    }
 
     if (recentAttempt) {
       return NextResponse.json(
@@ -181,155 +162,86 @@ export async function POST(
       );
     }
 
-    const { data: tokenRows, error: tokenError } = await sb
-      .from("plate_setup_tokens")
-      .select("email")
-      .eq("plate_id", plate.id);
-
-    if (tokenError) {
-      return NextResponse.json(
-        { error: `Token email lookup failed: ${tokenError.message}` },
-        { status: 500 }
-      );
-    }
-
-    const { data: contacts, error: contactsError } = await sb
-      .from("emergency_contacts")
-      .select("phone, email, enabled")
+    // ✅ OWNER ONLY (NEW SOURCE)
+    const { data: owner } = await sb
+      .from("plate_owners")
+      .select("email, phone_1, phone_2")
       .eq("plate_id", plate.id)
-      .eq("enabled", true);
+      .maybeSingle();
 
-    if (contactsError) {
-      return NextResponse.json(
-        { error: `Contact recipient lookup failed: ${contactsError.message}` },
-        { status: 500 }
-      );
-    }
+    const ownerEmails = owner?.email
+      ? [normalizeEmail(owner.email)]
+      : [];
+
+    const ownerPhones = [owner?.phone_1, owner?.phone_2]
+      .map((p) => normalizePhone(String(p ?? "")))
+      .filter(Boolean);
 
     const preferredChannel = String(
       plate.preferred_contact_channel ?? "email"
     ).toLowerCase();
-
-    const emails = Array.from(
-      new Set(
-        [
-          ...(tokenRows ?? []).map((r) => normalizeEmail(r.email)),
-          ...(contacts ?? []).map((c) => normalizeEmail(c.email)),
-        ].filter(Boolean)
-      )
-    );
-
-    const phones = Array.from(
-      new Set(
-        (contacts ?? [])
-          .map((c) => normalizePhone(String(c.phone ?? "")))
-          .filter(Boolean)
-      )
-    );
 
     const shouldSendEmail =
       preferredChannel === "email" || preferredChannel === "both";
     const shouldSendSms =
       preferredChannel === "sms" || preferredChannel === "both";
 
-    if (shouldSendEmail && !emails.length && shouldSendSms && !phones.length) {
+    if (!ownerEmails.length && !ownerPhones.length) {
       return NextResponse.json(
-        {
-          error:
-            "No contact recipients found for the selected contact channel.",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (shouldSendEmail && !emails.length && !shouldSendSms) {
-      return NextResponse.json(
-        {
-          error:
-            "No email recipients found for the selected contact channel.",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (shouldSendSms && !phones.length && !shouldSendEmail) {
-      return NextResponse.json(
-        {
-          error: "No SMS recipients found for the selected contact channel.",
-        },
+        { error: "No contact method configured for this plate." },
         { status: 400 }
       );
     }
 
     const emailHtml = `
-  <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111827;">
-    <h2>👋 Virtual Doorknock - knock, knock</h2>
-    <p><strong>Plate:</strong> ${plate.identifier}</p>
-    <p><strong>Sender name:</strong> ${reporterName || "Not provided"}</p>
-    <p><strong>Sender phone:</strong> ${reporterPhone || "Not provided"}</p>
-    <p><strong>Sender email:</strong> ${reporterEmail || "Not provided"}</p>
-    <p><strong>Message:</strong></p>
-    <p>${message.replace(/\n/g, "<br />")}</p>
-    <p>Please remember, response is optional.</p>
-    <p>
-      <a href="https://www.carascan.com.au" target="_blank" rel="noopener noreferrer">
-        www.carascan.com.au
-      </a>
-    </p>
-  </div>
-`;
-    const smsLines = [
-  `VIRTUAL DOOR KNOCK - ${plate.identifier}`,
-  reporterName ? `Name: ${reporterName}` : "",
-  reporterPhone ? `Phone: ${reporterPhone}` : "",
-  reporterEmail ? `Email: ${reporterEmail}` : "",
-  message ? `Msg: ${message}` : "",
-  "",
-  "Please remember, response is optional.",
-  "https://www.carascan.com.au",
-].filter(Boolean);
-    const sms = smsLines.join("\n");
+      <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">
+        <h2>👋 Virtual Doorknock</h2>
+        <p><strong>Plate:</strong> ${plate.identifier}</p>
+        <p><strong>Name:</strong> ${reporterName || "Not provided"}</p>
+        <p><strong>Phone:</strong> ${reporterPhone || "Not provided"}</p>
+        <p><strong>Email:</strong> ${reporterEmail || "Not provided"}</p>
+        <p><strong>Message:</strong></p>
+        <p>${message.replace(/\n/g, "<br />")}</p>
+        <p>Please remember, response is optional.</p>
+      </div>
+    `;
+
+    const sms = [
+      `DOORKNOCK - ${plate.identifier}`,
+      reporterName ? `Name: ${reporterName}` : "",
+      reporterPhone ? `Phone: ${reporterPhone}` : "",
+      reporterEmail ? `Email: ${reporterEmail}` : "",
+      message ? `Msg: ${message}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     const tasks: Promise<any>[] = [];
 
-    if (shouldSendEmail && emails.length) {
+    if (shouldSendEmail && ownerEmails.length) {
       tasks.push(
-        sendEmail(emails, `👋 Contact - ${plate.identifier}`, emailHtml)
+        sendEmail(ownerEmails, `Contact - ${plate.identifier}`, emailHtml)
       );
     }
 
-    if (shouldSendSms && phones.length) {
-      tasks.push(sendSmsMany(phones, sms));
+    if (shouldSendSms && ownerPhones.length) {
+      tasks.push(sendSmsMany(ownerPhones, sms));
     }
 
     await Promise.all(tasks);
 
-    const { error: insertAttemptError } = await sb
-      .from("plate_contact_attempts")
-      .insert({
-        plate_id: plate.id,
-        slug: plate.slug,
-        sender_fingerprint: senderFingerprint,
-        sender_name: reporterName || null,
-        sender_phone: reporterPhone || null,
-        sender_email: reporterEmail || null,
-        message,
-      });
-
-    if (insertAttemptError) {
-      return NextResponse.json(
-        {
-          error: `Contact sent, but cooldown record failed: ${insertAttemptError.message}`,
-        },
-        { status: 500 }
-      );
-    }
+    await sb.from("plate_contact_attempts").insert({
+      plate_id: plate.id,
+      slug: plate.slug,
+      sender_fingerprint: senderFingerprint,
+      sender_name: reporterName || null,
+      sender_phone: reporterPhone || null,
+      sender_email: reporterEmail || null,
+      message,
+    });
 
     return NextResponse.json({
       ok: true,
-      email_recipient_count: shouldSendEmail ? emails.length : 0,
-      sms_recipient_count: shouldSendSms ? phones.length : 0,
-      cooldown_minutes: CONTACT_WINDOW_MINUTES,
     });
   } catch (error) {
     return NextResponse.json(

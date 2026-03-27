@@ -111,11 +111,13 @@ export default function SetupClient({ token }: SetupClientProps) {
   const [contactChannel, setContactChannel] = useState("email");
   const [reportChannel, setReportChannel] = useState("email");
   const [mountingHoles, setMountingHoles] = useState(true);
+  const [ownerPhone1, setOwnerPhone1] = useState("");
+  const [ownerPhone2, setOwnerPhone2] = useState("");
   const [contacts, setContacts] = useState<EmergencyContact[]>([
-    blankContact(),
-    blankContact(),
-    blankContact(),
-  ]);
+  blankContact(),
+  blankContact(),
+  blankContact(),
+]);
 
   useEffect(() => {
     let cancelled = false;
@@ -294,15 +296,17 @@ export default function SetupClient({ token }: SetupClientProps) {
 
     try {
       const payload = {
-        token,
-        caravan_name: caravanName.trim(),
-        bio: bio.trim(),
-        contact_enabled: contactEnabled,
-        contact_channel: contactChannel,
-        report_channel: reportChannel,
-        mounting_holes: mountingHoles,
-        emergency_contacts: activeContacts,
-      };
+  token,
+  caravan_name: caravanName.trim(),
+  bio: bio.trim(),
+  contact_enabled: contactEnabled,
+  contact_channel: contactChannel,
+  report_channel: reportChannel,
+  mounting_holes: mountingHoles,
+  owner_phone_1: ownerPhone1,
+  owner_phone_2: ownerPhone2,
+  emergency_contacts: activeContacts,
+};
 
       const res = await fetch("/api/setup/save", {
         method: "POST",
@@ -453,6 +457,25 @@ export default function SetupClient({ token }: SetupClientProps) {
             </label>
           </div>
 
+          <label style={styles.label}>
+            Owner 1 phone (optional - used for SMS notifications only)
+            <input
+              style={styles.input}
+              value={ownerPhone1}
+              onChange={(e) => setOwnerPhone1(e.target.value)}
+              placeholder="Optional"
+            />
+          </label>
+
+          <label style={styles.label}>
+            Owner 2 phone (optional - used for SMS notifications only)
+            <input
+              style={styles.input}
+              value={ownerPhone2}
+              onChange={(e) => setOwnerPhone2(e.target.value)}
+              placeholder="Optional"
+            />
+          </label>
           <label style={styles.checkboxRow}>
             <input
               type="checkbox"
