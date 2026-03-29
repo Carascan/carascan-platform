@@ -8,7 +8,6 @@ const LOGO_URL =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
 export default function PlatePreviewGenerator() {
-  const [mountingHoles, setMountingHoles] = useState(true);
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -22,7 +21,6 @@ export default function PlatePreviewGenerator() {
         const preview = await buildPlatePreviewData({
           slug: "preview-demo",
           identifier: "CSN-XXXXXX",
-          mountingHoles,
           logoUrl: LOGO_URL,
         });
 
@@ -42,7 +40,7 @@ export default function PlatePreviewGenerator() {
     return () => {
       active = false;
     };
-  }, [mountingHoles]);
+  }, []);
 
   const svgMarkup = useMemo(() => {
     if (!qrDataUrl) return "";
@@ -53,7 +51,7 @@ export default function PlatePreviewGenerator() {
       logoImageHref: LOGO_URL,
       includeCrosshair: false,
     });
-  }, [qrDataUrl, mountingHoles]);
+  }, [qrDataUrl]);
 
   return (
     <section id="preview" style={{ width: "100%" }}>
@@ -65,34 +63,17 @@ export default function PlatePreviewGenerator() {
           alignItems: "start",
         }}
       >
-        <div>
-          <label
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              fontSize: 15,
-              fontWeight: 600,
-              color: "#0f172a",
-              marginBottom: 18,
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={mountingHoles}
-              onChange={(e) => setMountingHoles(e.target.checked)}
-            />
-            Include mounting holes
-          </label>
-
-          <div
-            style={{
-              background: "#e9e9ea",
-              borderRadius: 28,
-              padding: 20,
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45)",
-            }}
-          >
+        <div
+  style={{
+    background: "#e9e9ea",
+    borderRadius: 28,
+    padding: 20,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  }}
+>
             {isLoading ? (
               <div
                 style={{
@@ -107,15 +88,17 @@ export default function PlatePreviewGenerator() {
               </div>
             ) : (
               <div
-                style={{
-                  width: "100%",
-                  maxWidth: 430,
-                }}
-                dangerouslySetInnerHTML={{ __html: svgMarkup }}
-              />
+  style={{
+    width: "100%",
+    maxWidth: 430,
+    margin: "0 auto",
+    display: "flex",
+    justifyContent: "center",
+  }}
+  dangerouslySetInnerHTML={{ __html: svgMarkup }}
+/>
             )}
           </div>
-        </div>
 
         <aside
           style={{
@@ -162,39 +145,30 @@ export default function PlatePreviewGenerator() {
             manufacturing plate output.
           </p>
 
-          <div
-            style={{
-              display: "grid",
-              gap: 12,
-              fontSize: 14,
-              color: "#0f172a",
-            }}
-          >
-            <div>
-              <strong>Plate size:</strong> 90 × 90 mm
-            </div>
-            <div>
-              <strong>Plate thickness:</strong> 3mm
-            </div>
-            <div>
-              <strong>Material:</strong> Aluminium anodised plate
-            </div>
-            <div>
-              <strong>Corner radius:</strong> 3 mm
-            </div>
-            <div>
-              <strong>Identifier format:</strong> CSN-XXXXXX
-            </div>
-            <div>
-              <strong>Mounting:</strong>{" "}
-              {mountingHoles
-                ? "HOLES - 5mm Aluminium pop rivets"
-                : "NO HOLES - Adhesive required"}
-            </div>
-            <div>
-              <strong>Hole diameter:</strong> 5.2 mm
-            </div>
-          </div>
+         <div
+  style={{
+    display: "grid",
+    gap: 12,
+    fontSize: 14,
+    color: "#0f172a",
+  }}
+>
+  <div>
+    <strong>Plate size:</strong> 90 × 90 mm
+  </div>
+  <div>
+    <strong>Plate thickness:</strong> 3mm
+  </div>
+  <div>
+    <strong>Material:</strong> Aluminium anodised plate
+  </div>
+  <div>
+    <strong>Corner radius:</strong> 3 mm
+  </div>
+  <div>
+    <strong>Identifier format:</strong> CSN-XXXXXX
+  </div>
+</div> 
         </aside>
       </div>
     </section>
