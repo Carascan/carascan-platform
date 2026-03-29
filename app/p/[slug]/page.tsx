@@ -526,7 +526,7 @@ export default function PlatePage({
         </a>
 
         <a
-          href="https://www.carascan.com.au/help"
+          href={`/help?plate=${encodeURIComponent(identifier)}`}
           style={{
   textDecoration: "none",
   padding: "10px 16px",
