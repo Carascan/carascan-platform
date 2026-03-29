@@ -47,10 +47,9 @@ export default function PlatePreviewGenerator() {
   const svgMarkup = useMemo(() => {
     if (!qrDataUrl) return "";
 
-    return buildPlateSvg({
+        return buildPlateSvg({
       identifier: "CSN-XXXXXX",
       qrImageHref: qrDataUrl,
-      mountingHoles,
       logoImageHref: LOGO_URL,
       includeCrosshair: false,
     });
