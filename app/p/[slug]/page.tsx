@@ -421,15 +421,15 @@ export default function PlatePage({
           <a
             href="https://www.carascan.com.au/help"
             style={{
-              textDecoration: "none",
-              padding: "10px 16px",
-              borderRadius: 999,
-              border: "1px solid #d1d5db",
-              fontSize: 14,
-              fontWeight: 600,
-              color: "#111827",
-              background: "#fff",
-            }}
+  textDecoration: "none",
+  padding: "10px 16px",
+  borderRadius: 999,
+  border: "1px solid #111827",
+  fontSize: 14,
+  fontWeight: 600,
+  color: "#ffffff",
+  background: "#111827",
+}}
           >
             Need help?
           </a>
@@ -475,15 +475,15 @@ export default function PlatePage({
           <a
             href="https://www.carascan.com.au/help"
             style={{
-              textDecoration: "none",
-              padding: "10px 16px",
-              borderRadius: 999,
-              border: "1px solid #d1d5db",
-              fontSize: 14,
-              fontWeight: 600,
-              color: "#111827",
-              background: "#fff",
-            }}
+  textDecoration: "none",
+  padding: "10px 16px",
+  borderRadius: 999,
+  border: "1px solid #111827",
+  fontSize: 14,
+  fontWeight: 600,
+  color: "#ffffff",
+  background: "#111827",
+}}
           >
             Need help?
           </a>
@@ -528,15 +528,15 @@ export default function PlatePage({
         <a
           href="https://www.carascan.com.au/help"
           style={{
-            textDecoration: "none",
-            padding: "10px 16px",
-            borderRadius: 999,
-            border: "1px solid #d1d5db",
-            fontSize: 14,
-            fontWeight: 600,
-            color: "#111827",
-            background: "#fff",
-          }}
+  textDecoration: "none",
+  padding: "10px 16px",
+  borderRadius: 999,
+  border: "1px solid #111827",
+  fontSize: 14,
+  fontWeight: 600,
+  color: "#ffffff",
+  background: "#111827",
+}}
         >
           Need help?
         </a>
