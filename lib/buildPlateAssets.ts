@@ -2,13 +2,9 @@ import { buildPlateUrl, getDefaultPlateSpec } from "./plate";
 import { generateQrBuffer, generateQrDataUrl } from "./generateQr";
 import { buildPlateSvg } from "./laserSvg";
 
-export type MountingMethod = "rivet" | "adhesive";
-
 export type BuildPlateAssetsInput = {
   identifier: string;
   slug: string;
-  mountingMethod?: MountingMethod;
-  mountingHoles?: boolean;
   logoSvgMarkup?: string;
   logoImageHref?: string;
 };
@@ -24,23 +20,11 @@ export type BuildPlateAssetsResult = {
   metadata: Record<string, unknown>;
 };
 
-function resolveMountingMethod(
-  input: Pick<BuildPlateAssetsInput, "mountingMethod" | "mountingHoles">
-): MountingMethod {
-  if (input.mountingMethod === "adhesive") return "adhesive";
-  if (input.mountingMethod === "rivet") return "rivet";
-  if (typeof input.mountingHoles === "boolean") {
-    return input.mountingHoles ? "rivet" : "adhesive";
-  }
-  return "rivet";
-}
 
 export async function buildPlateAssets(
   input: BuildPlateAssetsInput
 ): Promise<BuildPlateAssetsResult> {
   const plateUrl = buildPlateUrl(input.slug);
-  const mountingMethod = resolveMountingMethod(input);
-  const mountingHoles = mountingMethod === "rivet";
 
   const qrPngBuffer = await generateQrBuffer(plateUrl, {
     mode: "production",
@@ -55,12 +39,11 @@ export async function buildPlateAssets(
   });
 
   const plateSvg = buildPlateSvg({
-    identifier: input.identifier,
-    qrImageHref: qrDataUrl,
-    mountingHoles,
-    logoSvgMarkup: input.logoSvgMarkup,
-    logoImageHref: input.logoImageHref,
-  });
+  identifier: input.identifier,
+  qrImageHref: qrDataUrl,
+  logoSvgMarkup: input.logoSvgMarkup,
+  logoImageHref: input.logoImageHref,
+});
 
   return {
     identifier: input.identifier,
@@ -70,12 +53,10 @@ export async function buildPlateAssets(
     qrPngBuffer,
     qrDataUrl,
     plateSvg,
-    metadata: {
+        metadata: {
       identifier: input.identifier,
       slug: input.slug,
       plateUrl,
-      mountingMethod,
-      mountingHoles,
       plateSizeMm: {
         width: 90,
         height: 90,

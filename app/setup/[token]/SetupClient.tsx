@@ -266,7 +266,7 @@ export default function SetupClient({ token }: SetupClientProps) {
       ? loadState.data.design?.logo_url?.trim() || DEFAULT_LOGO_URL
       : DEFAULT_LOGO_URL;
 
-  const plateSvg = useMemo(() => {
+    const plateSvg = useMemo(() => {
     if (loadState.status !== "ready") return "";
     if (!loadState.data.plate.identifier || !(embeddedQrHref || qrUrl))
       return "";
