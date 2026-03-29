@@ -74,13 +74,6 @@ async function generateNextIdentifier(sb: ReturnType<typeof supabaseAdmin>) {
   return formatIdentifier(currentNumber + 1);
 }
 
-function readMountingHoles(session: any): boolean {
-  const method = session?.metadata?.mounting_method;
-
-  if (!method) return true;
-  return method === "rivet";
-}
-
 async function loadLogoSvgDataUrl(logoUrl: string): Promise<string> {
   try {
     const response = await fetch(logoUrl, { cache: "no-store" });
@@ -300,18 +293,15 @@ export async function POST(req: Request) {
       const duplicateAddress = session.customer_details?.address ?? null;
       const duplicateLogoUrl = ENV.PLATE_LOGO_SVG_URL ?? LOGO_URL_FALLBACK;
       const duplicateLogoImageHref = await loadLogoSvgDataUrl(duplicateLogoUrl);
-      const duplicateMountingHoles = readMountingHoles(session);
 
       console.log("[stripe-webhook] rebuilding duplicate assets", {
         identifier: plate.identifier,
         slug: plate.slug,
-        mountingHoles: duplicateMountingHoles,
       });
 
       const duplicateAssets = await buildPlateAssets({
         identifier: plate.identifier,
         slug: plate.slug,
-        mountingMethod: duplicateMountingHoles ? "rivet" : "adhesive",
         logoImageHref: duplicateLogoImageHref,
       });
 
@@ -405,7 +395,6 @@ export async function POST(req: Request) {
     const email = session.customer_details?.email ?? null;
     const customerName = session.customer_details?.name ?? null;
     const customerPhone = session.customer_details?.phone ?? null;
-    const mountingHoles = readMountingHoles(session);
     const emergencyPlan =
       session?.metadata?.emergency_plan === "10" ? "10" : "3";
 
@@ -413,7 +402,6 @@ export async function POST(req: Request) {
       email,
       customerName,
       customerPhone,
-      mountingHoles,
       emergencyPlan,
     });
 
@@ -461,14 +449,12 @@ export async function POST(req: Request) {
     console.log("[stripe-webhook] building plate assets", {
       identifier,
       slug,
-      mountingHoles,
       emergencyPlan,
     });
 
     const assets = await buildPlateAssets({
       identifier,
       slug,
-      mountingMethod: mountingHoles ? "rivet" : "adhesive",
       logoImageHref,
     });
 
