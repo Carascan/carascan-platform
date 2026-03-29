@@ -1,3 +1,6 @@
+const LOGO_URL =
+  "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
+
 export default function Success() {
   return (
     <main
@@ -21,7 +24,42 @@ export default function Success() {
           textAlign: "center",
         }}
       >
-      
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 24,
+            gap: 16,
+          }}
+        >
+          <img
+            src={LOGO_URL}
+            alt="Carascan"
+            style={{
+              height: 28,
+              width: "auto",
+              objectFit: "contain",
+            }}
+          />
+
+          <a
+            href="/contact"
+            style={{
+              textDecoration: "none",
+              padding: "8px 14px",
+              borderRadius: 999,
+              border: "1px solid #d1d5db",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#111827",
+              background: "#fff",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Help
+          </a>
+        </div>
 
         <h1
           style={{
@@ -39,8 +77,8 @@ export default function Success() {
             color: "#374151",
           }}
         >
-          Time to hit the road! Your order is confirmed.
-          Thank you for contributing to the community and looking out for each other.
+          Time to hit the road! Your order is confirmed. Thank you for
+          contributing to the community and looking out for each other.
         </p>
 
         <p
