@@ -37,7 +37,6 @@ type Design = {
   plate_height_mm: number;
   qr_size_mm: number;
   hole_diameter_mm: number;
-  mounting_holes?: boolean | null;
 };
 
 type EmergencyContact = {
@@ -110,7 +109,6 @@ export default function SetupClient({ token }: SetupClientProps) {
   const [contactEnabled, setContactEnabled] = useState(true);
   const [contactChannel, setContactChannel] = useState("email");
   const [reportChannel, setReportChannel] = useState("email");
-  const [mountingHoles, setMountingHoles] = useState(true);
   const [ownerPhone1, setOwnerPhone1] = useState("");
   const [ownerPhone2, setOwnerPhone2] = useState("");
   const [contacts, setContacts] = useState<EmergencyContact[]>([
@@ -183,7 +181,7 @@ export default function SetupClient({ token }: SetupClientProps) {
             : "email"
         );
 
-        setMountingHoles(data.design?.mounting_holes !== false);
+      
 
         const existing = Array.isArray(data.contacts)
           ? data.contacts.slice(0, 3)
@@ -273,14 +271,13 @@ export default function SetupClient({ token }: SetupClientProps) {
     if (!loadState.data.plate.identifier || !(embeddedQrHref || qrUrl))
       return "";
 
-    return buildPlateSvg({
+    r    return buildPlateSvg({
       identifier: loadState.data.plate.identifier,
       qrImageHref: embeddedQrHref || qrUrl,
-      mountingHoles,
       logoImageHref: logoUrl,
       includeCrosshair: false,
     });
-  }, [loadState, embeddedQrHref, qrUrl, mountingHoles, logoUrl]);
+  }, [loadState, embeddedQrHref, qrUrl, logoUrl]);
 
   function updateContact(index: number, patch: Partial<EmergencyContact>) {
     setContacts((prev) =>
@@ -295,18 +292,17 @@ export default function SetupClient({ token }: SetupClientProps) {
     setSaveError("");
 
     try {
-      const payload = {
-  token,
-  caravan_name: caravanName.trim(),
-  bio: bio.trim(),
-  contact_enabled: contactEnabled,
-  contact_channel: contactChannel,
-  report_channel: reportChannel,
-  mounting_holes: mountingHoles,
-  owner_phone_1: ownerPhone1,
-  owner_phone_2: ownerPhone2,
-  emergency_contacts: activeContacts,
-};
+            const payload = {
+        token,
+        caravan_name: caravanName.trim(),
+        bio: bio.trim(),
+        contact_enabled: contactEnabled,
+        contact_channel: contactChannel,
+        report_channel: reportChannel,
+        owner_phone_1: ownerPhone1,
+        owner_phone_2: ownerPhone2,
+        emergency_contacts: activeContacts,
+      };
 
       const res = await fetch("/api/setup/save", {
         method: "POST",

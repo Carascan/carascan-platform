@@ -27,7 +27,6 @@ type PlateResponse = {
   design?: {
     qr_url?: string | null;
     logo_url?: string | null;
-    mounting_holes?: boolean | null;
   } | null;
 };
 
@@ -194,7 +193,6 @@ export default function PlatePage({
   const identifier = data?.plate.identifier || "";
   const qrUrl = data?.design?.qr_url?.trim() || "";
   const logoUrl = data?.design?.logo_url?.trim() || LOGO_URL;
-  const mountingHoles = data?.design?.mounting_holes !== false;
 
   useEffect(() => {
     let cancelled = false;
@@ -230,11 +228,10 @@ export default function PlatePage({
     return buildPlateSvg({
       identifier,
       qrImageHref: embeddedQrHref || qrUrl,
-      mountingHoles,
       logoImageHref: logoUrl,
       includeCrosshair: false,
     });
-  }, [identifier, embeddedQrHref, qrUrl, mountingHoles, logoUrl]);
+  }, [identifier, embeddedQrHref, qrUrl, logoUrl]);
 
   const contactRemaining = CONTACT_CHAR_LIMIT - contactMessage.length;
   const reportRemaining = REPORT_CHAR_LIMIT - reportNotes.length;

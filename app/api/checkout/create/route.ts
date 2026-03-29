@@ -2,10 +2,6 @@ import { NextResponse } from "next/server";
 import { stripeClient } from "@/lib/stripe";
 import { ENV } from "@/lib/env";
 
-function readMountingMethod(value: FormDataEntryValue | null) {
-  return value === "adhesive" ? "adhesive" : "rivet";
-}
-
 function readEmergencyPlan(value: FormDataEntryValue | null) {
   return value === "10" ? "10" : "3";
 }
@@ -15,7 +11,6 @@ export async function POST(req: Request) {
 
   const formData = await req.formData();
 
-  const mountingMethod = readMountingMethod(formData.get("mounting_method"));
   const emergencyPlan = readEmergencyPlan(formData.get("emergency_plan"));
 
   const platePriceId = ENV.STRIPE_PRICE_ID_PLATE!;
@@ -41,14 +36,12 @@ export async function POST(req: Request) {
     metadata: {
       product: "carascan_plate",
       sku: "CARASCAN_90x90",
-      mounting_method: mountingMethod,
       emergency_plan: emergencyPlan,
     },
     subscription_data: {
       metadata: {
         product: "carascan_plate",
         sku: "CARASCAN_90x90",
-        mounting_method: mountingMethod,
         emergency_plan: emergencyPlan,
       },
     },

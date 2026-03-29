@@ -11,7 +11,6 @@ type SetupSaveBody = {
   emergency_enabled?: boolean;
   contact_channel?: "email" | "sms" | "both" | string;
   report_channel?: "email" | "sms" | "both" | string;
-  mounting_holes?: boolean;
   emergency_contacts?: Array<{
     name?: string;
     phone?: string;
@@ -79,7 +78,6 @@ export async function POST(req: Request) {
     const emergencyEnabled = true;
     const contactChannel = cleanChannel(body.contact_channel);
     const reportChannel = cleanChannel(body.report_channel || "both");
-    const mountingHoles = body.mounting_holes !== false;
 
     const ownerPhone1 =
       typeof body.owner_phone_1 === "string"
@@ -140,19 +138,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const { error: designError } = await supabase
-      .from("plate_designs")
-      .update({
-        mounting_holes: mountingHoles,
-      })
-      .eq("plate_id", tokenRow.plate_id);
-
-    if (designError) {
-      return NextResponse.json(
-        { error: `Design update failed: ${designError.message}` },
-        { status: 500 }
-      );
-    }
 
     const { error: ownerError } = await supabase
       .from("plate_owners")
@@ -212,10 +197,9 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({
+        return NextResponse.json({
       ok: true,
       plate_id: tokenRow.plate_id,
-      mounting_holes: mountingHoles,
     });
   } catch {
     return NextResponse.json(

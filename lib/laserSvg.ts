@@ -1,9 +1,8 @@
-import { getDefaultPlateSpec, getHoleCenters } from "./plate";
+import { getDefaultPlateSpec } from "./plate";
 
 export type BuildPlateSvgInput = {
   identifier: string;
   qrImageHref: string;
-  mountingHoles: boolean;
   logoSvgMarkup?: string;
   logoImageHref?: string;
   includeCrosshair?: boolean;
@@ -30,13 +29,11 @@ export function stripOuterSvg(svgText: string): string {
 export function buildPlateSvg({
   identifier,
   qrImageHref,
-  mountingHoles,
   logoSvgMarkup,
   logoImageHref,
   includeCrosshair = false,
 }: BuildPlateSvgInput): string {
   const spec = getDefaultPlateSpec();
-  const holes = getHoleCenters(spec);
 
   // Locked logo geometry
   const logoWidth = 84;
@@ -66,18 +63,6 @@ export function buildPlateSvg({
   const qrX = qrCenterX - qrSize / 2;
   const qrY = qrTop;
 
-  const holeMarkup = mountingHoles
-    ? `
-  <g id="HOLES" fill="none" stroke="black" stroke-width="0.3">
-    ${holes
-      .map(
-        (h) =>
-          `<circle cx="${h.x}" cy="${h.y}" r="${spec.holeDiameterMm / 2}" />`
-      )
-      .join("\n    ")}
-  </g>`
-    : "";
-
   const logoMarkup = logoImageHref
     ? `
   <g id="LOGO_IMAGE">
@@ -91,7 +76,7 @@ export function buildPlateSvg({
     />
   </g>`
     : logoSvgMarkup
-    ? `
+      ? `
   <g id="LOGO_SVG">
     <svg
       x="${logoX}"
@@ -105,7 +90,7 @@ export function buildPlateSvg({
       ${logoSvgMarkup}
     </svg>
   </g>`
-    : `
+      : `
   <g id="LOGO_SVG"></g>`;
 
   const qrMarkup = `
@@ -173,7 +158,7 @@ export function buildPlateSvg({
       rx="${spec.cornerRadiusMm}"
       ry="${spec.cornerRadiusMm}"
     />
-  </g>${holeMarkup}${logoMarkup}${qrMarkup}
+  </g>${logoMarkup}${qrMarkup}
 
   <g id="IDENTIFIER">
     <text

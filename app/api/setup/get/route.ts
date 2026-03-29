@@ -59,7 +59,7 @@ export async function GET(req: Request) {
     sb
       .from("plate_designs")
       .select(
-        "plate_id, text_line_1, text_line_2, logo_url, qr_url, proof_approved, plate_width_mm, plate_height_mm, qr_size_mm, hole_diameter_mm, mounting_holes"
+        "plate_id, text_line_1, text_line_2, logo_url, qr_url, proof_approved, plate_width_mm, plate_height_mm, qr_size_mm, hole_diameter_mm"
       )
       .eq("plate_id", plateId)
       .maybeSingle(),
