@@ -392,41 +392,162 @@ export default function PlatePage({
   }
 
   if (loading) {
-    return (
-      <main style={styles.page}>
+  return (
+    <>
+      <header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 50,
+          background: "rgba(255,255,255,0.92)",
+          backdropFilter: "blur(10px)",
+          borderBottom: "1px solid #e5e7eb",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1200,
+            margin: "0 auto",
+            padding: "16px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <a href="/" style={{ display: "flex", alignItems: "center" }}>
+            <img src={LOGO_URL} alt="Carascan" style={{ height: 28 }} />
+          </a>
+
+          <a
+            href="https://www.carascan.com.au/help"
+            style={{
+              textDecoration: "none",
+              padding: "10px 16px",
+              borderRadius: 999,
+              border: "1px solid #d1d5db",
+              fontSize: 14,
+              fontWeight: 600,
+              color: "#111827",
+              background: "#fff",
+            }}
+          >
+            Need help?
+          </a>
+        </div>
+      </header>
+
+      <main style={{ ...styles.page, minHeight: "calc(100vh - 61px)" }}>
         <div style={styles.wrap}>
           <div style={styles.card}>Loading...</div>
         </div>
       </main>
-    );
-  }
+    </>
+  );
+}
 
   if (loadError || !data) {
-    return (
-      <main style={styles.page}>
+  return (
+    <>
+      <header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 50,
+          background: "rgba(255,255,255,0.92)",
+          backdropFilter: "blur(10px)",
+          borderBottom: "1px solid #e5e7eb",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1200,
+            margin: "0 auto",
+            padding: "16px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <a href="/" style={{ display: "flex", alignItems: "center" }}>
+            <img src={LOGO_URL} alt="Carascan" style={{ height: 28 }} />
+          </a>
+
+          <a
+            href="https://www.carascan.com.au/help"
+            style={{
+              textDecoration: "none",
+              padding: "10px 16px",
+              borderRadius: 999,
+              border: "1px solid #d1d5db",
+              fontSize: 14,
+              fontWeight: 600,
+              color: "#111827",
+              background: "#fff",
+            }}
+          >
+            Need help?
+          </a>
+        </div>
+      </header>
+
+      <main style={{ ...styles.page, minHeight: "calc(100vh - 61px)" }}>
         <div style={styles.wrap}>
           <div style={styles.card}>{loadError || "Plate not found."}</div>
         </div>
       </main>
-    );
-  }
+    </>
+  );
+}
 
   return (
-    <main style={styles.page}>
+  <>
+    <header
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 50,
+        background: "rgba(255,255,255,0.92)",
+        backdropFilter: "blur(10px)",
+        borderBottom: "1px solid #e5e7eb",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          padding: "16px 20px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <a href="/" style={{ display: "flex", alignItems: "center" }}>
+          <img src={LOGO_URL} alt="Carascan" style={{ height: 28 }} />
+        </a>
+
+        <a
+          href="https://www.carascan.com.au/help"
+          style={{
+            textDecoration: "none",
+            padding: "10px 16px",
+            borderRadius: 999,
+            border: "1px solid #d1d5db",
+            fontSize: 14,
+            fontWeight: 600,
+            color: "#111827",
+            background: "#fff",
+          }}
+        >
+          Need help?
+        </a>
+      </div>
+    </header>
+
+    <main style={{ ...styles.page, minHeight: "calc(100vh - 61px)" }}>
       <div style={styles.wrap}>
         <div style={styles.card}>
           <div style={{ textAlign: "center", marginBottom: 24 }}>
-            <img
-              src={LOGO_URL}
-              alt="Carascan"
-              style={{
-                width: "100%",
-                maxWidth: 390,
-                height: "auto",
-                display: "block",
-                margin: "0 auto 18px",
-              }}
-            />
+            
 
             <div style={styles.platePreviewWrap}>
               <div
@@ -734,9 +855,9 @@ export default function PlatePage({
         }
       `}</style>
     </main>
-  );
+</>
+);
 }
-
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
