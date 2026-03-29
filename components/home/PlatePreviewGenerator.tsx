@@ -45,7 +45,7 @@ export default function PlatePreviewGenerator() {
   const svgMarkup = useMemo(() => {
     if (!qrDataUrl) return "";
 
-        return buildPlateSvg({
+    return buildPlateSvg({
       identifier: "CSN-XXXXXX",
       qrImageHref: qrDataUrl,
       logoImageHref: LOGO_URL,
@@ -64,41 +64,41 @@ export default function PlatePreviewGenerator() {
         }}
       >
         <div
-  style={{
-    background: "#e9e9ea",
-    borderRadius: 28,
-    padding: 20,
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  }}
->
-            {isLoading ? (
-              <div
-                style={{
-                  minHeight: 420,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#475569",
-                }}
-              >
-                Generating preview…
-              </div>
-            ) : (
-              <div
-  style={{
-    width: "100%",
-    maxWidth: 430,
-    margin: "0 auto",
-    display: "flex",
-    justifyContent: "center",
-  }}
-  dangerouslySetInnerHTML={{ __html: svgMarkup }}
-/>
-            )}
-          </div>
+          style={{
+            background: "#e9e9ea",
+            borderRadius: 28,
+            padding: 20,
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          {isLoading ? (
+            <div
+              style={{
+                minHeight: 420,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#475569",
+              }}
+            >
+              Generating preview…
+            </div>
+          ) : (
+            <div
+              style={{
+                width: "100%",
+                maxWidth: 430,
+                margin: "0 auto",
+                display: "flex",
+                justifyContent: "center",
+              }}
+              dangerouslySetInnerHTML={{ __html: svgMarkup }}
+            />
+          )}
+        </div>
 
         <aside
           style={{
@@ -145,30 +145,30 @@ export default function PlatePreviewGenerator() {
             manufacturing plate output.
           </p>
 
-         <div
-  style={{
-    display: "grid",
-    gap: 12,
-    fontSize: 14,
-    color: "#0f172a",
-  }}
->
-  <div>
-    <strong>Plate size:</strong> 90 × 90 mm
-  </div>
-  <div>
-    <strong>Plate thickness:</strong> 3mm
-  </div>
-  <div>
-    <strong>Material:</strong> Aluminium anodised plate
-  </div>
-  <div>
-    <strong>Corner radius:</strong> 3 mm
-  </div>
-  <div>
-    <strong>Identifier format:</strong> CSN-XXXXXX
-  </div>
-</div> 
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+              fontSize: 14,
+              color: "#0f172a",
+            }}
+          >
+            <div>
+              <strong>Plate size:</strong> 90 × 90 mm
+            </div>
+            <div>
+              <strong>Plate thickness:</strong> 3mm
+            </div>
+            <div>
+              <strong>Material:</strong> Aluminium anodised plate
+            </div>
+            <div>
+              <strong>Corner radius:</strong> 3 mm
+            </div>
+            <div>
+              <strong>Identifier format:</strong> CSN-XXXXXX
+            </div>
+          </div>
         </aside>
       </div>
     </section>
