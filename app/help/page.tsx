@@ -197,26 +197,6 @@ export default function HelpPage() {
       />
     </div>
 
-    <div
-      style={{
-        paddingTop: 8,
-        color: "#6b7280",
-        fontSize: 14,
-        lineHeight: 1.6,
-      }}
-    >
-      Current contact email:{" "}
-      <a
-        href="mailto:manufacture@carascan.com.au"
-        style={{
-          color: "#111827",
-          fontWeight: 600,
-          textDecoration: "none",
-        }}
-      >
-        manufacture@carascan.com.au
-      </a>
-    </div>
   </div>
 </div>
         </div>
