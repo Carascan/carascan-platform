@@ -199,6 +199,42 @@ export default function HelpPage() {
 
   </div>
 </div>
+<div
+  style={{
+    display: "flex",
+    justifyContent: "center",
+    paddingTop: 24,
+  }}
+>
+  <button
+    type="button"
+    style={{
+      background: "#111827",
+      color: "#ffffff",
+      padding: "12px 20px",
+      borderRadius: 12,
+      fontWeight: 600,
+      border: "1px solid #111827",
+      fontSize: 15,
+      cursor: "pointer",
+      minWidth: 180,
+    }}
+  >
+    Send request
+  </button>
+</div>
+
+<p
+  style={{
+    margin: "14px 0 0 0",
+    textAlign: "center",
+    color: "#6b7280",
+    fontSize: 14,
+    lineHeight: 1.6,
+  }}
+>
+  Help requests will be connected next.
+</p>
         </div>
       </main>
     </>
