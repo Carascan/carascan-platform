@@ -271,7 +271,7 @@ export default function SetupClient({ token }: SetupClientProps) {
     if (!loadState.data.plate.identifier || !(embeddedQrHref || qrUrl))
       return "";
 
-    r    return buildPlateSvg({
+    return buildPlateSvg({
       identifier: loadState.data.plate.identifier,
       qrImageHref: embeddedQrHref || qrUrl,
       logoImageHref: logoUrl,
