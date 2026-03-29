@@ -1,10 +1,19 @@
+"use client";
+
+import { useState } from "react";
+
 const LOGO_URL =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
 export default function HelpPage() {
+  const [topic, setTopic] = useState("");
+  const [contact, setContact] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [status, setStatus] = useState("");
+
   return (
     <>
-      {/* 🔷 HEADER */}
       <header
         style={{
           position: "sticky",
@@ -46,7 +55,6 @@ export default function HelpPage() {
         </div>
       </header>
 
-      {/* 🔷 PAGE */}
       <main
         style={{
           minHeight: "calc(100vh - 61px)",
@@ -61,7 +69,6 @@ export default function HelpPage() {
             margin: "0 auto",
           }}
         >
-          {/* 🔷 CARD */}
           <div
             style={{
               background: "#ffffff",
@@ -71,7 +78,6 @@ export default function HelpPage() {
               boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
             }}
           >
-            {/* HEADER */}
             <div style={{ textAlign: "center", marginBottom: 24 }}>
               <h1
                 style={{
@@ -95,7 +101,6 @@ export default function HelpPage() {
               </p>
             </div>
 
-            {/* FORM */}
             <div
               style={{
                 display: "grid",
@@ -118,7 +123,8 @@ export default function HelpPage() {
 
                 <select
                   id="help-topic"
-                  defaultValue=""
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
                   style={{
                     width: "100%",
                     border: "1px solid #d1d5db",
@@ -158,6 +164,8 @@ export default function HelpPage() {
                 <input
                   id="contact-detail"
                   type="text"
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
                   placeholder="Your email or phone number"
                   style={{
                     width: "100%",
@@ -187,6 +195,8 @@ export default function HelpPage() {
                 <textarea
                   id="help-message"
                   rows={6}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
                   placeholder="Tell us what you need help with"
                   style={{
                     width: "100%",
@@ -201,7 +211,6 @@ export default function HelpPage() {
               </div>
             </div>
 
-            {/* ACTION */}
             <div
               style={{
                 display: "flex",
@@ -211,6 +220,43 @@ export default function HelpPage() {
             >
               <button
                 type="button"
+                disabled={sending}
+                onClick={async () => {
+                  if (!topic || !contact.trim() || !message.trim()) {
+                    setStatus("Please complete all fields.");
+                    return;
+                  }
+
+                  try {
+                    setSending(true);
+                    setStatus("");
+
+                    const res = await fetch("/api/help", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        topic,
+                        contact,
+                        message,
+                      }),
+                    });
+
+                    if (!res.ok) {
+                      throw new Error("Failed");
+                    }
+
+                    setStatus("Request sent successfully.");
+                    setTopic("");
+                    setContact("");
+                    setMessage("");
+                  } catch {
+                    setStatus("Something went wrong. Please try again.");
+                  } finally {
+                    setSending(false);
+                  }
+                }}
                 style={{
                   background: "#111827",
                   color: "#ffffff",
@@ -221,26 +267,27 @@ export default function HelpPage() {
                   fontSize: 15,
                   cursor: "pointer",
                   minWidth: 180,
+                  opacity: sending ? 0.7 : 1,
                 }}
               >
-                Send request
+                {sending ? "Sending..." : "Send request"}
               </button>
             </div>
 
-            {/* NOTE */}
-            <p
-              style={{
-                margin: "14px 0 0 0",
-                textAlign: "center",
-                color: "#6b7280",
-                fontSize: 14,
-                lineHeight: 1.6,
-              }}
-            >
-              Help requests will be connected next.
-            </p>
+            {status ? (
+              <p
+                style={{
+                  margin: "14px 0 0 0",
+                  textAlign: "center",
+                  color: "#6b7280",
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                }}
+              >
+                {status}
+              </p>
+            ) : null}
 
-            {/* BUSINESS DETAILS */}
             <div
               style={{
                 marginTop: 32,
