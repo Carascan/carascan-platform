@@ -53,8 +53,7 @@ export default function HeroSection() {
               maxWidth: 680,
             }}
           >
-            Carascan QR plates let someone report your location, contact you, or trigger an
-            emergency alert through a secure relay system.
+            Carascan QR plates can let a person "Virtual Doorknock", Report a location, or in emergency, alert the your emergency contacts through email and SMS. 
           </p>
 
           <div
@@ -127,7 +126,7 @@ export default function HeroSection() {
               Contact owner
             </strong>
             <span style={{ color: "#5F5A54", lineHeight: 1.5 }}>
-              Messages are relayed without exposing the owner’s phone or email.
+              Messages are relayed without exposing the owner’s private deatails. 
             </span>
           </div>
 
@@ -175,7 +174,7 @@ export default function HeroSection() {
               Location reporting
             </strong>
             <span style={{ color: "#5F5A54", lineHeight: 1.5 }}>
-              A scanned plate can help someone report where your caravan was seen.
+              If something doesnt feel right, report the location and the owner will be alerted. 
             </span>
           </div>
         </div>

@@ -6,7 +6,7 @@ export default function HowItWorksSection() {
       id="details"
       style={{
         padding: "88px 20px",
-        background: "#F6F7F5",
+        background: "#E7E2D8",
       }}
     >
       <div
@@ -18,7 +18,7 @@ export default function HowItWorksSection() {
         <SectionHeader
           eyebrow="More detail"
           title="Designed for owners, travellers, and safer communities"
-          description="This section is separate from the flow cards so longer-form messaging can be edited independently for future homepage expansion."
+          description="One thing we all do well is observe, we love watching people backing caravans in, we love having a chat, we're all pretty good have having a drink and meeting new people. This product is designed to bridge the gap of when we meet people, we dont exchange details. But if the need arises, we can contact a person or in the worst situations, let their family know immediately."
         />
 
         <div
@@ -31,11 +31,11 @@ export default function HowItWorksSection() {
         >
           <article
             style={{
-              background: "#FFFFFF",
-              border: "1px solid #E5E7EB",
+              background: "#FFFDF9",
+              border: "1px solid #D4CEC4",
               borderRadius: 18,
               padding: 28,
-              boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
+              boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
             }}
           >
             <h3
@@ -53,21 +53,21 @@ export default function HowItWorksSection() {
                 margin: 0,
                 fontSize: 16,
                 lineHeight: 1.7,
-                color: "#6B7280",
+                color: "#5F5A54",
               }}
             >
-              The public scanner does not need direct access to the owner’s personal mobile
-              number or email address. Carascan acts as the relay layer.
+              A person scanning the QR code has no access to any personal details. No phone numbers, no emails, no addresses. The owner can also select if they want to recieve messages via the "Virtual Doorknock"
+              If the scanner doesnt want to give location access, that OK. This system is designed to be a comfort if you choose to use it, on both sides. 
             </p>
           </article>
 
           <article
             style={{
-              background: "#FFFFFF",
-              border: "1px solid #E5E7EB",
+              background: "#FFFDF9",
+              border: "1px solid #D4CEC4",
               borderRadius: 18,
               padding: 28,
-              boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
+              boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
             }}
           >
             <h3
@@ -85,7 +85,7 @@ export default function HowItWorksSection() {
                 margin: 0,
                 fontSize: 16,
                 lineHeight: 1.7,
-                color: "#6B7280",
+                color: "#5F5A54",
               }}
             >
               The same platform can later support caravans, trailers, plant, boats, and other
