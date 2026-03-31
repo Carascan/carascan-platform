@@ -65,7 +65,7 @@ export default function PlatePreviewGenerator() {
       >
         <div
           style={{
-            background: "#e9e9ea",
+            background: "#E7E2D8",
             borderRadius: 28,
             padding: 20,
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45)",
@@ -102,7 +102,7 @@ export default function PlatePreviewGenerator() {
 
         <aside
           style={{
-            background: "#ffffff",
+            background: "#E7E2D8",
             border: "1px solid #e5e7eb",
             borderRadius: 24,
             padding: 22,
@@ -115,7 +115,7 @@ export default function PlatePreviewGenerator() {
               fontWeight: 700,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "#2563eb",
+              color: "#C96A2B",
               marginBottom: 10,
             }}
           >
@@ -157,13 +157,13 @@ export default function PlatePreviewGenerator() {
               <strong>Plate size:</strong> 90 × 90 mm
             </div>
             <div>
-              <strong>Plate thickness:</strong> 3mm
+              <strong>Plate thickness:</strong> 2mm
             </div>
             <div>
-              <strong>Material:</strong> Aluminium anodised plate
+              <strong>Material:</strong> Aluminium plate - Clear powdercoated
             </div>
             <div>
-              <strong>Corner radius:</strong> 3 mm
+              <strong>Corner radius:</strong> 3mm fillet
             </div>
             <div>
               <strong>Identifier format:</strong> CSN-XXXXXX
