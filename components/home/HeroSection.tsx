@@ -98,11 +98,11 @@ export default function HeroSection() {
 
         <div
           style={{
-            background: "#F3F1EC",
+            background: "#E7E2D8",
             border: "1px solid #D4CEC4",
             borderRadius: 24,
             padding: 28,
-            boxShadow: "0 12px 28px rgba(0,0,0,0.10)",
+            boxShadow: "0 14px 34px rgba(0,0,0,0.12)",
             display: "grid",
             gap: 16,
           }}
@@ -113,6 +113,7 @@ export default function HeroSection() {
               background: "#FFFDF9",
               padding: 18,
               border: "1px solid #D4CEC4",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
             }}
           >
             <strong
@@ -136,6 +137,7 @@ export default function HeroSection() {
               background: "#FFFDF9",
               padding: 18,
               border: "1px solid #D4CEC4",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
             }}
           >
             <strong
@@ -159,6 +161,7 @@ export default function HeroSection() {
               background: "#FFFDF9",
               padding: 18,
               border: "1px solid #D4CEC4",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
             }}
           >
             <strong
