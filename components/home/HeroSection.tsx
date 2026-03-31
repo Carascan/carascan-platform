@@ -3,7 +3,7 @@ export default function HeroSection() {
     <section
       style={{
         padding: "88px 20px 72px",
-        background: "#F6F7F5",
+        background: "#E7E2D8",
       }}
     >
       <div
@@ -24,7 +24,7 @@ export default function HeroSection() {
               fontWeight: 700,
               letterSpacing: 1.4,
               textTransform: "uppercase",
-              color: "#4F6F64",
+              color: "#C96A2B",
             }}
           >
             Smart QR plates for caravans
@@ -49,7 +49,7 @@ export default function HeroSection() {
               margin: "0 0 28px 0",
               fontSize: 20,
               lineHeight: 1.6,
-              color: "#6B7280",
+              color: "#5F5A54",
               maxWidth: 680,
             }}
           >
@@ -73,7 +73,7 @@ export default function HeroSection() {
                 padding: "14px 22px",
                 borderRadius: 12,
                 fontWeight: 700,
-                boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
+                boxShadow: "0 6px 18px rgba(0,0,0,0.10)",
               }}
             >
               Buy your plate
@@ -83,12 +83,12 @@ export default function HeroSection() {
               href="#preview"
               style={{
                 textDecoration: "none",
-                background: "#FFFFFF",
+                background: "#F3F1EC",
                 color: "#1F2933",
                 padding: "14px 22px",
                 borderRadius: 12,
                 fontWeight: 700,
-                border: "1px solid #D1D5DB",
+                border: "1px solid #B9B1A5",
               }}
             >
               Preview the plate
@@ -98,11 +98,11 @@ export default function HeroSection() {
 
         <div
           style={{
-            background: "#FFFFFF",
-            border: "1px solid #E5E7EB",
+            background: "#F3F1EC",
+            border: "1px solid #D4CEC4",
             borderRadius: 24,
             padding: 28,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
+            boxShadow: "0 12px 28px rgba(0,0,0,0.10)",
             display: "grid",
             gap: 16,
           }}
@@ -110,9 +110,9 @@ export default function HeroSection() {
           <div
             style={{
               borderRadius: 18,
-              background: "#FFFFFF",
+              background: "#FFFDF9",
               padding: 18,
-              border: "1px solid #E5E7EB",
+              border: "1px solid #D4CEC4",
             }}
           >
             <strong
@@ -125,7 +125,7 @@ export default function HeroSection() {
             >
               Contact owner
             </strong>
-            <span style={{ color: "#6B7280", lineHeight: 1.5 }}>
+            <span style={{ color: "#5F5A54", lineHeight: 1.5 }}>
               Messages are relayed without exposing the owner’s phone or email.
             </span>
           </div>
@@ -133,9 +133,9 @@ export default function HeroSection() {
           <div
             style={{
               borderRadius: 18,
-              background: "#FFFFFF",
+              background: "#FFFDF9",
               padding: 18,
-              border: "1px solid #E5E7EB",
+              border: "1px solid #D4CEC4",
             }}
           >
             <strong
@@ -148,7 +148,7 @@ export default function HeroSection() {
             >
               Emergency alerts
             </strong>
-            <span style={{ color: "#6B7280", lineHeight: 1.5 }}>
+            <span style={{ color: "#5F5A54", lineHeight: 1.5 }}>
               Notify the owner and emergency contacts when urgent help is needed.
             </span>
           </div>
@@ -156,9 +156,9 @@ export default function HeroSection() {
           <div
             style={{
               borderRadius: 18,
-              background: "#FFFFFF",
+              background: "#FFFDF9",
               padding: 18,
-              border: "1px solid #E5E7EB",
+              border: "1px solid #D4CEC4",
             }}
           >
             <strong
@@ -171,7 +171,7 @@ export default function HeroSection() {
             >
               Location reporting
             </strong>
-            <span style={{ color: "#6B7280", lineHeight: 1.5 }}>
+            <span style={{ color: "#5F5A54", lineHeight: 1.5 }}>
               A scanned plate can help someone report where your caravan was seen.
             </span>
           </div>

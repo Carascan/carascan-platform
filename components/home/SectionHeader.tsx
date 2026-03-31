@@ -31,7 +31,7 @@ export default function SectionHeader({
             fontWeight: 700,
             letterSpacing: 1.6,
             textTransform: "uppercase",
-            color: "#4F6F64",
+            color: "#C96A2B",
           }}
         >
           {eyebrow}
@@ -57,7 +57,7 @@ export default function SectionHeader({
             margin: 0,
             fontSize: 18,
             lineHeight: 1.6,
-            color: "#6B7280",
+            color: "#5F5A54",
           }}
         >
           {description}

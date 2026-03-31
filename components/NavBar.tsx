@@ -8,9 +8,9 @@ export default function NavBar() {
         position: "sticky",
         top: 0,
         zIndex: 50,
-        background: "rgba(255,255,255,0.92)",
+        background: "rgba(20,26,32,0.94)",
         backdropFilter: "blur(10px)",
-        borderBottom: "1px solid #e5e7eb",
+        borderBottom: "1px solid #2B3138",
       }}
     >
       <div
@@ -40,6 +40,7 @@ export default function NavBar() {
               height: 28,
               width: "auto",
               display: "block",
+              filter: "brightness(0) invert(1)",
             }}
           />
         </a>
@@ -51,7 +52,7 @@ export default function NavBar() {
             alignItems: "center",
             flexWrap: "wrap",
             fontSize: 14,
-            color: "#374151",
+            color: "#F3F1EC",
           }}
         >
           <a href="#preview" style={{ color: "inherit", textDecoration: "none" }}>
@@ -70,11 +71,12 @@ export default function NavBar() {
             href="/buy"
             style={{
               textDecoration: "none",
-              background: "#111827",
-              color: "#fff",
+              background: "#C96A2B",
+              color: "#FFFFFF",
               padding: "10px 16px",
-              borderRadius: 999,
-              fontWeight: 600,
+              borderRadius: 12,
+              fontWeight: 700,
+              boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
             }}
           >
             Buy now
