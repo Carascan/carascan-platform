@@ -8,11 +8,11 @@ export default function FlowCard({ step, title, description }: FlowCardProps) {
   return (
     <article
       style={{
-        background: "#fff",
-        border: "1px solid #e5e7eb",
-        borderRadius: 24,
+        background: "#FFFFFF",
+        border: "1px solid #E5E7EB",
+        borderRadius: 18,
         padding: 24,
-        boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
         height: "100%",
       }}
     >
@@ -21,12 +21,12 @@ export default function FlowCard({ step, title, description }: FlowCardProps) {
           width: 40,
           height: 40,
           borderRadius: 999,
-          background: "#eff6ff",
-          color: "#2563eb",
+          background: "#E6EFEC",
+          color: "#3E5A50",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontWeight: 800,
+          fontWeight: 700,
           fontSize: 14,
           marginBottom: 16,
         }}
@@ -39,7 +39,8 @@ export default function FlowCard({ step, title, description }: FlowCardProps) {
           margin: "0 0 10px 0",
           fontSize: 22,
           lineHeight: 1.2,
-          color: "#111827",
+          color: "#1F2933",
+          fontWeight: 600,
         }}
       >
         {title}
@@ -50,7 +51,7 @@ export default function FlowCard({ step, title, description }: FlowCardProps) {
           margin: 0,
           fontSize: 16,
           lineHeight: 1.6,
-          color: "#4b5563",
+          color: "#6B7280",
         }}
       >
         {description}

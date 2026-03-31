@@ -7,7 +7,7 @@ export default function FlowSection() {
       id="flow"
       style={{
         padding: "88px 20px",
-        background: "#f7f7f8",
+        background: "#F6F7F5",
       }}
     >
       <div

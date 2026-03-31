@@ -3,7 +3,7 @@ export default function HeroSection() {
     <section
       style={{
         padding: "88px 20px 72px",
-        background: "#f7f7f8",
+        background: "#F6F7F5",
       }}
     >
       <div
@@ -24,7 +24,7 @@ export default function HeroSection() {
               fontWeight: 700,
               letterSpacing: 1.4,
               textTransform: "uppercase",
-              color: "#2563eb",
+              color: "#4F6F64",
             }}
           >
             Smart QR plates for caravans
@@ -35,8 +35,10 @@ export default function HeroSection() {
               margin: "0 0 18px 0",
               fontSize: "clamp(42px, 7vw, 64px)",
               lineHeight: 1.02,
-              color: "#111827",
+              color: "#1F2933",
               maxWidth: 760,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
             }}
           >
             Help people contact you quickly without exposing your personal details
@@ -47,7 +49,7 @@ export default function HeroSection() {
               margin: "0 0 28px 0",
               fontSize: 20,
               lineHeight: 1.6,
-              color: "#4b5563",
+              color: "#6B7280",
               maxWidth: 680,
             }}
           >
@@ -66,11 +68,12 @@ export default function HeroSection() {
               href="/buy"
               style={{
                 textDecoration: "none",
-                background: "#111827",
-                color: "#fff",
+                background: "#1F2933",
+                color: "#FFFFFF",
                 padding: "14px 22px",
-                borderRadius: 999,
+                borderRadius: 12,
                 fontWeight: 700,
+                boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
               }}
             >
               Buy your plate
@@ -80,12 +83,12 @@ export default function HeroSection() {
               href="#preview"
               style={{
                 textDecoration: "none",
-                background: "#fff",
-                color: "#111827",
+                background: "#FFFFFF",
+                color: "#1F2933",
                 padding: "14px 22px",
-                borderRadius: 999,
+                borderRadius: 12,
                 fontWeight: 700,
-                border: "1px solid #d1d5db",
+                border: "1px solid #D1D5DB",
               }}
             >
               Preview the plate
@@ -95,59 +98,80 @@ export default function HeroSection() {
 
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
-            borderRadius: 28,
+            background: "#FFFFFF",
+            border: "1px solid #E5E7EB",
+            borderRadius: 24,
             padding: 28,
-            boxShadow: "0 12px 32px rgba(0,0,0,0.05)",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
             display: "grid",
             gap: 16,
           }}
         >
           <div
             style={{
-              borderRadius: 20,
-              background: "#f9fafb",
+              borderRadius: 18,
+              background: "#FFFFFF",
               padding: 18,
-              border: "1px solid #e5e7eb",
+              border: "1px solid #E5E7EB",
             }}
           >
-            <strong style={{ display: "block", marginBottom: 8, color: "#111827" }}>
+            <strong
+              style={{
+                display: "block",
+                marginBottom: 8,
+                color: "#1F2933",
+                fontSize: 16,
+              }}
+            >
               Contact owner
             </strong>
-            <span style={{ color: "#4b5563", lineHeight: 1.5 }}>
+            <span style={{ color: "#6B7280", lineHeight: 1.5 }}>
               Messages are relayed without exposing the owner’s phone or email.
             </span>
           </div>
 
           <div
             style={{
-              borderRadius: 20,
-              background: "#f9fafb",
+              borderRadius: 18,
+              background: "#FFFFFF",
               padding: 18,
-              border: "1px solid #e5e7eb",
+              border: "1px solid #E5E7EB",
             }}
           >
-            <strong style={{ display: "block", marginBottom: 8, color: "#111827" }}>
+            <strong
+              style={{
+                display: "block",
+                marginBottom: 8,
+                color: "#1F2933",
+                fontSize: 16,
+              }}
+            >
               Emergency alerts
             </strong>
-            <span style={{ color: "#4b5563", lineHeight: 1.5 }}>
+            <span style={{ color: "#6B7280", lineHeight: 1.5 }}>
               Notify the owner and emergency contacts when urgent help is needed.
             </span>
           </div>
 
           <div
             style={{
-              borderRadius: 20,
-              background: "#f9fafb",
+              borderRadius: 18,
+              background: "#FFFFFF",
               padding: 18,
-              border: "1px solid #e5e7eb",
+              border: "1px solid #E5E7EB",
             }}
           >
-            <strong style={{ display: "block", marginBottom: 8, color: "#111827" }}>
+            <strong
+              style={{
+                display: "block",
+                marginBottom: 8,
+                color: "#1F2933",
+                fontSize: 16,
+              }}
+            >
               Location reporting
             </strong>
-            <span style={{ color: "#4b5563", lineHeight: 1.5 }}>
+            <span style={{ color: "#6B7280", lineHeight: 1.5 }}>
               A scanned plate can help someone report where your caravan was seen.
             </span>
           </div>

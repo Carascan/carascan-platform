@@ -6,7 +6,7 @@ export default function HowItWorksSection() {
       id="details"
       style={{
         padding: "88px 20px",
-        background: "#ffffff",
+        background: "#F6F7F5",
       }}
     >
       <div
@@ -31,17 +31,19 @@ export default function HowItWorksSection() {
         >
           <article
             style={{
-              background: "#f9fafb",
-              border: "1px solid #e5e7eb",
-              borderRadius: 24,
+              background: "#FFFFFF",
+              border: "1px solid #E5E7EB",
+              borderRadius: 18,
               padding: 28,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
             }}
           >
             <h3
               style={{
                 margin: "0 0 12px 0",
                 fontSize: 22,
-                color: "#111827",
+                color: "#1F2933",
+                fontWeight: 600,
               }}
             >
               Private by design
@@ -51,7 +53,7 @@ export default function HowItWorksSection() {
                 margin: 0,
                 fontSize: 16,
                 lineHeight: 1.7,
-                color: "#4b5563",
+                color: "#6B7280",
               }}
             >
               The public scanner does not need direct access to the owner’s personal mobile
@@ -61,17 +63,19 @@ export default function HowItWorksSection() {
 
           <article
             style={{
-              background: "#f9fafb",
-              border: "1px solid #e5e7eb",
-              borderRadius: 24,
+              background: "#FFFFFF",
+              border: "1px solid #E5E7EB",
+              borderRadius: 18,
               padding: 28,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
             }}
           >
             <h3
               style={{
                 margin: "0 0 12px 0",
                 fontSize: 22,
-                color: "#111827",
+                color: "#1F2933",
+                fontWeight: 600,
               }}
             >
               Built for expansion
@@ -81,7 +85,7 @@ export default function HowItWorksSection() {
                 margin: 0,
                 fontSize: 16,
                 lineHeight: 1.7,
-                color: "#4b5563",
+                color: "#6B7280",
               }}
             >
               The same platform can later support caravans, trailers, plant, boats, and other
