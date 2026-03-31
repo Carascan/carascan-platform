@@ -65,10 +65,7 @@ export default function PlatePreviewGenerator() {
       >
         <div
           style={{
-            background: "#E7E2D8",
-            borderRadius: 28,
-            padding: 20,
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45)",
+            padding: 0,
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -81,7 +78,8 @@ export default function PlatePreviewGenerator() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#475569",
+                color: "#5F5A54",
+                width: "100%",
               }}
             >
               Generating preview…
@@ -102,11 +100,7 @@ export default function PlatePreviewGenerator() {
 
         <aside
           style={{
-            background: "#E7E2D8",
-            border: "1px solid #e5e7eb",
-            borderRadius: 24,
-            padding: 22,
-            boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
+            padding: 0,
           }}
         >
           <div
@@ -127,7 +121,7 @@ export default function PlatePreviewGenerator() {
               fontSize: 22,
               lineHeight: 1.2,
               margin: "0 0 12px 0",
-              color: "#0f172a",
+              color: "#1F2933",
             }}
           >
             90 × 90 mm aluminium QR plate
@@ -136,7 +130,7 @@ export default function PlatePreviewGenerator() {
           <p
             style={{
               margin: "0 0 18px 0",
-              color: "#475569",
+              color: "#5F5A54",
               lineHeight: 1.65,
               fontSize: 15,
             }}
@@ -150,7 +144,7 @@ export default function PlatePreviewGenerator() {
               display: "grid",
               gap: 12,
               fontSize: 14,
-              color: "#0f172a",
+              color: "#1F2933",
             }}
           >
             <div>
