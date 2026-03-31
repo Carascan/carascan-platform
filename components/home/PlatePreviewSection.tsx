@@ -9,7 +9,7 @@ export default function PlatePreviewSection() {
       id="preview"
       style={{
         padding: "88px 20px",
-        background: "#F3F1EC",
+        background: "#E7E2D8",
       }}
     >
       <div
@@ -29,7 +29,7 @@ export default function PlatePreviewSection() {
         <div
           style={{
             marginTop: 40,
-            background: "#FFFDF9",
+            background: "#E7E2D8",
             border: "1px solid #D4CEC4",
             borderRadius: 18,
             padding: 28,
