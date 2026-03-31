@@ -7,7 +7,7 @@ export default function FlowSection() {
       id="flow"
       style={{
         padding: "88px 20px",
-        background: "#F6F7F5",
+        background: "#F3F1EC",
       }}
     >
       <div
@@ -18,8 +18,8 @@ export default function FlowSection() {
       >
         <SectionHeader
           eyebrow="How it works"
-          title="A simple process when someone scans your plate"
-          description="The flow section is broken into reusable cards so it can be edited, reordered, and reused more easily."
+          title="No apps. No signups. By scanning the plate, you can either contact the owner or there loved ones in an emergency"
+          description="The best part about this community is that we all have a common thread. We're social, we like to travel, but we all look out for each other. "
         />
 
         <div
@@ -33,17 +33,17 @@ export default function FlowSection() {
           <FlowCard
             step="1"
             title="Scan the plate"
-            description="A person scans the Carascan QR plate attached to the caravan and lands on the secure public plate page."
+            description="A person scans the Carascan QR plate attached to the caravan and lands on the secure public plate page where you can fill out your details, provide GPS postion, and a message."
           />
           <FlowCard
             step="2"
             title="Choose an action"
-            description="They can contact the owner, report a location, or trigger an emergency alert depending on the situation."
+            description="Use the 'virtual doorknock'function, report the location if something feels off, or raise an alarm in an emergency"
           />
           <FlowCard
             step="3"
             title="Relay the message"
-            description="Carascan routes the message to the owner and emergency contacts without revealing private personal details."
+            description="In an emergency Carascan sends an email and SMS to the owners emergency contacts, so the can be assured they have a friend right there. The owner chooses how they recieve other alerts."
           />
         </div>
       </div>
