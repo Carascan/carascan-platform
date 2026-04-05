@@ -17,12 +17,12 @@ export default function NavBar() {
         style={{
           maxWidth: 1200,
           margin: "0 auto",
-          padding: "20px 20px", // slight increase again to balance
+          padding: "16px 20px", // reduced slightly to balance height
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 16,
-          flexWrap: "wrap",
+          minHeight: 72, // 🔥 forces clean vertical centering zone
         }}
       >
         <a
@@ -31,13 +31,14 @@ export default function NavBar() {
             textDecoration: "none",
             display: "flex",
             alignItems: "center",
+            height: "100%",
           }}
         >
           <img
             src={LOGO_URL}
             alt="Carascan"
             style={{
-              height: 44, // 🔥 increased again
+              height: 44,
               width: "auto",
               display: "block",
               filter: "brightness(0) invert(1)",
@@ -50,7 +51,6 @@ export default function NavBar() {
             display: "flex",
             gap: 20,
             alignItems: "center",
-            flexWrap: "wrap",
             fontSize: 14,
             color: "#F3F1EC",
           }}
