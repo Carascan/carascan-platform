@@ -17,7 +17,7 @@ export default function NavBar() {
         style={{
           maxWidth: 1200,
           margin: "0 auto",
-          padding: "18px 20px",
+          padding: "20px 20px", // slight increase again to balance
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -37,7 +37,7 @@ export default function NavBar() {
             src={LOGO_URL}
             alt="Carascan"
             style={{
-              height: 35,
+              height: 44, // 🔥 increased again
               width: "auto",
               display: "block",
               filter: "brightness(0) invert(1)",
