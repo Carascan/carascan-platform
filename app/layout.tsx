@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Carascan",
@@ -18,18 +19,12 @@ export default function RootLayout({
           margin: 0,
           fontFamily:
             "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-          background: "#f7f7f8",
+          background: "#F3F1EC",
           color: "#111827",
+          overflowX: "hidden",
         }}
       >
-        <div
-          style={{
-            maxWidth: 1100,
-            margin: "0 auto",
-          }}
-        >
-          {children}
-        </div>
+        {children}
       </body>
     </html>
   );

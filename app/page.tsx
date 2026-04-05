@@ -6,7 +6,13 @@ import HowItWorksSection from "@/components/home/HowItWorksSection";
 
 export default function Home() {
   return (
-    <main style={{ minHeight: "100vh", background: "#f7f7f8" }}>
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "#F3F1EC",
+        overflowX: "hidden",
+      }}
+    >
       <NavBar />
       <HeroSection />
       <PlatePreviewSection />
