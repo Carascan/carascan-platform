@@ -1,13 +1,49 @@
 export default function HeroSection() {
+  const IMAGE_URL =
+    "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/home/carascan-beach-drone-capture.jpg";
+
   return (
     <section
       style={{
+        position: "relative",
         padding: "88px 20px 72px",
+        overflow: "hidden",
         background: "#E7E2D8",
       }}
     >
       <div
         style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 0,
+        }}
+      >
+        <img
+          src={IMAGE_URL}
+          alt="Caravan travelling along the Australian coastline"
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            objectPosition: "50% 58%",
+            display: "block",
+          }}
+        />
+
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(to right, rgba(231,226,216,0.92) 0%, rgba(231,226,216,0.84) 32%, rgba(231,226,216,0.60) 58%, rgba(231,226,216,0.74) 100%)",
+          }}
+        />
+      </div>
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
           maxWidth: 1200,
           margin: "0 auto",
           display: "grid",
@@ -53,7 +89,8 @@ export default function HeroSection() {
               maxWidth: 680,
             }}
           >
-            Carascan QR plates can let a person "Virtual Doorknock", Report a location, or in emergency, alert the your emergency contacts through email and SMS. 
+            Carascan QR plates can let a person "Virtual Doorknock", Report a location, or in
+            emergency, alert the your emergency contacts through email and SMS.
           </p>
 
           <div
@@ -82,12 +119,13 @@ export default function HeroSection() {
               href="#preview"
               style={{
                 textDecoration: "none",
-                background: "#F3F1EC",
+                background: "rgba(243,241,236,0.92)",
                 color: "#1F2933",
                 padding: "14px 22px",
                 borderRadius: 12,
                 fontWeight: 700,
                 border: "1px solid #B9B1A5",
+                backdropFilter: "blur(4px)",
               }}
             >
               Preview the plate
@@ -97,11 +135,12 @@ export default function HeroSection() {
 
         <div
           style={{
-            background: "#E7E2D8",
-            border: "1px solid #D4CEC4",
+            background: "rgba(231,226,216,0.86)",
+            border: "1px solid rgba(212,206,196,0.95)",
             borderRadius: 24,
             padding: 28,
             boxShadow: "0 14px 34px rgba(0,0,0,0.12)",
+            backdropFilter: "blur(6px)",
             display: "grid",
             gap: 16,
           }}
@@ -109,7 +148,7 @@ export default function HeroSection() {
           <div
             style={{
               borderRadius: 18,
-              background: "#FFFDF9",
+              background: "rgba(255,253,249,0.94)",
               padding: 18,
               border: "1px solid #D4CEC4",
               boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
@@ -126,14 +165,14 @@ export default function HeroSection() {
               Contact owner
             </strong>
             <span style={{ color: "#5F5A54", lineHeight: 1.5 }}>
-              Messages are relayed without exposing the owner’s private deatails. 
+              Messages are relayed without exposing the owner’s private deatails.
             </span>
           </div>
 
           <div
             style={{
               borderRadius: 18,
-              background: "#FFFDF9",
+              background: "rgba(255,253,249,0.94)",
               padding: 18,
               border: "1px solid #D4CEC4",
               boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
@@ -157,7 +196,7 @@ export default function HeroSection() {
           <div
             style={{
               borderRadius: 18,
-              background: "#FFFDF9",
+              background: "rgba(255,253,249,0.94)",
               padding: 18,
               border: "1px solid #D4CEC4",
               boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
@@ -174,7 +213,7 @@ export default function HeroSection() {
               Location reporting
             </strong>
             <span style={{ color: "#5F5A54", lineHeight: 1.5 }}>
-              If something doesnt feel right, report the location and the owner will be alerted. 
+              If something doesnt feel right, report the location and the owner will be alerted.
             </span>
           </div>
         </div>
