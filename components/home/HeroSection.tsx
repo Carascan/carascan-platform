@@ -35,7 +35,7 @@ export default function HeroSection() {
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(to right, rgba(231,226,216,0.92) 0%, rgba(231,226,216,0.84) 32%, rgba(231,226,216,0.60) 58%, rgba(231,226,216,0.74) 100%)",
+  "linear-gradient(to right, rgba(231,226,216,0.82) 0%, rgba(231,226,216,0.65) 35%, rgba(231,226,216,0.35) 60%, rgba(231,226,216,0.55) 100%)",
           }}
         />
       </div>
