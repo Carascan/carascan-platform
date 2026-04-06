@@ -64,9 +64,9 @@ export default function PlatePreviewGenerator() {
           justifyContent: "center",
         }}
       >
-                        <div
+                                <div
           style={{
-            padding: 24,
+            padding: 8,
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -89,16 +89,14 @@ export default function PlatePreviewGenerator() {
               Generating preview…
             </div>
           ) : (
-                                    <div
+                                                <div
               style={{
                 width: "100%",
-                height: "100%",
-                maxWidth: 430,
+                maxWidth: 520,
                 margin: "0 auto",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                minHeight: 100,
               }}
               dangerouslySetInnerHTML={{ __html: svgMarkup }}
             />
