@@ -1,6 +1,27 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 export default function NavBar() {
   const LOGO_URL =
     "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
+
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth > 860) {
+        setMenuOpen(false);
+      }
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  function handleLinkClick() {
+    setMenuOpen(false);
+  }
 
   return (
     <header
@@ -17,12 +38,13 @@ export default function NavBar() {
         style={{
           maxWidth: 1200,
           margin: "0 auto",
-          padding: "16px 20px", // reduced slightly to balance height
+          padding: "16px 20px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 16,
-          minHeight: 72, // 🔥 forces clean vertical centering zone
+          minHeight: 78,
+          position: "relative",
         }}
       >
         <a
@@ -32,13 +54,15 @@ export default function NavBar() {
             display: "flex",
             alignItems: "center",
             height: "100%",
+            flexShrink: 0,
+            minWidth: 0,
           }}
         >
           <img
             src={LOGO_URL}
             alt="Carascan"
             style={{
-              height: 44,
+              height: "clamp(42px, 7vw, 52px)",
               width: "auto",
               display: "block",
               filter: "brightness(0) invert(1)",
@@ -47,6 +71,7 @@ export default function NavBar() {
         </a>
 
         <nav
+          className="carascan-navbar-desktop"
           style={{
             display: "flex",
             gap: 20,
@@ -77,12 +102,176 @@ export default function NavBar() {
               borderRadius: 12,
               fontWeight: 700,
               boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
+              whiteSpace: "nowrap",
             }}
           >
             Buy now
           </a>
         </nav>
+
+        <button
+          type="button"
+          aria-label="Open navigation menu"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((prev) => !prev)}
+          className="carascan-navbar-mobile-button"
+          style={{
+            display: "none",
+            width: 48,
+            height: 48,
+            borderRadius: 12,
+            border: "1px solid #3A424B",
+            background: "rgba(255,255,255,0.04)",
+            color: "#F3F1EC",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            flexShrink: 0,
+            padding: 0,
+          }}
+        >
+          <span
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              gap: 5,
+            }}
+          >
+            <span
+              style={{
+                display: "block",
+                width: 18,
+                height: 2,
+                background: "#F3F1EC",
+                borderRadius: 999,
+              }}
+            />
+            <span
+              style={{
+                display: "block",
+                width: 18,
+                height: 2,
+                background: "#F3F1EC",
+                borderRadius: 999,
+              }}
+            />
+            <span
+              style={{
+                display: "block",
+                width: 18,
+                height: 2,
+                background: "#F3F1EC",
+                borderRadius: 999,
+              }}
+            />
+          </span>
+        </button>
+
+        {menuOpen && (
+          <div
+            className="carascan-navbar-mobile-menu"
+            style={{
+              position: "absolute",
+              top: "calc(100% + 10px)",
+              right: 20,
+              left: 20,
+              background: "rgba(26,33,40,0.98)",
+              border: "1px solid #2F3740",
+              borderRadius: 16,
+              padding: 12,
+              boxShadow: "0 14px 34px rgba(0,0,0,0.28)",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              <a
+                href="#preview"
+                onClick={handleLinkClick}
+                style={{
+                  color: "#F3F1EC",
+                  textDecoration: "none",
+                  padding: "12px 14px",
+                  borderRadius: 12,
+                  background: "transparent",
+                }}
+              >
+                Preview
+              </a>
+
+              <a
+                href="#flow"
+                onClick={handleLinkClick}
+                style={{
+                  color: "#F3F1EC",
+                  textDecoration: "none",
+                  padding: "12px 14px",
+                  borderRadius: 12,
+                  background: "transparent",
+                }}
+              >
+                How it works
+              </a>
+
+              <a
+                href="#details"
+                onClick={handleLinkClick}
+                style={{
+                  color: "#F3F1EC",
+                  textDecoration: "none",
+                  padding: "12px 14px",
+                  borderRadius: 12,
+                  background: "transparent",
+                }}
+              >
+                Details
+              </a>
+
+              <a
+                href="/buy"
+                onClick={handleLinkClick}
+                style={{
+                  textDecoration: "none",
+                  background: "#C96A2B",
+                  color: "#FFFFFF",
+                  padding: "12px 14px",
+                  borderRadius: 12,
+                  fontWeight: 700,
+                  boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
+                  textAlign: "center",
+                  marginTop: 4,
+                }}
+              >
+                Buy now
+              </a>
+            </div>
+          </div>
+        )}
       </div>
+
+      <style jsx>{`
+        @media (max-width: 860px) {
+          .carascan-navbar-desktop {
+            display: none !important;
+          }
+
+          .carascan-navbar-mobile-button {
+            display: inline-flex !important;
+          }
+        }
+
+        @media (min-width: 861px) {
+          .carascan-navbar-mobile-menu {
+            display: none !important;
+          }
+        }
+      `}</style>
     </header>
   );
 }
