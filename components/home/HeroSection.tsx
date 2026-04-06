@@ -210,7 +210,7 @@ export default function HeroSection() {
   />
 }
             title="Scan the plate"
-            description="Locate the owners unique QR code plate. Using the camera on your phone, follow the link to access the customers public page."
+            description="Scan the unique QR code with a device and access the public contact page"
           />
 
           <HeroCard
@@ -218,11 +218,11 @@ export default function HeroSection() {
   <img
     src="/icons/doorKnock.svg"
     alt="Door knock icon"
-    style={{ width: 30, height: 30, display: "block" }}
+    style={{ width: 50, height: 50, display: "block" }}
   />
 }
             title="Contact owner"
-            description={`Knock, knock. Is anyone home? If the owner allows it, you can leave a message to say G'day without any owner personal details being available.`}
+            description={`Knock, knock. Is anyone home? Send a message via SMS or email`}
           />
 
           <HeroCard
@@ -230,11 +230,11 @@ export default function HeroSection() {
   <img
     src="/icons/satelliteDish.svg"
     alt="Location reporting icon"
-    style={{ width: 30, height: 30, display: "block" }}
+    style={{ width: 50, height: 50, display: "block" }}
   />
 }
             title="Location reporting"
-            description="If something doesnt feel right, report the location and the owner will be alerted."
+            description="If something doesnt feel right, report the exact location for the owner."
           />
 
           <HeroCard
@@ -242,7 +242,7 @@ export default function HeroSection() {
   <img
     src="/icons/sirenFlash.svg"
     alt="Emergency icon"
-    style={{ width: 30, height: 30, display: "block" }}
+    style={{ width: 50, height: 50, display: "block" }}
   />
 }
             title="Emergency alerts"
