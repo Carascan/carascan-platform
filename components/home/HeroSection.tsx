@@ -19,20 +19,16 @@ function HeroCard({ icon, title, description }: HeroCardProps) {
       }}
     >
       <div
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 12,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#F3F1EC",
-          border: "1px solid #D4CEC4",
-          marginBottom: 14,
-        }}
-      >
-        {icon}
-      </div>
+  style={{
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    marginBottom: 16,
+    minHeight: 30,
+  }}
+>
+  {icon}
+</div>
 
       <strong
         style={{
@@ -209,7 +205,8 @@ export default function HeroSection() {
             icon={
   <img
     src="/icons/qrCode.svg"
-    style={{ width: 24, height: 24 }}
+    alt="QR code icon"
+    style={{ width: 30, height: 30, display: "block" }}
   />
 }
             title="Scan the plate"
@@ -220,7 +217,8 @@ export default function HeroSection() {
             icon={
   <img
     src="/icons/doorKnock.svg"
-    style={{ width: 24, height: 24 }}
+    alt="Door knock icon"
+    style={{ width: 30, height: 30, display: "block" }}
   />
 }
             title="Contact owner"
@@ -231,7 +229,8 @@ export default function HeroSection() {
             icon={
   <img
     src="/icons/satelliteDish.svg"
-    style={{ width: 24, height: 24 }}
+    alt="Location reporting icon"
+    style={{ width: 30, height: 30, display: "block" }}
   />
 }
             title="Location reporting"
@@ -242,7 +241,8 @@ export default function HeroSection() {
             icon={
   <img
     src="/icons/sirenFlash.svg"
-    style={{ width: 24, height: 24 }}
+    alt="Emergency icon"
+    style={{ width: 30, height: 30, display: "block" }}
   />
 }
             title="Emergency alerts"
