@@ -55,26 +55,28 @@ export default function PlatePreviewGenerator() {
 
   return (
     <section id="preview" style={{ width: "100%" }}>
-      <div
+            <div
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(320px, 560px) minmax(260px, 360px)",
           gap: 28,
-          alignItems: "start",
+          alignItems: "stretch",
         }}
       >
-        <div
+                <div
           style={{
             padding: 0,
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
+            minHeight: "100%",
           }}
         >
           {isLoading ? (
-            <div
+                        <div
               style={{
-                minHeight: 420,
+                minHeight: 100,
+                height: "100%",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -85,13 +87,15 @@ export default function PlatePreviewGenerator() {
               Generating preview…
             </div>
           ) : (
-            <div
+                        <div
               style={{
                 width: "100%",
+                height: "100%",
                 maxWidth: 430,
                 margin: "0 auto",
                 display: "flex",
                 justifyContent: "center",
+                alignItems: "center",
               }}
               dangerouslySetInnerHTML={{ __html: svgMarkup }}
             />

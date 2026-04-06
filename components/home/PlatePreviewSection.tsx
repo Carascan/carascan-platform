@@ -26,14 +26,9 @@ export default function PlatePreviewSection() {
           maxWidth={760}
         />
 
-        <div
+                <div
           style={{
             marginTop: 28,
-            background: "#E7E2D8",
-            border: "1px solid #D4CEC4",
-            borderRadius: 18,
-            padding: 24,
-            boxShadow: "0 6px 16px rgba(0,0,0,0.05)",
           }}
         >
           <PlatePreviewGenerator />
