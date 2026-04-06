@@ -110,7 +110,7 @@ export default function HeroSection() {  const [isMobile, setIsMobile] = useStat
             width: "100%",
             height: "100%",
             objectFit: "cover",
-                        objectPosition: isMobile ? "48% center" : "50% 58%",
+                        objectPosition: isMobile ? "38% center" : "50% 58%",
             display: "block",
           }}
         />
