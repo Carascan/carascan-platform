@@ -18,7 +18,6 @@ export default function Home() {
       <HeroSection />
       <PlatePreviewSection />
       <FlowSection />
-      <TravelImageSection />
       <HowItWorksSection />
     </main>
   );
