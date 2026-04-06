@@ -5,7 +5,7 @@ export default function HowItWorksSection() {
     <section
       id="details"
       style={{
-        padding: "88px 20px",
+        padding: "36px 20px 72px",
         background: "#E7E2D8",
       }}
     >
@@ -23,7 +23,7 @@ export default function HowItWorksSection() {
 
         <div
           style={{
-            marginTop: 32,
+            marginTop: 20,
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
             gap: 24,
@@ -35,7 +35,7 @@ export default function HowItWorksSection() {
               border: "1px solid #D4CEC4",
               borderRadius: 18,
               padding: 28,
-              boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
             }}
           >
             <h3
