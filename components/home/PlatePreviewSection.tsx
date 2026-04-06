@@ -8,7 +8,7 @@ export default function PlatePreviewSection() {
     <section
       id="preview"
       style={{
-        padding: "56px 20px 72px",
+        padding: "36px 20px 72px",
         background: "#E7E2D8",
       }}
     >
@@ -28,7 +28,7 @@ export default function PlatePreviewSection() {
 
                 <div
           style={{
-            marginTop: 28,
+            marginTop: 18,
           }}
         >
           <PlatePreviewGenerator />
