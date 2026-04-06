@@ -1,3 +1,5 @@
+"use client";
+
 type HeroCardProps = {
   icon: React.ReactNode;
   title: string;
