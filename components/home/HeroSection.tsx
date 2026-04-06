@@ -298,18 +298,12 @@ export default function HeroSection() {
         </div>
 
         <div
-          style={{
-            background: "rgba(231,226,216,0.86)",
-            border: "1px solid rgba(212,206,196,0.95)",
-            borderRadius: 24,
-            padding: 24,
-            boxShadow: "0 14px 34px rgba(0,0,0,0.12)",
-            backdropFilter: "blur(6px)",
-            display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-            gap: 16,
-          }}
-        >
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 16,
+  }}
+>
           <HeroCard
             icon={<QrIcon />}
             title="Scan the plate"
