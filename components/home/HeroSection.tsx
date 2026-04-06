@@ -20,32 +20,25 @@ function HeroCard({ iconSrc, iconAlt, title, description }: HeroCardProps) {
       }}
     >
       <div
-        style={{
-          width: 44,
-          height: 44,
-          minWidth: 44,
-          minHeight: 44,
-          borderRadius: 12,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#F3F1EC",
-          border: "1px solid #D4CEC4",
-          marginBottom: 16,
-          overflow: "hidden",
-        }}
-      >
-        <img
-          src={iconSrc}
-          alt={iconAlt}
-          style={{
-            width: 30,
-            height: 30,
-            display: "block",
-            objectFit: "contain",
-          }}
-        />
-      </div>
+  style={{
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    marginBottom: 16,
+    minHeight: 50,
+  }}
+>
+  <img
+    src={iconSrc}
+    alt={iconAlt}
+    style={{
+      width: 50,
+      height: 50,
+      display: "block",
+      objectFit: "contain",
+    }}
+  />
+</div>
 
       <strong
         style={{
