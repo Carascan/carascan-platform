@@ -225,17 +225,23 @@ export default function HeroSection() {
         }
 
         .hero-card-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
           display: flex;
           align-items: center;
-          justify-content: flex-start;
+          justify-content: center;
+          background: #f3f1ec;
+          border: 1px solid #d4cec4;
           margin-bottom: 16px;
-          min-height: 30px;
+          overflow: hidden;
         }
 
         .hero-icon-image {
-          width: 50px;
-          height: 50px;
+          width: 30px;
+          height: 30px;
           display: block;
+          object-fit: contain;
         }
 
         .hero-card-title {
@@ -282,13 +288,19 @@ export default function HeroSection() {
             max-width: none;
           }
 
-          .hero-icon-image {
-            width: 42px;
-            height: 42px;
-          }
-
           .hero-card {
             padding: 16px;
+          }
+
+          .hero-card-icon {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 14px;
+          }
+
+          .hero-icon-image {
+            width: 24px;
+            height: 24px;
           }
 
           .hero-card-description {
