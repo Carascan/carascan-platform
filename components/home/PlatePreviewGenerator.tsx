@@ -10,10 +10,15 @@ const LOGO_URL =
 export default function PlatePreviewGenerator() {
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-
+  const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     let active = true;
+    function handleResize() {
+      setIsMobile(window.innerWidth <= 860);
+    }
 
+    handleResize();
+    window.addEventListener("resize", handleResize);
     async function run() {
       try {
         setIsLoading(true);
@@ -37,8 +42,9 @@ export default function PlatePreviewGenerator() {
 
     run();
 
-    return () => {
+        return () => {
       active = false;
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
@@ -63,23 +69,26 @@ export default function PlatePreviewGenerator() {
 
   return (
     <section id="preview" style={{ width: "100%" }}>
-                  <div
+                        <div
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(320px, 520px) minmax(280px, 360px)",
-          gap: 32,
+          gridTemplateColumns: isMobile
+            ? "minmax(0, 1fr)"
+            : "minmax(320px, 520px) minmax(280px, 360px)",
+          gap: isMobile ? 20 : 32,
           alignItems: "stretch",
           justifyContent: "center",
         }}
       >
-                                <div
+                                        <div
           style={{
-            padding: 8,
+            padding: isMobile ? 0 : 8,
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
             minHeight: "100%",
             height: "100%",
+            order: isMobile ? 1 : 0,
           }}
         >
           {isLoading ? (
@@ -97,11 +106,11 @@ export default function PlatePreviewGenerator() {
               Generating preview…
             </div>
           ) : (
-             <div
+                         <div
               style={{
                 width: "100%",
                 height: "100%",
-                maxWidth: 560,
+                maxWidth: isMobile ? 420 : 560,
                 margin: "0 auto",
                 display: "flex",
                 justifyContent: "center",
@@ -112,14 +121,15 @@ export default function PlatePreviewGenerator() {
           )}
         </div>
 
-                        <aside
+                                <aside
           style={{
-            padding: 24,
+            padding: isMobile ? 20 : 24,
             background: "rgba(255,253,249,0.92)",
             border: "1px solid #D4CEC4",
             borderRadius: 18,
             boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
             height: "100%",
+            order: isMobile ? 2 : 0,
           }}
         >
           <div
