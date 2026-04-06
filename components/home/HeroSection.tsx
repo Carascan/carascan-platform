@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 type HeroCardProps = {
   iconSrc: string;
   iconAlt: string;
@@ -69,7 +72,18 @@ function HeroCard({ iconSrc, iconAlt, title, description }: HeroCardProps) {
   );
 }
 
-export default function HeroSection() {
+export default function HeroSection() {  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth <= 860);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
   const IMAGE_URL =
     "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/home/carascan-beach-drone-capture.jpg";
 
@@ -96,7 +110,7 @@ export default function HeroSection() {
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            objectPosition: "50% 58%",
+            objectPosition: isMobile ? "50% 42%" : "50% 58%",
             display: "block",
           }}
         />
