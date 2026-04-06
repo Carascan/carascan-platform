@@ -42,15 +42,23 @@ export default function PlatePreviewGenerator() {
     };
   }, []);
 
-  const svgMarkup = useMemo(() => {
+    const svgMarkup = useMemo(() => {
     if (!qrDataUrl) return "";
 
-    return buildPlateSvg({
+    const rawSvg = buildPlateSvg({
       identifier: "CSN-XXXXXX",
       qrImageHref: qrDataUrl,
       logoImageHref: LOGO_URL,
       includeCrosshair: false,
     });
+
+    return rawSvg
+      .replace(/width="[^"]*"/, 'width="100%"')
+      .replace(/height="[^"]*"/, 'height="100%"')
+      .replace(
+        /<svg\b([^>]*)>/,
+        '<svg$1 preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:100%;">'
+      );
   }, [qrDataUrl]);
 
   return (
@@ -89,10 +97,11 @@ export default function PlatePreviewGenerator() {
               Generating preview…
             </div>
           ) : (
-                                                <div
+             <div
               style={{
                 width: "100%",
-                maxWidth: 520,
+                height: "100%",
+                maxWidth: 560,
                 margin: "0 auto",
                 display: "flex",
                 justifyContent: "center",
