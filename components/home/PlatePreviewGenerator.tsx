@@ -98,9 +98,13 @@ export default function PlatePreviewGenerator() {
           )}
         </div>
 
-        <aside
+                <aside
           style={{
-            padding: 0,
+            padding: 24,
+            background: "rgba(255,253,249,0.92)",
+            border: "1px solid #D4CEC4",
+            borderRadius: 18,
+            boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
           }}
         >
           <div
@@ -110,7 +114,7 @@ export default function PlatePreviewGenerator() {
               letterSpacing: "0.12em",
               textTransform: "uppercase",
               color: "#C96A2B",
-              marginBottom: 10,
+              marginBottom: 8,
             }}
           >
             Plate details
@@ -118,10 +122,12 @@ export default function PlatePreviewGenerator() {
 
           <h3
             style={{
-              fontSize: 22,
-              lineHeight: 1.2,
-              margin: "0 0 12px 0",
+                            fontSize: 28,
+              lineHeight: 1.08,
+              margin: "0 0 14px 0",
               color: "#1F2933",
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
             }}
           >
             90 × 90 mm aluminium QR plate
@@ -129,10 +135,10 @@ export default function PlatePreviewGenerator() {
 
           <p
             style={{
-              margin: "0 0 18px 0",
+                            margin: "0 0 22px 0",
               color: "#5F5A54",
-              lineHeight: 1.65,
-              fontSize: 15,
+              lineHeight: 1.6,
+              fontSize: 17,
             }}
           >
             This preview now uses the same locked SVG layout as the public and
@@ -142,9 +148,10 @@ export default function PlatePreviewGenerator() {
           <div
             style={{
               display: "grid",
-              gap: 12,
-              fontSize: 14,
+                            gap: 14,
+              fontSize: 15,
               color: "#1F2933",
+              lineHeight: 1.5,
             }}
           >
             <div>
