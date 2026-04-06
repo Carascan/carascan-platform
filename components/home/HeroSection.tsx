@@ -206,7 +206,7 @@ export default function HeroSection() {
   <img
     src="/icons/qrCode.svg"
     alt="QR code icon"
-    style={{ width: 30, height: 30, display: "block" }}
+    style={{ width: 50, height: 50, display: "block" }}
   />
 }
             title="Scan the plate"
