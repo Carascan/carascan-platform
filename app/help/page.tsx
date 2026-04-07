@@ -1,19 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const LOGO_URL =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
 const BACKGROUND_IMAGE =
-  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&q=80";
+  "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/home/carascan-beach-drone-capture.jpg";
 
 export default function HelpPage() {
+  const [isMobile, setIsMobile] = useState(false);
   const [topic, setTopic] = useState("");
   const [contact, setContact] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth <= 860);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <>
@@ -22,9 +34,9 @@ export default function HelpPage() {
           position: "sticky",
           top: 0,
           zIndex: 50,
-          background: "rgba(255,255,255,0.92)",
+          background: "rgba(255,253,249,0.88)",
           backdropFilter: "blur(10px)",
-          borderBottom: "1px solid #e5e7eb",
+          borderBottom: "1px solid #d4cec4",
         }}
       >
         <div
@@ -47,13 +59,14 @@ export default function HelpPage() {
             href="/help"
             style={{
               textDecoration: "none",
-              background: "#111827",
-              color: "#ffffff",
+              background: "#1F2933",
+              color: "#FFFFFF",
               padding: "10px 16px",
               borderRadius: 999,
-              fontWeight: 600,
-              border: "1px solid #111827",
+              fontWeight: 700,
+              border: "1px solid #1F2933",
               whiteSpace: "nowrap",
+              boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
             }}
           >
             Help
@@ -67,28 +80,37 @@ export default function HelpPage() {
           position: "relative",
           overflow: "hidden",
           fontFamily: "Arial, sans-serif",
-          backgroundColor: "#e7e2d8",
+          background: "#E7E2D8",
         }}
       >
         <div
           style={{
             position: "absolute",
             inset: 0,
-            backgroundImage: `url(${BACKGROUND_IMAGE})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
+            zIndex: 0,
           }}
-        />
+        >
+          <img
+            src={BACKGROUND_IMAGE}
+            alt="Caravan travelling along the Australian coastline"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: isMobile ? "30% center" : "50% 58%",
+              display: "block",
+            }}
+          />
 
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(180deg, rgba(17,24,39,0.42) 0%, rgba(17,24,39,0.58) 100%)",
-          }}
-        />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(to right, rgba(231,226,216,0.86) 0%, rgba(231,226,216,0.70) 35%, rgba(231,226,216,0.42) 60%, rgba(231,226,216,0.58) 100%)",
+            }}
+          />
+        </div>
 
         <div
           style={{
@@ -96,51 +118,130 @@ export default function HelpPage() {
             zIndex: 1,
             maxWidth: 1200,
             margin: "0 auto",
-            padding: "56px 20px 72px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
+            padding: "72px 20px 80px",
             minHeight: "calc(100vh - 61px)",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gap: 40,
+            alignItems: "center",
           }}
         >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: 820,
-              background: "rgba(255,255,255,0.94)",
-              backdropFilter: "blur(8px)",
-              border: "1px solid rgba(255,255,255,0.55)",
-              borderRadius: 24,
-              padding: 32,
-              boxShadow: "0 18px 60px rgba(0,0,0,0.18)",
-            }}
-          >
-            <div style={{ textAlign: "center", marginBottom: 28 }}>
-              <h1
+          <div>
+            <p
+              style={{
+                margin: "0 0 12px 0",
+                fontSize: 14,
+                fontWeight: 700,
+                letterSpacing: 1.4,
+                textTransform: "uppercase",
+                color: "#C96A2B",
+              }}
+            >
+              Carascan support
+            </p>
+
+            <h1
+              style={{
+                margin: "0 0 18px 0",
+                fontSize: "clamp(40px, 7vw, 60px)",
+                lineHeight: 1.04,
+                color: "#1F2933",
+                maxWidth: 720,
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Get help with your plate, setup link, or contact details
+            </h1>
+
+            <p
+              style={{
+                margin: "0 0 28px 0",
+                fontSize: 20,
+                lineHeight: 1.6,
+                color: "#5F5A54",
+                maxWidth: 640,
+              }}
+            >
+              Send us your request and we will review it as quickly as possible.
+              Use this page for setup issues, plate page updates, emergency
+              contact changes, or anything else you need help with.
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 14,
+                flexWrap: "wrap",
+              }}
+            >
+              <a
+                href="/buy"
                 style={{
-                  margin: "0 0 12px 0",
-                  fontSize: "clamp(30px, 5vw, 42px)",
-                  lineHeight: 1.1,
-                  color: "#111827",
+                  textDecoration: "none",
+                  background: "#1F2933",
+                  color: "#FFFFFF",
+                  padding: "14px 22px",
+                  borderRadius: 12,
                   fontWeight: 700,
+                  boxShadow: "0 6px 18px rgba(0,0,0,0.10)",
                 }}
               >
-                Carascan Help
-              </h1>
+                Buy your plate
+              </a>
+
+              <a
+                href="#help-form"
+                style={{
+                  textDecoration: "none",
+                  background: "rgba(255,253,249,0.92)",
+                  color: "#1F2933",
+                  padding: "14px 22px",
+                  borderRadius: 12,
+                  fontWeight: 700,
+                  border: "1px solid #B9B1A5",
+                  backdropFilter: "blur(4px)",
+                }}
+              >
+                Open help form
+              </a>
+            </div>
+          </div>
+
+          <div
+            id="help-form"
+            style={{
+              width: "100%",
+              maxWidth: 760,
+              justifySelf: "end",
+              borderRadius: 18,
+              background: "rgba(255,253,249,0.94)",
+              padding: 24,
+              border: "1px solid #D4CEC4",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
+            }}
+          >
+            <div style={{ marginBottom: 22 }}>
+              <h2
+                style={{
+                  margin: "0 0 8px 0",
+                  fontSize: 28,
+                  lineHeight: 1.15,
+                  color: "#1F2933",
+                }}
+              >
+                Help request
+              </h2>
 
               <p
                 style={{
                   margin: 0,
-                  color: "#4b5563",
-                  lineHeight: 1.65,
-                  fontSize: 16,
-                  maxWidth: 580,
-                  marginInline: "auto",
+                  color: "#5F5A54",
+                  lineHeight: 1.6,
+                  fontSize: 15,
                 }}
               >
-                Tell us what you need help with and send us a message below.
-                We will review your request and get back to you as soon as
-                possible.
+                Complete the form below and we will get back to you.
               </p>
             </div>
 
@@ -157,8 +258,8 @@ export default function HelpPage() {
                     display: "block",
                     marginBottom: 8,
                     fontSize: 14,
-                    fontWeight: 600,
-                    color: "#111827",
+                    fontWeight: 700,
+                    color: "#1F2933",
                   }}
                 >
                   Help topic
@@ -170,13 +271,13 @@ export default function HelpPage() {
                   onChange={(e) => setTopic(e.target.value)}
                   style={{
                     width: "100%",
-                    border: "1px solid #d1d5db",
+                    border: "1px solid #D4CEC4",
                     borderRadius: 12,
                     padding: "13px 14px",
                     fontSize: 15,
                     boxSizing: "border-box",
-                    background: "#ffffff",
-                    color: "#111827",
+                    background: "#FFFFFF",
+                    color: "#1F2933",
                     outline: "none",
                   }}
                 >
@@ -200,8 +301,8 @@ export default function HelpPage() {
                     display: "block",
                     marginBottom: 8,
                     fontSize: 14,
-                    fontWeight: 600,
-                    color: "#111827",
+                    fontWeight: 700,
+                    color: "#1F2933",
                   }}
                 >
                   Contact detail
@@ -215,13 +316,13 @@ export default function HelpPage() {
                   placeholder="Your email or phone number"
                   style={{
                     width: "100%",
-                    border: "1px solid #d1d5db",
+                    border: "1px solid #D4CEC4",
                     borderRadius: 12,
                     padding: "13px 14px",
                     fontSize: 15,
                     boxSizing: "border-box",
-                    color: "#111827",
-                    background: "#ffffff",
+                    color: "#1F2933",
+                    background: "#FFFFFF",
                     outline: "none",
                   }}
                 />
@@ -234,8 +335,8 @@ export default function HelpPage() {
                     display: "block",
                     marginBottom: 8,
                     fontSize: 14,
-                    fontWeight: 600,
-                    color: "#111827",
+                    fontWeight: 700,
+                    color: "#1F2933",
                   }}
                 >
                   Message
@@ -249,14 +350,14 @@ export default function HelpPage() {
                   placeholder="Tell us what you need help with"
                   style={{
                     width: "100%",
-                    border: "1px solid #d1d5db",
+                    border: "1px solid #D4CEC4",
                     borderRadius: 12,
                     padding: "13px 14px",
                     fontSize: 15,
                     boxSizing: "border-box",
                     resize: "vertical",
-                    color: "#111827",
-                    background: "#ffffff",
+                    color: "#1F2933",
+                    background: "#FFFFFF",
                     outline: "none",
                   }}
                 />
@@ -267,7 +368,7 @@ export default function HelpPage() {
               style={{
                 display: "flex",
                 justifyContent: "center",
-                paddingTop: 26,
+                paddingTop: 24,
               }}
             >
               <button
@@ -310,16 +411,17 @@ export default function HelpPage() {
                   }
                 }}
                 style={{
-                  background: "#111827",
-                  color: "#ffffff",
-                  padding: "13px 22px",
-                  borderRadius: 14,
-                  fontWeight: 600,
-                  border: "1px solid #111827",
+                  background: "#1F2933",
+                  color: "#FFFFFF",
+                  padding: "14px 22px",
+                  borderRadius: 12,
+                  fontWeight: 700,
+                  border: "1px solid #1F2933",
                   fontSize: 15,
                   cursor: "pointer",
                   minWidth: 190,
                   opacity: sending ? 0.7 : 1,
+                  boxShadow: "0 6px 18px rgba(0,0,0,0.10)",
                 }}
               >
                 {sending ? "Sending..." : "Send request"}
@@ -331,7 +433,7 @@ export default function HelpPage() {
                 style={{
                   margin: "14px 0 0 0",
                   textAlign: "center",
-                  color: "#6b7280",
+                  color: "#5F5A54",
                   fontSize: 14,
                   lineHeight: 1.6,
                 }}
@@ -342,11 +444,11 @@ export default function HelpPage() {
 
             <div
               style={{
-                marginTop: 32,
+                marginTop: 28,
                 paddingTop: 20,
-                borderTop: "1px solid #e5e7eb",
+                borderTop: "1px solid #D4CEC4",
                 textAlign: "center",
-                color: "#6b7280",
+                color: "#5F5A54",
                 fontSize: 13,
                 lineHeight: 1.6,
               }}
