@@ -20,6 +20,7 @@ export default function SectionHeader({
       style={{
         maxWidth,
         margin: isCentered ? "0 auto" : "0",
+paddingTop: 4,
         textAlign: align,
       }}
     >
@@ -40,7 +41,7 @@ export default function SectionHeader({
 
       <h2
         style={{
-          margin: "0 0 14px 0",
+          margin: "0 0 10px 0",
           fontSize: "clamp(30px, 5vw, 44px)",
           lineHeight: 1.08,
           color: "#1F2933",
@@ -55,7 +56,7 @@ export default function SectionHeader({
         <p
           style={{
             margin: 0,
-            fontSize: 18,
+            fontSize: 17,
             lineHeight: 1.6,
             color: "#5F5A54",
           }}

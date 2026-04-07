@@ -183,7 +183,7 @@ export default function PlatePreviewGenerator() {
               <strong>Plate size:</strong> 90 × 90 mm
             </div>
             <div>
-              <strong>Plate thickness:</strong> 2mm
+              <strong>Plate thickness:</strong> 3mm
             </div>
             <div>
               <strong>Material:</strong> Aluminium plate - Clear powdercoated

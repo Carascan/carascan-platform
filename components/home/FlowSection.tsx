@@ -18,8 +18,8 @@ export default function FlowSection() {
       >
         <SectionHeader
           eyebrow="How it works"
-          title="No apps. No signups. By scanning the plate, you can either contact the owner or there loved ones in an emergency"
-          description="The best part about this community is that we all have a common thread. We're social, we like to travel, but we all look out for each other. "
+          title="No apps. No signups. By scanning the plate with your device, you can either contact the owner or their loved ones in an emergency"
+          description="We're all travelling in this wide land. The best part about our community, is that we look out for each other. "
         />
 
         <div
@@ -33,12 +33,12 @@ export default function FlowSection() {
           <FlowCard
             step="1"
             title="Scan the plate"
-            description="A person scans the Carascan QR plate attached to the caravan and lands on the secure public plate page where you can fill out your details, provide GPS postion, and a message."
+            description="Use your device camera to scan the Carascan QR plate. This will direct you to the secure public plate page where you can fill out your details, provide GPS postion, and a message."
           />
           <FlowCard
             step="2"
             title="Choose an action"
-            description="Use the 'virtual doorknock'function, report the location if something feels off, or raise an alarm in an emergency"
+            description="Use the 'virtual doorknock' function, report the location if something feels off, or raise an alarm in an emergency"
           />
           <FlowCard
             step="3"
