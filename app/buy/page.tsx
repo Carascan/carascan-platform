@@ -135,7 +135,7 @@ export default function Buy() {
                 marginBottom: 14,
                 color: "#5F5A54",
                 lineHeight: 1.5,
-                fontWeight: 400,
+                fontWeight: 500,
                 fontSize: 15,
                 maxWidth: 520,
               }}
@@ -193,7 +193,7 @@ export default function Buy() {
     marginBottom: 16,
     color: "#5F5A54",
     lineHeight: 1.5,
-    fontWeight: 400,
+    fontWeight: 500,
     fontSize: 15,
     maxWidth: 520,
   }}
@@ -204,21 +204,15 @@ export default function Buy() {
               <div style={{ display: "grid", gap: 12 }}>
                 <label
                   style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 14,
-                    border:
-                      emergencyPlan === "3"
-                        ? "2px solid #1F2933"
-                        : "1px solid #D4CEC4",
-                    borderRadius: 16,
-                    padding: 16,
-                    cursor: "pointer",
-                    background:
-                      emergencyPlan === "3"
-                        ? "#F3F1EC"
-                        : "rgba(255,253,249,0.92)",
-                  }}
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 14,
+  border: "1px solid #D4CEC4",
+  borderRadius: 16,
+  padding: 16,
+  cursor: "pointer",
+  background: "rgba(255,253,249,0.92)",
+}}
                 >
                   <div
                     style={{
@@ -270,28 +264,22 @@ export default function Buy() {
                         color: "#1F2933",
                       }}
                     >
-                      $2.00 / month ($48 per year unless cancelled)
+                      $3.00 / month ($36 per year unless cancelled)
                     </div>
                   </div>
                 </label>
 
                 <label
                   style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 14,
-                    border:
-                      emergencyPlan === "10"
-                        ? "2px solid #1F2933"
-                        : "1px solid #D4CEC4",
-                    borderRadius: 16,
-                    padding: 16,
-                    cursor: "pointer",
-                    background:
-                      emergencyPlan === "10"
-                        ? "#F3F1EC"
-                        : "rgba(255,253,249,0.92)",
-                  }}
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 14,
+  border: "1px solid #D4CEC4",
+  borderRadius: 16,
+  padding: 16,
+  cursor: "pointer",
+  background: "rgba(255,253,249,0.92)",
+}}
                 >
                   <div
                     style={{
@@ -345,7 +333,7 @@ export default function Buy() {
                           color: "#1F2933",
                         }}
                       >
-                        $4.00 / month ($48 per year unless cancelled)
+                        $5.00 / month ($60 per year unless cancelled)
                       </div>
                     )}
                   </div>
