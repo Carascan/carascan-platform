@@ -113,7 +113,7 @@ export default function Buy() {
               }}
             >
               Purchase your unique Carascan plate for your caravan, camp trailer or mobile home.
-              
+              </br>
               Be part of our growing community, keeping each other safe.
             </h1>
           </div>
@@ -151,7 +151,7 @@ export default function Buy() {
                 maxWidth: 520,
               }}
             >
-              You will receive a Carascan Aluminium Plate with unique QR code.
+              Details of your Carascan plate below:
             </div>
 
             <div
