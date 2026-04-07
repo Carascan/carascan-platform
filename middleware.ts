@@ -1,10 +1,33 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const TESTER_COOKIE_NAME = "carascan_tester_portal";
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Only protect admin routes
+  //
+  // TESTER PORTAL PROTECTION
+  //
+  // Allow the login page itself, but protect all other /tester routes
+  //
+  if (pathname.startsWith("/tester")) {
+    if (pathname === "/tester/login") {
+      return NextResponse.next();
+    }
+
+    const testerCookie = request.cookies.get(TESTER_COOKIE_NAME)?.value;
+
+    if (!testerCookie) {
+      return NextResponse.redirect(new URL("/tester/login", request.url));
+    }
+
+    return NextResponse.next();
+  }
+
+  //
+  // ADMIN PROTECTION
+  //
   if (!pathname.startsWith("/admin")) {
     return NextResponse.next();
   }
@@ -47,5 +70,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/tester/:path*"],
 };
