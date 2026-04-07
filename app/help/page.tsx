@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-const LOGO_URL =
-  "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
+import NavBar from "@/components/NavBar";
 
 const BACKGROUND_IMAGE =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/home/carascan-beach-drone-capture.jpg";
@@ -29,54 +27,11 @@ export default function HelpPage() {
 
   return (
     <>
-      <header
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 50,
-          background: "rgba(255,253,249,0.88)",
-          backdropFilter: "blur(10px)",
-          borderBottom: "1px solid #d4cec4",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: "0 auto",
-            padding: "16px 20px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16,
-            flexWrap: "wrap",
-          }}
-        >
-          <a href="/" style={{ display: "flex", alignItems: "center" }}>
-            <img src={LOGO_URL} alt="Carascan" style={{ height: 28 }} />
-          </a>
-
-          <a
-            href="/help"
-            style={{
-              textDecoration: "none",
-              background: "#1F2933",
-              color: "#FFFFFF",
-              padding: "10px 16px",
-              borderRadius: 999,
-              fontWeight: 700,
-              border: "1px solid #1F2933",
-              whiteSpace: "nowrap",
-              boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
-            }}
-          >
-            Help
-          </a>
-        </div>
-      </header>
+      <NavBar variant="inner" />
 
       <main
         style={{
-          minHeight: "calc(100vh - 61px)",
+          minHeight: "calc(100vh - 78px)",
           position: "relative",
           overflow: "hidden",
           fontFamily: "Arial, sans-serif",
@@ -119,7 +74,7 @@ export default function HelpPage() {
             maxWidth: 1200,
             margin: "0 auto",
             padding: "72px 20px 80px",
-            minHeight: "calc(100vh - 61px)",
+            minHeight: "calc(100vh - 78px)",
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
             gap: 40,
@@ -188,22 +143,6 @@ export default function HelpPage() {
                 }}
               >
                 Buy your plate
-              </a>
-
-              <a
-                href="#help-form"
-                style={{
-                  textDecoration: "none",
-                  background: "rgba(255,253,249,0.92)",
-                  color: "#1F2933",
-                  padding: "14px 22px",
-                  borderRadius: 12,
-                  fontWeight: 700,
-                  border: "1px solid #B9B1A5",
-                  backdropFilter: "blur(4px)",
-                }}
-              >
-                Open help form
               </a>
             </div>
           </div>
