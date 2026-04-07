@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     }
 
     const email = {
-      to: process.env.MANUFACTURING_EMAIL_TO!,
+      to: process.env.MANUFACTURING_EMAIL!,
       subject: "Carascan Help Request",
       html: `
         <h2>Help Request</h2>
