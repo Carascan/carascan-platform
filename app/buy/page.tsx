@@ -325,17 +325,16 @@ export default function Buy() {
                       Expanded monthly subscription for up to 10 ICE contacts.
                     </div>
 
-                    {emergencyPlan === "10" && (
-                      <div
-                        style={{
-                          marginTop: 8,
-                          fontWeight: 700,
-                          color: "#1F2933",
-                        }}
-                      >
-                        $5.00 / month ($60 per year unless cancelled)
-                      </div>
-                    )}
+                    <div
+  style={{
+    marginTop: 8,
+    fontWeight: 700,
+    color: "#1F2933",
+  }}
+>
+  $5.00 / month ($60 per year unless cancelled)
+</div>
+                    
                   </div>
                 </label>
               </div>
