@@ -444,5 +444,6 @@ export default function Buy() {
         </p>
       </div>
     </main>
+    </>
   );
 }
