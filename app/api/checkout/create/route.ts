@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     line_items: [
       { price: platePriceId, quantity: 1 },
       { price: subscriptionPriceId, quantity: 1 },
-      { price: shippingPriceId, quantity: 1 }, // ✅ THIS IS THE FIX
+      { price: shippingPriceId, quantity: 1 },
     ],
     success_url: `${baseUrl}/order/success`,
     cancel_url: `${baseUrl}/buy`,
