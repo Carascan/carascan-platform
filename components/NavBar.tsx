@@ -192,27 +192,75 @@ export default function NavBar({
             }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {!isInner ? (
-                <>
-                  <a href="/#preview" onClick={closeMenu} style={{ padding: 12 }}>
-                    Preview
-                  </a>
-                  <a href="/#flow" onClick={closeMenu} style={{ padding: 12 }}>
-                    How it works
-                  </a>
-                  <a href="/#details" onClick={closeMenu} style={{ padding: 12 }}>
-                    Details
-                  </a>
-                  <a href="/buy" onClick={closeMenu} style={{ padding: 12 }}>
-                    Buy now
-                  </a>
-                </>
-              ) : (
-                <a href="/help" onClick={closeMenu} style={{ padding: 12 }}>
-                  Need Help
-                </a>
-              )}
-            </div>
+  {!isInner ? (
+    <>
+      <a
+        href="/#preview"
+        onClick={closeMenu}
+        style={{
+          padding: 12,
+          color: "#F3F1EC",
+          textDecoration: "none",
+          fontWeight: 500,
+        }}
+      >
+        Preview
+      </a>
+
+      <a
+        href="/#flow"
+        onClick={closeMenu}
+        style={{
+          padding: 12,
+          color: "#F3F1EC",
+          textDecoration: "none",
+          fontWeight: 500,
+        }}
+      >
+        How it works
+      </a>
+
+      <a
+        href="/#details"
+        onClick={closeMenu}
+        style={{
+          padding: 12,
+          color: "#F3F1EC",
+          textDecoration: "none",
+          fontWeight: 500,
+        }}
+      >
+        Details
+      </a>
+
+      <a
+        href="/buy"
+        onClick={closeMenu}
+        style={{
+          padding: 12,
+          color: "#F3F1EC",
+          textDecoration: "none",
+          fontWeight: 500,
+        }}
+      >
+        Buy now
+      </a>
+    </>
+  ) : (
+    <a
+      href="/help"
+      onClick={closeMenu}
+      style={{
+        padding: 12,
+        color: "#F3F1EC",
+        textDecoration: "none",
+        fontWeight: 500,
+      }}
+    >
+      Need Help
+    </a>
+  )}
+</div>
           </div>
         )}
       </div>
