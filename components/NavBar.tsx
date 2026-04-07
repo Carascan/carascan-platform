@@ -2,12 +2,18 @@
 
 import { useEffect, useState } from "react";
 
-export default function NavBar() {
+export default function NavBar({
+  variant = "home",
+}: {
+  variant?: "home" | "inner";
+}) {
   const LOGO_URL =
     "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  const isInner = variant === "inner";
 
   useEffect(() => {
     function handleResize() {
@@ -52,6 +58,7 @@ export default function NavBar() {
           position: "relative",
         }}
       >
+        {/* Logo */}
         <a
           href="/"
           style={{
@@ -76,6 +83,7 @@ export default function NavBar() {
           />
         </a>
 
+        {/* Desktop Nav */}
         {!isMobile && (
           <nav
             style={{
@@ -87,36 +95,57 @@ export default function NavBar() {
               flexShrink: 0,
             }}
           >
-            <a href="#preview" style={{ color: "inherit", textDecoration: "none" }}>
-              Preview
-            </a>
+            {!isInner ? (
+              <>
+                <a href="/#preview" style={{ color: "inherit", textDecoration: "none" }}>
+                  Preview
+                </a>
 
-            <a href="#flow" style={{ color: "inherit", textDecoration: "none" }}>
-              How it works
-            </a>
+                <a href="/#flow" style={{ color: "inherit", textDecoration: "none" }}>
+                  How it works
+                </a>
 
-            <a href="#details" style={{ color: "inherit", textDecoration: "none" }}>
-              Details
-            </a>
+                <a href="/#details" style={{ color: "inherit", textDecoration: "none" }}>
+                  Details
+                </a>
 
-            <a
-              href="/buy"
-              style={{
-                textDecoration: "none",
-                background: "#C96A2B",
-                color: "#FFFFFF",
-                padding: "10px 16px",
-                borderRadius: 12,
-                fontWeight: 700,
-                boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Buy now
-            </a>
+                <a
+                  href="/buy"
+                  style={{
+                    textDecoration: "none",
+                    background: "#C96A2B",
+                    color: "#FFFFFF",
+                    padding: "10px 16px",
+                    borderRadius: 12,
+                    fontWeight: 700,
+                    boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Buy now
+                </a>
+              </>
+            ) : (
+              <a
+                href="/help"
+                style={{
+                  textDecoration: "none",
+                  background: "#C96A2B",
+                  color: "#FFFFFF",
+                  padding: "10px 16px",
+                  borderRadius: 12,
+                  fontWeight: 700,
+                  boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Need Help
+              </a>
+            )}
           </nav>
         )}
 
+        {/* Mobile Menu Button */}
         {isMobile && (
           <button
             type="button"
@@ -138,45 +167,15 @@ export default function NavBar() {
               padding: 0,
             }}
           >
-            <span
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                gap: 5,
-              }}
-            >
-              <span
-                style={{
-                  display: "block",
-                  width: 18,
-                  height: 2,
-                  background: "#F3F1EC",
-                  borderRadius: 999,
-                }}
-              />
-              <span
-                style={{
-                  display: "block",
-                  width: 18,
-                  height: 2,
-                  background: "#F3F1EC",
-                  borderRadius: 999,
-                }}
-              />
-              <span
-                style={{
-                  display: "block",
-                  width: 18,
-                  height: 2,
-                  background: "#F3F1EC",
-                  borderRadius: 999,
-                }}
-              />
+            <span style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <span style={{ width: 18, height: 2, background: "#F3F1EC" }} />
+              <span style={{ width: 18, height: 2, background: "#F3F1EC" }} />
+              <span style={{ width: 18, height: 2, background: "#F3F1EC" }} />
             </span>
           </button>
         )}
 
+        {/* Mobile Dropdown */}
         {isMobile && menuOpen && (
           <div
             style={{
@@ -192,69 +191,27 @@ export default function NavBar() {
               backdropFilter: "blur(12px)",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-              }}
-            >
-              <a
-                href="#preview"
-                onClick={closeMenu}
-                style={{
-                  color: "#F3F1EC",
-                  textDecoration: "none",
-                  padding: "12px 14px",
-                  borderRadius: 12,
-                }}
-              >
-                Preview
-              </a>
-
-              <a
-                href="#flow"
-                onClick={closeMenu}
-                style={{
-                  color: "#F3F1EC",
-                  textDecoration: "none",
-                  padding: "12px 14px",
-                  borderRadius: 12,
-                }}
-              >
-                How it works
-              </a>
-
-              <a
-                href="#details"
-                onClick={closeMenu}
-                style={{
-                  color: "#F3F1EC",
-                  textDecoration: "none",
-                  padding: "12px 14px",
-                  borderRadius: 12,
-                }}
-              >
-                Details
-              </a>
-
-              <a
-                href="/buy"
-                onClick={closeMenu}
-                style={{
-                  textDecoration: "none",
-                  background: "#C96A2B",
-                  color: "#FFFFFF",
-                  padding: "12px 14px",
-                  borderRadius: 12,
-                  fontWeight: 700,
-                  boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
-                  textAlign: "center",
-                  marginTop: 4,
-                }}
-              >
-                Buy now
-              </a>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {!isInner ? (
+                <>
+                  <a href="/#preview" onClick={closeMenu} style={{ padding: 12 }}>
+                    Preview
+                  </a>
+                  <a href="/#flow" onClick={closeMenu} style={{ padding: 12 }}>
+                    How it works
+                  </a>
+                  <a href="/#details" onClick={closeMenu} style={{ padding: 12 }}>
+                    Details
+                  </a>
+                  <a href="/buy" onClick={closeMenu} style={{ padding: 12 }}>
+                    Buy now
+                  </a>
+                </>
+              ) : (
+                <a href="/help" onClick={closeMenu} style={{ padding: 12 }}>
+                  Need Help
+                </a>
+              )}
             </div>
           </div>
         )}
