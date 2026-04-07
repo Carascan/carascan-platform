@@ -118,12 +118,12 @@ export default function Buy() {
               boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
             }}
           >
-            <div
+           <div
   style={{
     fontSize: 20,
     fontWeight: 700,
     color: "#1F2933",
-    marginBottom: 6,
+    marginBottom: 10,
     lineHeight: 1.4,
   }}
 >
@@ -132,33 +132,35 @@ export default function Buy() {
 
 <div
   style={{
-    marginTop: 6,
+    marginTop: 10,
+    marginBottom: 14, // 👈 key spacing to separate from bullets
     color: "#5F5A54",
-    lineHeight: 1.5,
+    lineHeight: 1.6,
     fontWeight: 400,
     fontSize: 15,
+    maxWidth: 520, // 👈 optional but improves readability
   }}
 >
-  You will recieve a 90x90mm Carascan Aluminium Plate with unique QR
+  You will receive a 90x90mm Carascan Aluminium Plate with unique QR
   code. Powdercoated for all weather protection and durability.
 </div>
 
-            <div
-              style={{
-                color: "#5F5A54",
-                lineHeight: 1.7,
-                display: "grid",
-                gap: 4,
-              }}
-            >
-              <div>• 90 x 90mm aluminium plate, 2mm thickness</div>
-              <div>• Unique Carascan QR code for your personal public page access</div>
-              <div>• Laser engraved for durable outdoor use</div>
-              <div>• Powdercoated in a clear finish for a long life in the elements </div>
-              <div>• Customer contact personalisation required after purchase is finalised</div>
-              <div>• Industrial adhesive as standard mounting method (sold separately) </div>
-            </div>
-          </div>
+<div
+  style={{
+    color: "#5F5A54",
+    lineHeight: 1.7,
+    display: "grid",
+    gap: 6,
+    fontSize: 15,
+  }}
+>
+  <div>• 90 x 90mm aluminium plate, 2mm thickness</div>
+  <div>• Unique Carascan QR code for your personal public page access</div>
+  <div>• Laser engraved for durable outdoor use</div>
+  <div>• Powdercoated in a clear finish for a long life in the elements</div>
+  <div>• Customer contact personalisation required after purchase is finalised</div>
+  <div>• Industrial adhesive as standard mounting method (sold separately)</div>
+</div>
 
           <form action="/api/checkout/create" method="post">
             <input type="hidden" name="mounting_method" value="adhesive" />
