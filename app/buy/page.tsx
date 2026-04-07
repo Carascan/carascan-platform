@@ -3,9 +3,6 @@
 import { useState } from "react";
 import NavBar from "@/components/NavBar";
 
-const LOGO_URL =
-  "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
-
 const HERO_IMAGE_URL =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/home/carascan-beach-drone-capture.jpg";
 
@@ -75,7 +72,6 @@ export default function Buy() {
         >
           <div
             style={{
-              textAlign: "center",
               marginBottom: 20,
               background: "rgba(255,253,249,0.94)",
               border: "1px solid #D4CEC4",
@@ -84,40 +80,30 @@ export default function Buy() {
               boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
             }}
           >
-            <img
-              src={LOGO_URL}
-              alt="Carascan"
+            <p
               style={{
-                width: "100%",
-                maxWidth: 360,
-                height: "auto",
-                display: "block",
-                margin: "0 auto 18px",
-              }}
-            />
-
-            <h1
-              style={{
-                margin: "0 0 10px",
-                fontSize: "clamp(32px, 5vw, 44px)",
-                lineHeight: 1.08,
-                color: "#1F2933",
+                margin: "0 0 12px 0",
+                fontSize: 14,
                 fontWeight: 700,
-                letterSpacing: "-0.01em",
+                letterSpacing: 1.4,
+                textTransform: "uppercase",
+                color: "#C96A2B",
               }}
             >
-              Buy Carascan Plate
-            </h1>
+              Smart QR plates for caravans
+            </p>
 
             <p
               style={{
                 margin: 0,
-                color: "#5F5A54",
-                fontSize: 17,
+                fontSize: 20,
                 lineHeight: 1.6,
+                color: "#5F5A54",
+                maxWidth: 680,
               }}
             >
-              Smart QR plate for caravans and vehicles
+              Purchase your unique Carascan plate for your caravan or mobile
+              home. Be part of our growing community keeping each other safe.
             </p>
           </div>
 
@@ -243,15 +229,20 @@ export default function Buy() {
               <div style={{ display: "grid", gap: 12 }}>
                 <label
                   style={{
-                    display: "block",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 14,
                     border:
                       emergencyPlan === "3"
-                        ? "2px solid #111827"
-                        : "1px solid #d1d5db",
-                    borderRadius: 14,
+                        ? "2px solid #1F2933"
+                        : "1px solid #D4CEC4",
+                    borderRadius: 16,
                     padding: 16,
                     cursor: "pointer",
-                    background: emergencyPlan === "3" ? "#f9fafb" : "#ffffff",
+                    background:
+                      emergencyPlan === "3"
+                        ? "#F3F1EC"
+                        : "rgba(255,253,249,0.92)",
                   }}
                 >
                   <input
@@ -260,44 +251,54 @@ export default function Buy() {
                     value="3"
                     checked={emergencyPlan === "3"}
                     onChange={() => setEmergencyPlan("3")}
-                    style={{ marginRight: 10 }}
+                    required
+                    style={{
+                      margin: "4px 0 0 0",
+                      flexShrink: 0,
+                    }}
                   />
-                  <span style={{ fontWeight: 700, color: "#111827" }}>
-                    3 x ICE contacts
-                  </span>
-                  <div
-                    style={{
-                      marginTop: 6,
-                      marginLeft: 24,
-                      color: "#4b5563",
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    Standard monthly subscription for up to 3 ICE contacts.
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      marginLeft: 24,
-                      fontWeight: 700,
-                      color: "#111827",
-                    }}
-                  >
-                    $2.00 / month ($48 per year unless cancelled)
+
+                  <div>
+                    <div style={{ fontWeight: 700, color: "#1F2933" }}>
+                      3 x ICE contacts
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color: "#5F5A54",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      Standard monthly subscription for up to 3 ICE contacts.
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        fontWeight: 700,
+                        color: "#1F2933",
+                      }}
+                    >
+                      $2.00 / month ($48 per year unless cancelled)
+                    </div>
                   </div>
                 </label>
 
                 <label
                   style={{
-                    display: "block",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 14,
                     border:
                       emergencyPlan === "10"
-                        ? "2px solid #111827"
-                        : "1px solid #d1d5db",
-                    borderRadius: 14,
+                        ? "2px solid #1F2933"
+                        : "1px solid #D4CEC4",
+                    borderRadius: 16,
                     padding: 16,
                     cursor: "pointer",
-                    background: emergencyPlan === "10" ? "#f9fafb" : "#ffffff",
+                    background:
+                      emergencyPlan === "10"
+                        ? "#F3F1EC"
+                        : "rgba(255,253,249,0.92)",
                   }}
                 >
                   <input
@@ -306,34 +307,39 @@ export default function Buy() {
                     value="10"
                     checked={emergencyPlan === "10"}
                     onChange={() => setEmergencyPlan("10")}
-                    style={{ marginRight: 10 }}
-                  />
-                  <span style={{ fontWeight: 700, color: "#111827" }}>
-                    10 x ICE contacts
-                  </span>
-                  <div
+                    required
                     style={{
-                      marginTop: 6,
-                      marginLeft: 24,
-                      color: "#4b5563",
-                      lineHeight: 1.5,
+                      margin: "4px 0 0 0",
+                      flexShrink: 0,
                     }}
-                  >
-                    Expanded monthly subscription for up to 10 ICE contacts.
-                  </div>
+                  />
 
-                  {emergencyPlan === "10" && (
+                  <div>
+                    <div style={{ fontWeight: 700, color: "#1F2933" }}>
+                      10 x ICE contacts
+                    </div>
                     <div
                       style={{
-                        marginTop: 8,
-                        marginLeft: 24,
-                        fontWeight: 700,
-                        color: "#111827",
+                        marginTop: 6,
+                        color: "#5F5A54",
+                        lineHeight: 1.5,
                       }}
                     >
-                      $4.00 / month ($48 per year unless cancelled)
+                      Expanded monthly subscription for up to 10 ICE contacts.
                     </div>
-                  )}
+
+                    {emergencyPlan === "10" && (
+                      <div
+                        style={{
+                          marginTop: 8,
+                          fontWeight: 700,
+                          color: "#1F2933",
+                        }}
+                      >
+                        $4.00 / month ($48 per year unless cancelled)
+                      </div>
+                    )}
+                  </div>
                 </label>
               </div>
             </div>
