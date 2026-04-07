@@ -20,11 +20,11 @@ export default function Buy() {
 
   return (
         <>
-      <NavBar />
+      <NavBar variant="inner" />
 
       <main 
         style={{
-          minHeight: "100vh",
+          minHeight: "calc(100vh - 78px)",
           position: "relative",
           overflow: "hidden",
           background: "#E7E2D8",
@@ -32,9 +32,10 @@ export default function Buy() {
         }}
       >        <div
           style={{
-            position: "absolute",
+            position: "fixed",
             inset: 0,
             zIndex: 0,
+            pointerEvents: "none",
           }}
         >
           <img
