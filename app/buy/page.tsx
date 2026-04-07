@@ -198,12 +198,9 @@ export default function Buy() {
     maxWidth: 520,
   }}
 >
-  Emergency contact subscriptions are split into the options below.
+  Emergency contact subscriptions are split into the options below. 
+  Emergency contacts are contacted by SMS and email in emergency situation making your loved ones aware of the situation.
 </div>
-<div style={{ ... }}>
-  Emergency contact subscriptions...
-</div>
-
               <div style={{ display: "grid", gap: 12 }}>
                 <label
                   style={{
