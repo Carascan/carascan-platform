@@ -112,9 +112,7 @@ export default function Buy() {
                 letterSpacing: "-0.01em",
               }}
             >
-              Purchase your unique Carascan plate for your caravan, camp trailer or mobile home.
-              <br />
-              Be part of our growing community, keeping each other safe.
+              Purchase your unique Carascan plate for your caravan, camp trailer or mobile home. Be part of our growing community, keeping each other safe.
             </h1>
           </div>
 
