@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-
+import NavBar from "@/components/NavBar";
 const LOGO_URL =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
-
+const HERO_IMAGE_URL =
+  "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/home/carascan-beach-drone-capture.jpg";
 export default function Buy() {
   const [emergencyPlan, setEmergencyPlan] = useState<"3" | "10">("3");
   const [showIncludedInfo, setShowIncludedInfo] = useState(false);
@@ -18,26 +19,59 @@ export default function Buy() {
   const totalToday = platePrice + subscriptionPrice;
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "grid",
-        placeItems: "center",
-        padding: "32px 20px",
-        background: "#f7f7f8",
-      }}
-    >
-      <div
+        <>
+      <NavBar />
+
+      <main 
         style={{
-          width: "100%",
-          maxWidth: 760,
-          background: "#ffffff",
-          border: "1px solid #e5e7eb",
-          borderRadius: 18,
-          padding: 32,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+          minHeight: "100vh",
+          position: "relative",
+          overflow: "hidden",
+          background: "#E7E2D8",
+          padding: "40px 20px 72px",
         }}
-      >
+      >        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 0,
+          }}
+        >
+          <img
+            src={HERO_IMAGE_URL}
+            alt="Caravan travelling along the Australian coastline"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "50% 58%",
+              display: "block",
+            }}
+          />
+
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(to right, rgba(231,226,216,0.88) 0%, rgba(231,226,216,0.72) 35%, rgba(231,226,216,0.42) 60%, rgba(231,226,216,0.62) 100%)",
+            }}
+          />
+        </div>
+      <div
+  style={{
+    position: "relative",
+    zIndex: 1,
+    width: "100%",
+    maxWidth: 760,
+    margin: "0 auto",
+    background: "rgba(255,253,249,0.94)",
+    border: "1px solid #D4CEC4",
+    borderRadius: 18,
+    padding: 28,
+    boxShadow: "0 6px 18px rgba(0,0,0,0.05)",
+  }}
+>
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <img
             src={LOGO_URL}
