@@ -119,19 +119,29 @@ export default function Buy() {
             }}
           >
             <div
-              style={{
-                fontSize: 20,
-                fontWeight: 700,
-                color: "#1F2933",
-                marginBottom: 8,
-                lineHeight: 1.4,
-              }}
-            >
-              Step 1. The physical plate.
-              <br />
-              You will recieve a 90x90mm Carascan Aluminium Plate with unique QR
-              code. Powedercoated for all weather protection and durability.
-            </div>
+  style={{
+    fontSize: 20,
+    fontWeight: 700,
+    color: "#1F2933",
+    marginBottom: 6,
+    lineHeight: 1.4,
+  }}
+>
+  Step 1. The physical plate.
+</div>
+
+<div
+  style={{
+    marginTop: 6,
+    color: "#5F5A54",
+    lineHeight: 1.5,
+    fontWeight: 400,
+    fontSize: 15,
+  }}
+>
+  You will recieve a 90x90mm Carascan Aluminium Plate with unique QR
+  code. Powdercoated for all weather protection and durability.
+</div>
 
             <div
               style={{
@@ -141,11 +151,12 @@ export default function Buy() {
                 gap: 4,
               }}
             >
-              <div>• 90 x 90mm anodised aluminium plate</div>
-              <div>• Unique Carascan QR code</div>
+              <div>• 90 x 90mm aluminium plate, 2mm thickness</div>
+              <div>• Unique Carascan QR code for your personal public page access</div>
               <div>• Laser engraved for durable outdoor use</div>
-              <div>• Customer contact personalisation completed after purchase</div>
-              <div>• Industrial adhesive mounting (recommended standard)</div>
+              <div>• Powdercoated in a clear finish for a long life in the elements </div>
+              <div>• Customer contact personalisation required after purchase is finalised</div>
+              <div>• Industrial adhesive as standard mounting method (sold separately) </div>
             </div>
           </div>
 
@@ -172,8 +183,18 @@ export default function Buy() {
                 }}
               >
                 Step 2. Choose how many emergency contacts
-                <br />
-                Emergency contact subscriptions are split into the options below:
+                
+                </div>
+                <div
+  style={{
+    marginTop: 6,
+    color: "#5F5A54",
+    lineHeight: 1.5,
+    fontWeight: 400,
+    fontSize: 15,
+  }}
+>
+                Emergency contact subscriptions are split into the options below. 
               </div>
 
               <div style={{ display: "grid", gap: 12 }}>
