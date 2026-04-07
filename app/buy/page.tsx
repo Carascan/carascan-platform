@@ -175,7 +175,7 @@ export default function Buy() {
                 boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
               }}
             >
-              <div
+<div
   style={{
     fontSize: 20,
     fontWeight: 700,
@@ -187,6 +187,19 @@ export default function Buy() {
   Step 2. Choose how many emergency contacts
 </div>
 
+<div
+  style={{
+    marginTop: 6,
+    marginBottom: 16,
+    color: "#5F5A54",
+    lineHeight: 1.5,
+    fontWeight: 400,
+    fontSize: 15,
+    maxWidth: 520,
+  }}
+>
+  Emergency contact subscriptions are split into the options below.
+</div>
 <div style={{ ... }}>
   Emergency contact subscriptions...
 </div>
