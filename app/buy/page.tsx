@@ -8,7 +8,6 @@ const HERO_IMAGE_URL =
 
 export default function Buy() {
   const [emergencyPlan, setEmergencyPlan] = useState<"3" | "10">("3");
-  const [showIncludedInfo, setShowIncludedInfo] = useState(false);
 
   const platePrice = 35;
   const standardSubscription = 2;
@@ -80,7 +79,7 @@ export default function Buy() {
               boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
             }}
           >
-                        <p
+            <p
               style={{
                 margin: "0 0 12px 0",
                 fontSize: 14,
@@ -125,9 +124,13 @@ export default function Buy() {
                 fontWeight: 700,
                 color: "#1F2933",
                 marginBottom: 8,
+                lineHeight: 1.4,
               }}
             >
-              90x90mm Carascan Anodised Aluminium Plate with unique QR code
+              Step 1. The physical plate.
+              <br />
+              You will recieve a 90x90mm Carascan Aluminium Plate with unique QR
+              code. Powedercoated for all weather protection and durability.
             </div>
 
             <div
@@ -161,75 +164,20 @@ export default function Buy() {
             >
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                  marginBottom: 12,
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: "#1F2933",
+                  marginBottom: 16,
+                  lineHeight: 1.4,
                 }}
               >
-                <div>
-                  <div
-                    style={{
-                      fontSize: 17,
-                      fontWeight: 700,
-                      color: "#1F2933",
-                    }}
-                  >
-                    Emergency contact subscription
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 4,
-                      color: "#5F5A54",
-                      fontWeight: 600,
-                      fontSize: 14,
-                    }}
-                  >
-                    Choose your contact capacity
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowIncludedInfo((v) => !v)}
-                  style={{
-                    border: "1px solid #D4CEC4",
-                    borderRadius: 12,
-                    padding: "8px 12px",
-                    background: "rgba(255,253,249,0.92)",
-                    color: "#1F2933",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  {showIncludedInfo ? "Hide details" : "Show details"}
-                </button>
+                Step 2. Choose how many emergency contacts
+                <br />
+                Emergency contact subscriptions are split into the options below:
               </div>
 
-              {showIncludedInfo && (
-                <div
-                  style={{
-                    marginBottom: 16,
-                    padding: 14,
-                    borderRadius: 14,
-                    background: "#F3F1EC",
-                    border: "1px solid #D4CEC4",
-                    color: "#5F5A54",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  The standard Carascan subscription supports up to 3 ICE
-                  contacts and is billed monthly.
-                  <br />
-                  If you would like more than 3 emergency contacts, up to 10 ICE
-                  contacts can be purchased and billed monthly.
-                </div>
-              )}
-
               <div style={{ display: "grid", gap: 12 }}>
-                                <label
+                <label
                   style={{
                     display: "flex",
                     alignItems: "flex-start",
@@ -302,7 +250,7 @@ export default function Buy() {
                   </div>
                 </label>
 
-                                <label
+                <label
                   style={{
                     display: "flex",
                     alignItems: "flex-start",
