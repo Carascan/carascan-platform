@@ -337,7 +337,7 @@ export default function Buy() {
                         lineHeight: 1.5,
                       }}
                     >
-                      Expanded monthly subscription for up to 10 Standard monthly subscription for up to ten (10) emergency contacts (1 x email and phone number per contact)
+                      Premium monthly subscription for up to ten (10) emergency contacts (1 x email and phone number per contact)
                     </div>
 
                     <div
@@ -397,8 +397,8 @@ export default function Buy() {
   >
     <span>
       {emergencyPlan === "10"
-        ? "10 x ICE contact subscription"
-        : "3 x ICE contact subscription"}
+        ? "10 x Emergency contacts subscription"
+        : "3 x Emergency contacts subscription"}
     </span>
     <strong>${subscriptionPrice}.00 / month</strong>
   </div>
