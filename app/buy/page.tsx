@@ -603,6 +603,20 @@ export default function Buy() {
     color: "#6b7280",
   }}
 >
+    <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      gap: 16,
+    }}
+  >
+    <span>
+      {shippingOption === "express"
+        ? "Express shipping"
+        : "Standard shipping"}
+    </span>
+    <strong>${shippingPrice}.00</strong>
+  </div>
   Subscription choices are charged monthly automatically.
 </div>
   <div
@@ -627,7 +641,7 @@ export default function Buy() {
           marginTop: 4,
         }}
       >
-        Includes plate + first month of selected subscription 
+        Includes plate + selected shipping + first month of selected subscription
       </div>
     </span>
     <strong>${totalToday}.00</strong>
