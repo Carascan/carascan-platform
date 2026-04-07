@@ -10,8 +10,8 @@ export default function Buy() {
   const [emergencyPlan, setEmergencyPlan] = useState<"3" | "10">("3");
 
   const platePrice = 35;
-  const standardSubscription = 2;
-  const upgradeSubscription = 4;
+  const standardSubscription = 3;
+  const upgradeSubscription = 5;
   const subscriptionPrice =
     emergencyPlan === "10" ? upgradeSubscription : standardSubscription;
   const upgradeDelta = upgradeSubscription - standardSubscription;
@@ -140,8 +140,7 @@ export default function Buy() {
                 maxWidth: 520,
               }}
             >
-              You will receive a 90x90mm Carascan Aluminium Plate with unique QR
-              code. Powdercoated for all weather protection and durability.
+              You will receive a Carascan Aluminium Plate with unique QR code.
             </div>
 
             <div
