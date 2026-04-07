@@ -261,7 +261,7 @@ export default function Buy() {
                     }}
                   >
                     <div style={{ fontWeight: 700, color: "#1F2933" }}>
-                      3 x ICE contacts
+                      3 x Emergency contacts
                     </div>
                     <div
                       style={{
@@ -270,7 +270,7 @@ export default function Buy() {
                         lineHeight: 1.5,
                       }}
                     >
-                      Standard monthly subscription for up to 3 ICE contacts.
+                      Standard monthly subscription for up to three (3) emergency contacts (1 x email and phone number per contact)
                     </div>
                     <div
                       style={{
@@ -328,7 +328,7 @@ export default function Buy() {
                     }}
                   >
                     <div style={{ fontWeight: 700, color: "#1F2933" }}>
-                      10 x ICE contacts
+                      10 x Emergency Contacts
                     </div>
                     <div
                       style={{
@@ -337,7 +337,7 @@ export default function Buy() {
                         lineHeight: 1.5,
                       }}
                     >
-                      Expanded monthly subscription for up to 10 ICE contacts.
+                      Expanded monthly subscription for up to 10 Standard monthly subscription for up to ten (10) emergency contacts (1 x email and phone number per contact)
                     </div>
 
                     <div
@@ -402,7 +402,15 @@ export default function Buy() {
     </span>
     <strong>${subscriptionPrice}.00 / month</strong>
   </div>
-
+<div
+  style={{
+    marginTop: 4,
+    fontSize: 13,
+    color: "#6b7280",
+  }}
+>
+  Subscription choices are charged monthly automatically.
+</div>
   <div
     style={{
       marginTop: 8,
@@ -425,7 +433,7 @@ export default function Buy() {
           marginTop: 4,
         }}
       >
-        Includes plate + first month of selected subscription
+        Includes plate + first month of selected subscription 
       </div>
     </span>
     <strong>${totalToday}.00</strong>
