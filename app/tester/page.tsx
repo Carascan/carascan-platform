@@ -108,25 +108,28 @@ export default async function TesterPortalPage() {
             }}
           >
             <div
-              style={{
-                width: "100%",
-                minHeight: 280,
-                borderRadius: 16,
-                border: "1px dashed #B9B1A5",
-                background: "#F3F1EC",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#5F5A54",
-                fontSize: 16,
-                fontWeight: 600,
-                textAlign: "center",
-                padding: 20,
-                boxSizing: "border-box",
-              }}
-            >
-              Placeholder for tester portal image
-            </div>
+  style={{
+    width: "100%",
+    minHeight: 280,
+    borderRadius: 16,
+    border: "1px solid #D4CEC4",
+    overflow: "hidden",
+    background: "#F3F1EC",
+    boxSizing: "border-box",
+  }}
+>
+  <img
+    src="https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/home/Sandbox%20Card%20Details.png"
+    alt="Sandbox test details"
+    style={{
+      width: "100%",
+      height: "100%",
+      minHeight: 280,
+      objectFit: "cover",
+      display: "block",
+    }}
+  />
+</div>
           </div>
 
           <div
