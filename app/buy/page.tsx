@@ -377,75 +377,61 @@ export default function Buy() {
               </div>
 
               <div style={{ display: "grid", gap: 10, color: "#5F5A54" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 16,
-                  }}
-                >
-                  <span>
-                    Unique QR Code laser engraved aluminium plate
-                  </span>
-                  <strong>$35.00</strong>
-                </div>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      gap: 16,
+    }}
+  >
+    <span>Unique QR Code laser engraved aluminium plate</span>
+    <strong>$35.00</strong>
+  </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 16,
-                  }}
-                >
-                  <span>
-                    {emergencyPlan === "10"
-                      ? "10 x ICE contact subscription"
-                      : "3 x ICE contact subscription"}
-                  </span>
-                  <strong>${subscriptionPrice}.00 / month</strong>
-                </div>
-<div style={{ display: "grid", gap: 10, color: "#5F5A54" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 16,
-                  }}
-                >
-                  <span>
-                    *Recurring monthly subscription charged automatically monthly until cancelled. 
-                  </span>
-                  <strong>$35.00</strong>
-                </div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    paddingTop: 12,
-                    borderTop: "1px solid #D4CEC4",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 16,
-                    color: "#111827",
-                    fontSize: 18,
-                  }}
-                >
-                  <span>
-                    Total today
-                    <div
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: "#6b7280",
-                        marginTop: 4,
-                      }}
-                    >
-                      Includes plate + first month of selected subscription
-                    </div>
-                  </span>
-                  <strong>${totalToday}.00</strong>
-                </div>
-              </div>
-            </div>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      gap: 16,
+    }}
+  >
+    <span>
+      {emergencyPlan === "10"
+        ? "10 x ICE contact subscription"
+        : "3 x ICE contact subscription"}
+    </span>
+    <strong>${subscriptionPrice}.00 / month</strong>
+  </div>
+
+  <div
+    style={{
+      marginTop: 8,
+      paddingTop: 12,
+      borderTop: "1px solid #D4CEC4",
+      display: "flex",
+      justifyContent: "space-between",
+      gap: 16,
+      color: "#111827",
+      fontSize: 18,
+    }}
+  >
+    <span>
+      Total today
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 500,
+          color: "#6b7280",
+          marginTop: 4,
+        }}
+      >
+        Includes plate + first month of selected subscription
+      </div>
+    </span>
+    <strong>${totalToday}.00</strong>
+  </div>
+</div>
+</div>
 
             <button
               type="submit"
