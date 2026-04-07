@@ -404,7 +404,19 @@ export default function Buy() {
                   </span>
                   <strong>${subscriptionPrice}.00 / month</strong>
                 </div>
-
+<div style={{ display: "grid", gap: 10, color: "#5F5A54" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 16,
+                  }}
+                >
+                  <span>
+                    *Recurring monthly subscription charged automatically monthly until cancelled. 
+                  </span>
+                  <strong>$35.00</strong>
+                </div>
                 <div
                   style={{
                     marginTop: 8,
