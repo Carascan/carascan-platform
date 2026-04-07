@@ -96,12 +96,12 @@ export default function Buy() {
             <h1
               style={{
                 margin: 0,
-                fontSize: "clamp(42px, 7vw, 64px)",
-                lineHeight: 1.02,
+                fontSize: "clamp(26px, 4.2vw, 36px)",
+                lineHeight: 1.15,
                 color: "#1F2933",
                 maxWidth: 760,
                 fontWeight: 700,
-                letterSpacing: "-0.02em",
+                letterSpacing: "-0.01em",
               }}
             >
               Purchase your unique Carascan plate for your caravan or mobile
