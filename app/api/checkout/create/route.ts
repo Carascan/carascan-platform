@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { stripeClient } from "@/lib/stripe";
-import { ENV } from "@/lib/env";
+import {
+  ENV,
+  requireStripePriceIdPlate,
+  requireStripePriceIdSubscription3,
+  requireStripePriceIdSubscription10,
+  requireStripePriceIdShippingStandard,
+  requireStripePriceIdShippingExpress,
+} from "@/lib/env";
 
 function readEmergencyPlan(value: FormDataEntryValue | null) {
   return value === "10" ? "10" : "3";
@@ -17,28 +24,29 @@ export async function POST(req: Request) {
   const emergencyPlan = readEmergencyPlan(formData.get("emergency_plan"));
   const shippingOption = readShippingOption(formData.get("shipping_option"));
 
-  const platePriceId = ENV.STRIPE_PRICE_ID_PLATE!;
-  const subscription3PriceId = ENV.STRIPE_PRICE_ID_SUBSCRIPTION_3!;
-  const subscription10PriceId = ENV.STRIPE_PRICE_ID_SUBSCRIPTION_10!;
-  const standardShippingRateId = ENV.STRIPE_SHIPPING_RATE_ID_STANDARD!;
-  const expressShippingRateId = ENV.STRIPE_SHIPPING_RATE_ID_EXPRESS!;
+  const platePriceId = requireStripePriceIdPlate();
+  const subscription3PriceId = requireStripePriceIdSubscription3();
+  const subscription10PriceId = requireStripePriceIdSubscription10();
+  const shippingStandardPriceId = requireStripePriceIdShippingStandard();
+  const shippingExpressPriceId = requireStripePriceIdShippingExpress();
+
   const baseUrl = ENV.APP_BASE_URL;
 
   const subscriptionPriceId =
     emergencyPlan === "10" ? subscription10PriceId : subscription3PriceId;
 
-  const shippingRateId =
+  const shippingPriceId =
     shippingOption === "express"
-      ? expressShippingRateId
-      : standardShippingRateId;
+      ? shippingExpressPriceId
+      : shippingStandardPriceId;
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     line_items: [
       { price: platePriceId, quantity: 1 },
       { price: subscriptionPriceId, quantity: 1 },
+      { price: shippingPriceId, quantity: 1 }, // ✅ THIS IS THE FIX
     ],
-    shipping_options: [{ shipping_rate: shippingRateId }],
     success_url: `${baseUrl}/order/success`,
     cancel_url: `${baseUrl}/buy`,
     shipping_address_collection: {
@@ -50,7 +58,7 @@ export async function POST(req: Request) {
       sku: "CARASCAN_90x90",
       emergency_plan: emergencyPlan,
       shipping_option: shippingOption,
-      shipping_rate_id: shippingRateId,
+      shipping_price_id: shippingPriceId,
     },
     subscription_data: {
       metadata: {
@@ -58,7 +66,7 @@ export async function POST(req: Request) {
         sku: "CARASCAN_90x90",
         emergency_plan: emergencyPlan,
         shipping_option: shippingOption,
-        shipping_rate_id: shippingRateId,
+        shipping_price_id: shippingPriceId,
       },
     },
   });
