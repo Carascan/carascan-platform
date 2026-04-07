@@ -113,7 +113,7 @@ export default function Buy() {
               }}
             >
               Purchase your unique Carascan plate for your caravan, camp trailer or mobile home.
-              </br>
+              <br />
               Be part of our growing community, keeping each other safe.
             </h1>
           </div>
@@ -163,7 +163,7 @@ export default function Buy() {
                 fontSize: 15,
               }}
             >
-              <div>• 90 x 90mm aluminium plate, 2mm thickness</div>
+              <div>• 90 x 90mm aluminium plate, 3mm thickness</div>
               <div>
                 • Unique Carascan QR code for your personal public page access
               </div>
