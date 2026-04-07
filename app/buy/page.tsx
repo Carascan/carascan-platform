@@ -80,7 +80,7 @@ export default function Buy() {
               boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
             }}
           >
-            <p
+                        <p
               style={{
                 margin: "0 0 12px 0",
                 fontSize: 14,
@@ -93,18 +93,20 @@ export default function Buy() {
               Smart QR plates for caravans
             </p>
 
-            <p
+            <h1
               style={{
                 margin: 0,
-                fontSize: 20,
-                lineHeight: 1.6,
-                color: "#5F5A54",
-                maxWidth: 680,
+                fontSize: "clamp(42px, 7vw, 64px)",
+                lineHeight: 1.02,
+                color: "#1F2933",
+                maxWidth: 760,
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
               }}
             >
               Purchase your unique Carascan plate for your caravan or mobile
               home. Be part of our growing community keeping each other safe.
-            </p>
+            </h1>
           </div>
 
           <div
@@ -227,7 +229,7 @@ export default function Buy() {
               )}
 
               <div style={{ display: "grid", gap: 12 }}>
-                <label
+                                <label
                   style={{
                     display: "flex",
                     alignItems: "flex-start",
@@ -245,20 +247,37 @@ export default function Buy() {
                         : "rgba(255,253,249,0.92)",
                   }}
                 >
-                  <input
-                    type="radio"
-                    name="emergency_plan"
-                    value="3"
-                    checked={emergencyPlan === "3"}
-                    onChange={() => setEmergencyPlan("3")}
-                    required
+                  <div
                     style={{
-                      margin: "4px 0 0 0",
-                      flexShrink: 0,
+                      width: 20,
+                      minWidth: 20,
+                      display: "flex",
+                      justifyContent: "center",
+                      paddingTop: 3,
                     }}
-                  />
+                  >
+                    <input
+                      type="radio"
+                      name="emergency_plan"
+                      value="3"
+                      checked={emergencyPlan === "3"}
+                      onChange={() => setEmergencyPlan("3")}
+                      required
+                      style={{
+                        margin: 0,
+                        width: 14,
+                        height: 14,
+                        flex: "0 0 auto",
+                      }}
+                    />
+                  </div>
 
-                  <div>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
                     <div style={{ fontWeight: 700, color: "#1F2933" }}>
                       3 x ICE contacts
                     </div>
@@ -283,7 +302,7 @@ export default function Buy() {
                   </div>
                 </label>
 
-                <label
+                                <label
                   style={{
                     display: "flex",
                     alignItems: "flex-start",
@@ -301,20 +320,37 @@ export default function Buy() {
                         : "rgba(255,253,249,0.92)",
                   }}
                 >
-                  <input
-                    type="radio"
-                    name="emergency_plan"
-                    value="10"
-                    checked={emergencyPlan === "10"}
-                    onChange={() => setEmergencyPlan("10")}
-                    required
+                  <div
                     style={{
-                      margin: "4px 0 0 0",
-                      flexShrink: 0,
+                      width: 20,
+                      minWidth: 20,
+                      display: "flex",
+                      justifyContent: "center",
+                      paddingTop: 3,
                     }}
-                  />
+                  >
+                    <input
+                      type="radio"
+                      name="emergency_plan"
+                      value="10"
+                      checked={emergencyPlan === "10"}
+                      onChange={() => setEmergencyPlan("10")}
+                      required
+                      style={{
+                        margin: 0,
+                        width: 14,
+                        height: 14,
+                        flex: "0 0 auto",
+                      }}
+                    />
+                  </div>
 
-                  <div>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
                     <div style={{ fontWeight: 700, color: "#1F2933" }}>
                       10 x ICE contacts
                     </div>
