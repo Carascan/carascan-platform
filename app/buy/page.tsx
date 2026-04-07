@@ -8,13 +8,20 @@ const HERO_IMAGE_URL =
 
 export default function Buy() {
   const [emergencyPlan, setEmergencyPlan] = useState<"3" | "10">("3");
-
+  const [shippingOption, setShippingOption] = useState<"standard" | "express">("standard");
   const platePrice = 35;
   const standardSubscription = 3;
   const upgradeSubscription = 5;
+  const standardShipping = 10;
+  const expressShipping = 15;
+
   const subscriptionPrice =
     emergencyPlan === "10" ? upgradeSubscription : standardSubscription;
-  const totalToday = platePrice + subscriptionPrice;
+
+  const shippingPrice =
+    shippingOption === "express" ? expressShipping : standardShipping;
+
+  const totalToday = platePrice + subscriptionPrice + shippingPrice;
 
   return (
     <>
@@ -365,6 +372,193 @@ export default function Buy() {
                 boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
               }}
             >
+                          <div
+              style={{
+                border: "1px solid #D4CEC4",
+                borderRadius: 18,
+                padding: 24,
+                marginBottom: 22,
+                background: "rgba(255,253,249,0.94)",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: "#1F2933",
+                  marginBottom: 8,
+                  lineHeight: 1.4,
+                }}
+              >
+                Step 3. Choose your shipping option
+              </div>
+
+              <div
+                style={{
+                  marginTop: 6,
+                  marginBottom: 16,
+                  color: "#5F5A54",
+                  lineHeight: 1.5,
+                  fontWeight: 500,
+                  fontSize: 15,
+                  maxWidth: 520,
+                }}
+              >
+                Send your plate on a journey. Pick what pace it travels out.
+              </div>
+
+              <div
+                style={{
+                  color: "#5F5A54",
+                  lineHeight: 1.7,
+                  display: "grid",
+                  gap: 6,
+                  fontSize: 15,
+                  marginBottom: 16,
+                }}
+              >
+                <div>• Standard shipping is a flat $10.00</div>
+                <div>• Express shipping is a flat $15.00</div>
+                <div>• Shipping is added once to your order total</div>
+              </div>
+
+              <div style={{ display: "grid", gap: 12 }}>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 14,
+                    border: "1px solid #D4CEC4",
+                    borderRadius: 16,
+                    padding: 16,
+                    cursor: "pointer",
+                    background: "rgba(255,253,249,0.92)",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 20,
+                      minWidth: 20,
+                      display: "flex",
+                      justifyContent: "center",
+                      paddingTop: 3,
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="shipping_choice"
+                      value="standard"
+                      checked={shippingOption === "standard"}
+                      onChange={() => setShippingOption("standard")}
+                      required
+                      style={{
+                        margin: 0,
+                        width: 14,
+                        height: 14,
+                        flex: "0 0 auto",
+                      }}
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, color: "#1F2933" }}>
+                      Standard Shipping
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color: "#5F5A54",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      Standard delivery option for your Carascan plate.
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        fontWeight: 700,
+                        color: "#1F2933",
+                      }}
+                    >
+                      $10.00
+                    </div>
+                  </div>
+                </label>
+
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 14,
+                    border: "1px solid #D4CEC4",
+                    borderRadius: 16,
+                    padding: 16,
+                    cursor: "pointer",
+                    background: "rgba(255,253,249,0.92)",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 20,
+                      minWidth: 20,
+                      display: "flex",
+                      justifyContent: "center",
+                      paddingTop: 3,
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="shipping_choice"
+                      value="express"
+                      checked={shippingOption === "express"}
+                      onChange={() => setShippingOption("express")}
+                      required
+                      style={{
+                        margin: 0,
+                        width: 14,
+                        height: 14,
+                        flex: "0 0 auto",
+                      }}
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, color: "#1F2933" }}>
+                      Express Shipping
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color: "#5F5A54",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      Faster delivery option for your Carascan plate.
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        fontWeight: 700,
+                        color: "#1F2933",
+                      }}
+                    >
+                      $15.00
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
               <div
                 style={{
                   fontSize: 18,
