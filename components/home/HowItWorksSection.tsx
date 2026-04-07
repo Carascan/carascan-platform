@@ -78,7 +78,7 @@ export default function HowItWorksSection() {
                 fontWeight: 600,
               }}
             >
-              Built for expansion
+              Built for travellers
             </h3>
             <p
               style={{
@@ -88,8 +88,7 @@ export default function HowItWorksSection() {
                 color: "#5F5A54",
               }}
             >
-              The same platform can later support caravans, trailers, plant, boats, and other
-              assets using the same shared backend structure.
+              We're a big travelling community, side-by-side but still at arms length. We don't need to know everything about each other, but just to know we're all looking out for each other while we do our own thing.
             </p>
           </article>
         </div>
