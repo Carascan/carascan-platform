@@ -112,7 +112,8 @@ export default function Buy() {
                 letterSpacing: "-0.01em",
               }}
             >
-              Purchase your unique Carascan plate for your caravan, camper or RV.
+              Purchase your unique Carascan plate for your caravan, camp trailer or mobile home.
+              
               Be part of our growing community, keeping each other safe.
             </h1>
           </div>
@@ -136,7 +137,7 @@ export default function Buy() {
                 lineHeight: 1.4,
               }}
             >
-              Step 1. The physical plate.
+              Step 1. Your unique QR coded plate
             </div>
 
             <div
