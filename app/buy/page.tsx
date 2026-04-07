@@ -14,7 +14,6 @@ export default function Buy() {
   const upgradeSubscription = 5;
   const subscriptionPrice =
     emergencyPlan === "10" ? upgradeSubscription : standardSubscription;
-  const upgradeDelta = upgradeSubscription - standardSubscription;
   const totalToday = platePrice + subscriptionPrice;
 
   return (
@@ -386,8 +385,7 @@ export default function Buy() {
                   }}
                 >
                   <span>
-                    90x90mm Weatherproof anodised aluminium Carascan plate with
-                    laser engraved customer unique QR code
+                    Unique QR Code laser engraved aluminium plate
                   </span>
                   <strong>$35.00</strong>
                 </div>
@@ -406,21 +404,6 @@ export default function Buy() {
                   </span>
                   <strong>${subscriptionPrice}.00 / month</strong>
                 </div>
-
-                {emergencyPlan === "10" && (
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 16,
-                      color: "#6b7280",
-                      fontSize: 14,
-                    }}
-                  >
-                    <span>Upgrade above standard 3-contact subscription</span>
-                    <strong>+${upgradeDelta}.00 / month</strong>
-                  </div>
-                )}
 
                 <div
                   style={{
