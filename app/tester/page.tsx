@@ -119,16 +119,15 @@ export default async function TesterPortalPage() {
   }}
 >
   <img
-    src="https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/home/Sandbox%20Card%20Details.png"
-    alt="Sandbox test details"
-    style={{
-      width: "100%",
-      height: "100%",
-      minHeight: 280,
-      objectFit: "cover",
-      display: "block",
-    }}
-  />
+  src="https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/home/Sandbox%20Card%20Details.png"
+  alt="Sandbox test details"
+  style={{
+    width: "50%",          // 👈 this shrinks it
+    height: "auto",
+    display: "block",
+    margin: "0 auto",      // 👈 keeps it centered
+  }}
+/>
 </div>
           </div>
 
@@ -161,10 +160,11 @@ export default async function TesterPortalPage() {
             >
               <div>1. Open the live homepage and review the overall layout.</div>
               <div>2. Run through the sandbox purchase flow.</div>
-              <div>3. Complete the setup process from the email link.</div>
-              <div>4. Check the public plate page and messaging flow.</div>
-              <div>5. Test the Help page and report anything unclear.</div>
+              <div>3. Complete the setup process. Sandbox Credit Card details above</div>
+              <div>4. Use your real email address, funny names are encouraged.</div>
+              <div>5. If you can run through a purchase, give me the feedback whats not good, and doesnt feel right.</div>
               <div>6. Send feedback with screenshots where possible.</div>
+              <div>7. Feedback email is manufacture@carascan.com.au.</div>
             </div>
           </div>
 
