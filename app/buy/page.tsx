@@ -198,9 +198,26 @@ export default function Buy() {
     maxWidth: 520,
   }}
 >
-  Emergency contact subscriptions are split into the options below. 
-  Emergency contacts are contacted by SMS and email in emergency situation making your loved ones aware of the situation.
+  Select the subsription option that works for you. 
 </div>
+
+
+<div
+              style={{
+                color: "#5F5A54",
+                lineHeight: 1.7,
+                display: "grid",
+                gap: 6,
+                fontSize: 15,
+              }}
+            >
+              <div>• "Virtual Doorknock" - included in all subsriptions</div>
+              <div>• Report Location - included in all subsriptions</div>
+              <div>• Customer preferences for contact are always controlled by you</div>
+              <div>• Add up to three emergency contacts who will be alerted by SMS and Email in an emergecny</div>
+              <div>• Need more people aware? Choose up the option for up to 10 emergency contacts. </div>
+              <div>• Emergency contacts are always sent and email and SMS so your loved ones are informed</div>
+            </div>
               <div style={{ display: "grid", gap: 12 }}>
                 <label
                   style={{
