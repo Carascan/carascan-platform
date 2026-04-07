@@ -27,8 +27,8 @@ export const ENV = {
     optionalEnv("STRIPE_PRICE_ID_PLATE") ?? optionalEnv("STRIPE_PRICE_ID"),
   STRIPE_PRICE_ID_SUBSCRIPTION_3: optionalEnv("STRIPE_PRICE_ID_SUBSCRIPTION_3"),
   STRIPE_PRICE_ID_SUBSCRIPTION_10: optionalEnv("STRIPE_PRICE_ID_SUBSCRIPTION_10"),
-  STRIPE_SHIPPING_RATE_ID_STANDARD: optionalEnv("STRIPE_SHIPPING_RATE_ID_STANDARD"),
-  STRIPE_SHIPPING_RATE_ID_EXPRESS: optionalEnv("STRIPE_SHIPPING_RATE_ID_EXPRESS"),
+  STRIPE_PRICE_ID_SHIPPING_STANDARD: optionalEnv("STRIPE_PRICE_ID_SHIPPING_STANDARD"),
+  STRIPE_PRICE_ID_SHIPPING_EXPRESS: optionalEnv("STRIPE_PRICE_ID_SHIPPING_EXPRESS"),
 
   PLATE_ASSETS_BUCKET: optionalEnv("PLATE_ASSETS_BUCKET") ?? "assets",
   PLATE_LOGO_SVG_URL: optionalEnv("PLATE_LOGO_SVG_URL"),
@@ -86,24 +86,24 @@ export function requireStripePriceIdSubscription10(): string {
   return value;
 }
 
-export function requireStripeShippingRateIdStandard(): string {
-  const value = ENV.STRIPE_SHIPPING_RATE_ID_STANDARD?.trim();
+export function requireStripePriceIdShippingStandard(): string {
+  const value = ENV.STRIPE_PRICE_ID_SHIPPING_STANDARD?.trim();
 
   if (!value) {
     throw new Error(
-      "Missing required environment variable: STRIPE_SHIPPING_RATE_ID_STANDARD"
+      "Missing required environment variable: STRIPE_PRICE_ID_SHIPPING_STANDARD"
     );
   }
 
   return value;
 }
 
-export function requireStripeShippingRateIdExpress(): string {
-  const value = ENV.STRIPE_SHIPPING_RATE_ID_EXPRESS?.trim();
+export function requireStripePriceIdShippingExpress(): string {
+  const value = ENV.STRIPE_PRICE_ID_SHIPPING_EXPRESS?.trim();
 
   if (!value) {
     throw new Error(
-      "Missing required environment variable: STRIPE_SHIPPING_RATE_ID_EXPRESS"
+      "Missing required environment variable: STRIPE_PRICE_ID_SHIPPING_EXPRESS"
     );
   }
 
