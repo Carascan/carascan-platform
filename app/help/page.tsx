@@ -5,6 +5,9 @@ import { useState } from "react";
 const LOGO_URL =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
+const BACKGROUND_IMAGE =
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&q=80";
+
 export default function HelpPage() {
   const [topic, setTopic] = useState("");
   const [contact, setContact] = useState("");
@@ -32,6 +35,8 @@ export default function HelpPage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
           }}
         >
           <a href="/" style={{ display: "flex", alignItems: "center" }}>
@@ -39,7 +44,7 @@ export default function HelpPage() {
           </a>
 
           <a
-            href="/buy"
+            href="/help"
             style={{
               textDecoration: "none",
               background: "#111827",
@@ -48,9 +53,10 @@ export default function HelpPage() {
               borderRadius: 999,
               fontWeight: 600,
               border: "1px solid #111827",
+              whiteSpace: "nowrap",
             }}
           >
-            Buy now
+            Help
           </a>
         </div>
       </header>
@@ -58,32 +64,65 @@ export default function HelpPage() {
       <main
         style={{
           minHeight: "calc(100vh - 61px)",
-          background: "#f7f7f8",
-          padding: "32px 20px",
+          position: "relative",
+          overflow: "hidden",
           fontFamily: "Arial, sans-serif",
+          backgroundColor: "#e7e2d8",
         }}
       >
         <div
           style={{
-            maxWidth: 800,
+            position: "absolute",
+            inset: 0,
+            backgroundImage: `url(${BACKGROUND_IMAGE})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(180deg, rgba(17,24,39,0.42) 0%, rgba(17,24,39,0.58) 100%)",
+          }}
+        />
+
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            maxWidth: 1200,
             margin: "0 auto",
+            padding: "56px 20px 72px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "calc(100vh - 61px)",
           }}
         >
           <div
             style={{
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              borderRadius: 18,
+              width: "100%",
+              maxWidth: 820,
+              background: "rgba(255,255,255,0.94)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255,255,255,0.55)",
+              borderRadius: 24,
               padding: 32,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+              boxShadow: "0 18px 60px rgba(0,0,0,0.18)",
             }}
           >
-            <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <div style={{ textAlign: "center", marginBottom: 28 }}>
               <h1
                 style={{
                   margin: "0 0 12px 0",
-                  fontSize: 32,
+                  fontSize: "clamp(30px, 5vw, 42px)",
+                  lineHeight: 1.1,
                   color: "#111827",
+                  fontWeight: 700,
                 }}
               >
                 Carascan Help
@@ -93,11 +132,15 @@ export default function HelpPage() {
                 style={{
                   margin: 0,
                   color: "#4b5563",
-                  lineHeight: 1.6,
+                  lineHeight: 1.65,
                   fontSize: 16,
+                  maxWidth: 580,
+                  marginInline: "auto",
                 }}
               >
                 Tell us what you need help with and send us a message below.
+                We will review your request and get back to you as soon as
+                possible.
               </p>
             </div>
 
@@ -128,12 +171,13 @@ export default function HelpPage() {
                   style={{
                     width: "100%",
                     border: "1px solid #d1d5db",
-                    borderRadius: 10,
-                    padding: "12px 14px",
+                    borderRadius: 12,
+                    padding: "13px 14px",
                     fontSize: 15,
                     boxSizing: "border-box",
                     background: "#ffffff",
                     color: "#111827",
+                    outline: "none",
                   }}
                 >
                   <option value="" disabled>
@@ -141,7 +185,9 @@ export default function HelpPage() {
                   </option>
                   <option value="1">1. I have not received my setup email</option>
                   <option value="2">2. My setup link is not working</option>
-                  <option value="3">3. I need to update my emergency contacts</option>
+                  <option value="3">
+                    3. I need to update my emergency contacts
+                  </option>
                   <option value="4">4. I need help with my plate page</option>
                   <option value="5">5. Something else</option>
                 </select>
@@ -170,10 +216,13 @@ export default function HelpPage() {
                   style={{
                     width: "100%",
                     border: "1px solid #d1d5db",
-                    borderRadius: 10,
-                    padding: "12px 14px",
+                    borderRadius: 12,
+                    padding: "13px 14px",
                     fontSize: 15,
                     boxSizing: "border-box",
+                    color: "#111827",
+                    background: "#ffffff",
+                    outline: "none",
                   }}
                 />
               </div>
@@ -201,11 +250,14 @@ export default function HelpPage() {
                   style={{
                     width: "100%",
                     border: "1px solid #d1d5db",
-                    borderRadius: 10,
-                    padding: "12px 14px",
+                    borderRadius: 12,
+                    padding: "13px 14px",
                     fontSize: 15,
                     boxSizing: "border-box",
                     resize: "vertical",
+                    color: "#111827",
+                    background: "#ffffff",
+                    outline: "none",
                   }}
                 />
               </div>
@@ -215,7 +267,7 @@ export default function HelpPage() {
               style={{
                 display: "flex",
                 justifyContent: "center",
-                paddingTop: 24,
+                paddingTop: 26,
               }}
             >
               <button
@@ -260,13 +312,13 @@ export default function HelpPage() {
                 style={{
                   background: "#111827",
                   color: "#ffffff",
-                  padding: "12px 20px",
-                  borderRadius: 12,
+                  padding: "13px 22px",
+                  borderRadius: 14,
                   fontWeight: 600,
                   border: "1px solid #111827",
                   fontSize: 15,
                   cursor: "pointer",
-                  minWidth: 180,
+                  minWidth: 190,
                   opacity: sending ? 0.7 : 1,
                 }}
               >
@@ -299,8 +351,8 @@ export default function HelpPage() {
                 lineHeight: 1.6,
               }}
             >
-              <div>Carascan Pty Ltd</div>
-              <div>ABN: XX XXX XXX XXX</div>
+              <div>Conolan Projects Pty Ltd T/A Carascan</div>
+              <div>ABN: 92 687 895 665</div>
               <div>© 2026 Carascan. All rights reserved.</div>
             </div>
           </div>
