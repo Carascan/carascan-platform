@@ -436,12 +436,17 @@ export default function PlatePage({
 
         <div style={styles.wrap}>
           <section style={styles.heroCard}>
-            <div style={styles.kicker}>Carascan public plate</div>
-            <h1 style={styles.heroTitle}>
-              Secure contact and emergency access for {identifier}
-            </h1>
+            <div style={styles.heroTitleBlock}>
+              <div style={styles.kickerLarge}>Carascan public plate</div>
+              <div style={styles.kickerLarge}>
+                Secure contact and emergency access
+              </div>
+            </div>
+
+            <p style={styles.identifierLine}>{identifier}</p>
+
             {caravanName ? (
-              <p style={styles.heroSubText}>{caravanName}</p>
+              <p style={styles.caravanNameLine}>{caravanName}</p>
             ) : null}
           </section>
 
@@ -808,13 +813,30 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: "0 18px 40px rgba(0,0,0,0.24)",
     backdropFilter: "blur(8px)",
   },
-  kicker: {
-    fontSize: 12,
+  heroTitleBlock: {
+    display: "grid",
+    gap: 2,
+  },
+  kickerLarge: {
+    fontSize: 28,
+    lineHeight: 1.15,
     fontWeight: 700,
-    letterSpacing: 1.4,
-    textTransform: "uppercase",
+    color: "#F3F1EC",
+    margin: 0,
+  },
+  identifierLine: {
+    margin: "14px 0 0 0",
+    fontSize: 18,
+    lineHeight: 1.3,
+    fontWeight: 700,
     color: "#D7D2C8",
-    marginBottom: 10,
+  },
+  caravanNameLine: {
+    margin: "8px 0 0 0",
+    fontSize: 28,
+    lineHeight: 1.15,
+    fontWeight: 800,
+    color: "#FFFFFF",
   },
   heroTitle: {
     margin: "0 0 10px 0",
@@ -826,12 +848,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 16,
     lineHeight: 1.65,
     color: "#E5E7EB",
-  },
-  heroSubText: {
-    margin: "12px 0 0 0",
-    fontSize: 20,
-    color: "#F3F1EC",
-    fontWeight: 700,
   },
   previewOnlyWrap: {
     display: "flex",
