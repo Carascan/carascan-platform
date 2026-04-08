@@ -59,19 +59,25 @@ async function generateNextIdentifier(sb: ReturnType<typeof supabaseAdmin>) {
     .from("plates")
     .select("identifier")
     .like("identifier", "CSN-%")
-    .order("identifier", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(5000);
 
   if (error) {
     throw new Error(`Identifier lookup failed: ${error.message}`);
   }
 
-  const current = data?.identifier ?? null;
-  const currentNumber =
-    current && /^CSN-(\d{6})$/.test(current) ? Number(current.slice(4)) : 0;
+  const maxNumber = (data ?? []).reduce((max, row) => {
+    const identifier = row.identifier ?? "";
+    const match = /^CSN-(\d{6})$/.exec(identifier);
 
-  return formatIdentifier(currentNumber + 1);
+    if (!match) {
+      return max;
+    }
+
+    const value = Number(match[1]);
+    return Number.isFinite(value) ? Math.max(max, value) : max;
+  }, 0);
+
+  return formatIdentifier(maxNumber + 1);
 }
 
 async function loadLogoSvgDataUrl(logoUrl: string): Promise<string> {
@@ -442,7 +448,6 @@ export async function POST(req: Request) {
           emergency_plan?: string | null;
         }
       | null = null;
-    let plateErr: { message?: string } | null = null;
 
     for (let attempt = 0; attempt < 5; attempt++) {
       const identifier = await generateNextIdentifier(sb);
@@ -462,31 +467,28 @@ export async function POST(req: Request) {
         .select("id, identifier, slug, emergency_plan")
         .single();
 
-      plate = result.data;
-      plateErr = result.error;
-
       console.log("[stripe-webhook] plate insert attempt", {
         attempt: attempt + 1,
         identifier,
-        plateId: plate?.id ?? null,
-        emergencyPlanInserted: plate?.emergency_plan ?? null,
-        plateErr: plateErr?.message ?? null,
+        plateId: result.data?.id ?? null,
+        emergencyPlanInserted: result.data?.emergency_plan ?? null,
+        plateErr: result.error?.message ?? null,
       });
 
-      if (!plateErr && plate) {
+      if (!result.error && result.data) {
+        plate = result.data;
         break;
       }
 
-      if (plateErr?.message?.includes("plates_identifier_key")) {
+      if (result.error?.message?.includes("plates_identifier_key")) {
         console.warn("[stripe-webhook] duplicate identifier retry", {
           attempt: attempt + 1,
           identifier,
         });
-        plate = null;
         continue;
       }
 
-      throw new Error(plateErr?.message ?? "Plate insert failed");
+      throw new Error(result.error?.message ?? "Plate insert failed");
     }
 
     if (!plate) {
