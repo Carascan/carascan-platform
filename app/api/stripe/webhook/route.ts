@@ -206,24 +206,35 @@ export async function POST(req: Request) {
   console.log("[stripe-webhook] raw body length", rawBody.length);
 
   let event: any;
+
   try {
     event = stripe.webhooks.constructEvent(rawBody, sig, secret);
-    console.log("[stripe-webhook] event constructed", {
-      type: event?.type,
-      id: event?.id,
-      livemode: event?.livemode,
-      created: event?.created,
+
+    console.log("[stripe-webhook] event constructed OK", {
+      type: event?.type ?? null,
+      id: event?.id ?? null,
+      livemode: event?.livemode ?? null,
+      created: event?.created ?? null,
     });
   } catch (err: any) {
-    console.error("[stripe-webhook] signature failed", err);
+    console.error("[stripe-webhook] constructEvent failed", {
+      message: err?.message ?? "unknown",
+      stack: err?.stack ?? null,
+      rawBodyLength: rawBody.length,
+      hasStripeSignature: Boolean(sig),
+      hasWebhookSecret: Boolean(secret),
+    });
+
     return NextResponse.json(
       { error: `Webhook signature failed: ${err?.message ?? "unknown"}` },
       { status: 400 }
     );
   }
 
+  console.log("[stripe-webhook] event type", event?.type ?? null);
+
   if (event.type !== "checkout.session.completed") {
-    console.log("[stripe-webhook] ignored event type", event.type);
+    console.log("[stripe-webhook] ignored event type", event?.type ?? null);
     return NextResponse.json({ received: true });
   }
 
@@ -284,7 +295,9 @@ export async function POST(req: Request) {
       });
 
       if (plateLookupErr || !plate) {
-        throw new Error(plateLookupErr?.message ?? "Plate not found for existing order");
+        throw new Error(
+          plateLookupErr?.message ?? "Plate not found for existing order"
+        );
       }
 
       const duplicateCustomerEmail = session.customer_details?.email ?? null;
@@ -371,7 +384,9 @@ export async function POST(req: Request) {
           identifier: plate.identifier,
         });
 
-        duplicateCustomerEmailResult = await sendCustomerPlateEmail(customerPayload);
+        duplicateCustomerEmailResult = await sendCustomerPlateEmail(
+          customerPayload
+        );
 
         console.log(
           "[stripe-webhook] customer email result (duplicate path)",
@@ -422,27 +437,27 @@ export async function POST(req: Request) {
     });
 
     const { data: plate, error: plateErr } = await sb
-  .from("plates")
-  .insert({
-    identifier,
-    slug,
-    status: "draft",
-    contact_enabled: true,
-    emergency_enabled: true,
-    preferred_contact_channel: "email",
-    sku: "CARASCAN_90x90",
-    emergency_plan: emergencyPlan, // ✅ THIS LINE
-  })
+      .from("plates")
+      .insert({
+        identifier,
+        slug,
+        status: "draft",
+        contact_enabled: true,
+        emergency_enabled: true,
+        preferred_contact_channel: "email",
+        sku: "CARASCAN_90x90",
+        emergency_plan: emergencyPlan,
+      })
       .select("id, identifier, slug, emergency_plan")
       .single();
 
     console.log("[stripe-webhook] plate insert", {
-  plateId: plate?.id ?? null,
-  identifier: plate?.identifier ?? null,
-  slug: plate?.slug ?? null,
-  emergencyPlanInserted: plate?.emergency_plan ?? null,
-  plateErr: plateErr?.message ?? null,
-});
+      plateId: plate?.id ?? null,
+      identifier: plate?.identifier ?? null,
+      slug: plate?.slug ?? null,
+      emergencyPlanInserted: plate?.emergency_plan ?? null,
+      plateErr: plateErr?.message ?? null,
+    });
 
     if (plateErr || !plate) {
       throw new Error(plateErr?.message ?? "Plate insert failed");
@@ -612,7 +627,10 @@ export async function POST(req: Request) {
       manufacturingPayload
     );
 
-    console.log("[stripe-webhook] manufacturing email result", manufacturingEmailResult);
+    console.log(
+      "[stripe-webhook] manufacturing email result",
+      manufacturingEmailResult
+    );
 
     if (manufacturingEmailResult.ok && !manufacturingEmailResult.skipped) {
       await updateOrderStatus(sb, order.id, "sent_to_manufacturing");
