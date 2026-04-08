@@ -422,25 +422,27 @@ export async function POST(req: Request) {
     });
 
     const { data: plate, error: plateErr } = await sb
-      .from("plates")
-      .insert({
-        identifier,
-        slug,
-        status: "draft",
-        contact_enabled: true,
-        emergency_enabled: true,
-        preferred_contact_channel: "email",
-        sku: "CARASCAN_90x90",
-      })
-      .select("id, identifier, slug")
+  .from("plates")
+  .insert({
+    identifier,
+    slug,
+    status: "draft",
+    contact_enabled: true,
+    emergency_enabled: true,
+    preferred_contact_channel: "email",
+    sku: "CARASCAN_90x90",
+    emergency_plan: emergencyPlan, // ✅ THIS LINE
+  })
+      .select("id, identifier, slug, emergency_plan")
       .single();
 
     console.log("[stripe-webhook] plate insert", {
-      plateId: plate?.id ?? null,
-      identifier: plate?.identifier ?? null,
-      slug: plate?.slug ?? null,
-      plateErr: plateErr?.message ?? null,
-    });
+  plateId: plate?.id ?? null,
+  identifier: plate?.identifier ?? null,
+  slug: plate?.slug ?? null,
+  emergencyPlanInserted: plate?.emergency_plan ?? null,
+  plateErr: plateErr?.message ?? null,
+});
 
     if (plateErr || !plate) {
       throw new Error(plateErr?.message ?? "Plate insert failed");
