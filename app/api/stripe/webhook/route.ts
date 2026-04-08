@@ -420,7 +420,6 @@ export async function POST(req: Request) {
       emergencyPlan,
     });
 
-    const identifier = await generateNextIdentifier(sb);
     const slug = await generateUniqueSlug(sb);
     const setupToken = randToken(48);
     const plateUrl = `${baseUrl}/p/${slug}`;
@@ -428,7 +427,6 @@ export async function POST(req: Request) {
     const logoImageHref = await loadLogoSvgDataUrl(logoUrl);
 
     console.log("[stripe-webhook] generated values", {
-      identifier,
       slug,
       setupTokenPreview: `${setupToken.slice(0, 8)}...`,
       plateUrl,
@@ -436,42 +434,81 @@ export async function POST(req: Request) {
       hasLogoImageHref: Boolean(logoImageHref),
     });
 
-    const { data: plate, error: plateErr } = await sb
-      .from("plates")
-      .insert({
+    let plate:
+      | {
+          id: string;
+          identifier: string;
+          slug: string;
+          emergency_plan?: string | null;
+        }
+      | null = null;
+    let plateErr: { message?: string } | null = null;
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const identifier = await generateNextIdentifier(sb);
+
+      const result = await sb
+        .from("plates")
+        .insert({
+          identifier,
+          slug,
+          status: "draft",
+          contact_enabled: true,
+          emergency_enabled: true,
+          preferred_contact_channel: "email",
+          sku: "CARASCAN_90x90",
+          emergency_plan: emergencyPlan,
+        })
+        .select("id, identifier, slug, emergency_plan")
+        .single();
+
+      plate = result.data;
+      plateErr = result.error;
+
+      console.log("[stripe-webhook] plate insert attempt", {
+        attempt: attempt + 1,
         identifier,
-        slug,
-        status: "draft",
-        contact_enabled: true,
-        emergency_enabled: true,
-        preferred_contact_channel: "email",
-        sku: "CARASCAN_90x90",
-        emergency_plan: emergencyPlan,
-      })
-      .select("id, identifier, slug, emergency_plan")
-      .single();
+        plateId: plate?.id ?? null,
+        emergencyPlanInserted: plate?.emergency_plan ?? null,
+        plateErr: plateErr?.message ?? null,
+      });
 
-    console.log("[stripe-webhook] plate insert", {
-      plateId: plate?.id ?? null,
-      identifier: plate?.identifier ?? null,
-      slug: plate?.slug ?? null,
-      emergencyPlanInserted: plate?.emergency_plan ?? null,
-      plateErr: plateErr?.message ?? null,
-    });
+      if (!plateErr && plate) {
+        break;
+      }
 
-    if (plateErr || !plate) {
+      if (plateErr?.message?.includes("plates_identifier_key")) {
+        console.warn("[stripe-webhook] duplicate identifier retry", {
+          attempt: attempt + 1,
+          identifier,
+        });
+        plate = null;
+        continue;
+      }
+
       throw new Error(plateErr?.message ?? "Plate insert failed");
     }
 
+    if (!plate) {
+      throw new Error("Failed to insert plate after retries");
+    }
+
+    console.log("[stripe-webhook] plate insert final", {
+      plateId: plate.id,
+      identifier: plate.identifier,
+      slug: plate.slug,
+      emergencyPlanInserted: plate.emergency_plan ?? null,
+    });
+
     console.log("[stripe-webhook] building plate assets", {
-      identifier,
-      slug,
+      identifier: plate.identifier,
+      slug: plate.slug,
       emergencyPlan,
     });
 
     const assets = await buildPlateAssets({
-      identifier,
-      slug,
+      identifier: plate.identifier,
+      slug: plate.slug,
       logoImageHref,
     });
 
@@ -671,16 +708,16 @@ export async function POST(req: Request) {
     }
 
     console.log("[stripe-webhook] success", {
-      identifier,
-      slug,
+      identifier: plate.identifier,
+      slug: plate.slug,
       plateUrl,
       setupUrl,
     });
 
     return NextResponse.json({
       received: true,
-      identifier,
-      slug,
+      identifier: plate.identifier,
+      slug: plate.slug,
       plateUrl,
       setupUrl,
       assets: savedAssets,
