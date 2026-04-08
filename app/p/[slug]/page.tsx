@@ -400,9 +400,11 @@ export default function PlatePage({
         <main style={styles.page}>
           <Background />
           <div style={styles.wrap}>
-            <div style={styles.heroCard}>
-              <h1 style={styles.heroTitle}>Loading plate...</h1>
-              <p style={styles.heroText}>Please wait while Carascan loads this plate.</p>
+            <div style={styles.loadingBlock}>
+              <h1 style={styles.loadingTitle}>Loading plate...</h1>
+              <p style={styles.loadingText}>
+                Please wait while Carascan loads this plate.
+              </p>
             </div>
           </div>
         </main>
@@ -417,9 +419,9 @@ export default function PlatePage({
         <main style={styles.page}>
           <Background />
           <div style={styles.wrap}>
-            <div style={styles.heroCard}>
-              <h1 style={styles.heroTitle}>Plate not available</h1>
-              <p style={styles.heroText}>{loadError || "Plate not found."}</p>
+            <div style={styles.loadingBlock}>
+              <h1 style={styles.loadingTitle}>Plate not available</h1>
+              <p style={styles.loadingText}>{loadError || "Plate not found."}</p>
             </div>
           </div>
         </main>
@@ -435,7 +437,7 @@ export default function PlatePage({
         <Background />
 
         <div style={styles.wrap}>
-          <section style={styles.heroCard}>
+          <section style={styles.heroTextOnly}>
             <div style={styles.heroTitleBlock}>
               <div style={styles.kickerLarge}>Carascan public plate</div>
               <div style={styles.kickerLarge}>
@@ -444,10 +446,6 @@ export default function PlatePage({
             </div>
 
             <p style={styles.identifierLine}>{identifier}</p>
-
-            {caravanName ? (
-              <p style={styles.caravanNameLine}>{caravanName}</p>
-            ) : null}
           </section>
 
           <div style={styles.previewOnlyWrap}>
@@ -459,6 +457,12 @@ export default function PlatePage({
               />
             </div>
           </div>
+
+          {caravanName ? (
+            <section style={styles.caravanNameTile}>
+              <p style={styles.caravanNameLine}>{caravanName}</p>
+            </section>
+          ) : null}
 
           {bio ? (
             <div style={styles.infoCard}>
@@ -804,7 +808,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: "grid",
     gap: 20,
   },
-  heroCard: {
+  loadingBlock: {
     background: "rgba(20,26,32,0.72)",
     border: "1px solid rgba(255,255,255,0.12)",
     borderRadius: 18,
@@ -812,6 +816,24 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#F3F1EC",
     boxShadow: "0 18px 40px rgba(0,0,0,0.24)",
     backdropFilter: "blur(8px)",
+  },
+  loadingTitle: {
+    margin: "0 0 10px 0",
+    fontSize: 30,
+    lineHeight: 1.15,
+  },
+  loadingText: {
+    margin: 0,
+    fontSize: 16,
+    lineHeight: 1.65,
+    color: "#E5E7EB",
+  },
+  heroTextOnly: {
+    display: "grid",
+    gap: 0,
+    textAlign: "center",
+    color: "#F3F1EC",
+    paddingTop: 6,
   },
   heroTitleBlock: {
     display: "grid",
@@ -831,29 +853,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     color: "#D7D2C8",
   },
-  caravanNameLine: {
-    margin: "8px 0 0 0",
-    fontSize: 28,
-    lineHeight: 1.15,
-    fontWeight: 800,
-    color: "#FFFFFF",
-  },
-  heroTitle: {
-    margin: "0 0 10px 0",
-    fontSize: 34,
-    lineHeight: 1.15,
-  },
-  heroText: {
-    margin: 0,
-    fontSize: 16,
-    lineHeight: 1.65,
-    color: "#E5E7EB",
-  },
   previewOnlyWrap: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    padding: "6px 0 10px",
+    padding: "6px 0 4px",
   },
   platePreviewWrap: {
     display: "flex",
@@ -867,6 +871,24 @@ const styles: Record<string, React.CSSProperties> = {
     width: "100%",
     maxWidth: 430,
     margin: "0 auto",
+  },
+  caravanNameTile: {
+    background: "rgba(20,26,32,0.82)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 18,
+    padding: "18px 20px",
+    color: "#FFFFFF",
+    boxShadow: "0 18px 40px rgba(0,0,0,0.22)",
+    backdropFilter: "blur(8px)",
+    textAlign: "center",
+  },
+  caravanNameLine: {
+    margin: 0,
+    fontSize: 32,
+    lineHeight: 1.1,
+    fontWeight: 800,
+    color: "#FFFFFF",
+    wordBreak: "break-word",
   },
   infoCard: {
     background: "#ffffff",
