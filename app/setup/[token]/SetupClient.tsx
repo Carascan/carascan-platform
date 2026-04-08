@@ -17,6 +17,7 @@ type Plate = {
   preferred_contact_channel: string;
   report_channel?: string | null;
   sku: string;
+  emergency_plan?: "3" | "10" | string | null;
 };
 
 type Profile = {
@@ -111,12 +112,12 @@ export default function SetupClient({ token }: SetupClientProps) {
   const [reportChannel, setReportChannel] = useState("email");
   const [ownerPhone1, setOwnerPhone1] = useState("");
   const [ownerPhone2, setOwnerPhone2] = useState("");
-  const [contacts, setContacts] = useState<EmergencyContact[]>([
-  blankContact(),
-  blankContact(),
-  blankContact(),
-]);
-
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+const maxContacts =
+  loadState.status === "ready" &&
+  loadState.data.plate?.emergency_plan === "10"
+    ? 10
+    : 3;
   useEffect(() => {
     let cancelled = false;
 
@@ -183,11 +184,13 @@ export default function SetupClient({ token }: SetupClientProps) {
 
       
 
-        const existing = Array.isArray(data.contacts)
-          ? data.contacts.slice(0, 3)
-          : [];
-        const padded = [...existing];
-        while (padded.length < 3) padded.push(blankContact());
+        const allowedContacts = data.plate?.emergency_plan === "10" ? 10 : 3;
+
+const existing = Array.isArray(data.contacts)
+  ? data.contacts.slice(0, allowedContacts)
+  : [];
+const padded = [...existing];
+while (padded.length < allowedContacts) padded.push(blankContact());
 
         setContacts(
           padded.map((c) => ({
@@ -485,9 +488,9 @@ export default function SetupClient({ token }: SetupClientProps) {
             Emergency contacts - SMS & Email contacted in an emergency scan
           </h2>
           <p style={styles.muted}>
-            Add up to 3. All fields are optional. Emergency alerts always send
-            via both email and SMS where details are provided.
-          </p>
+  Add up to {maxContacts}. All fields are optional. Emergency alerts always send
+  via both email and SMS where details are provided.
+</p>
 
           {contacts.map((contact, index) => (
             <div key={index} style={styles.contactBlock}>

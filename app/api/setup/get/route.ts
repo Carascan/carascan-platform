@@ -45,7 +45,7 @@ export async function GET(req: Request) {
     sb
       .from("plates")
       .select(
-        "id, identifier, slug, status, contact_enabled, emergency_enabled, preferred_contact_channel, report_channel, sku"
+        "id, identifier, slug, status, contact_enabled, emergency_enabled, preferred_contact_channel, report_channel, sku, emergency_plan"
       )
       .eq("id", plateId)
       .maybeSingle(),
