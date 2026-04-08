@@ -89,6 +89,35 @@ export default function ContactClient({
 
     try {
       setSending(true);
+
+      if (mode === "contact") {
+        setStatus("Sending...");
+
+        const r = await fetch(`/api/plates/${encodeURIComponent(slug)}/contact`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            reporter_name: name.trim() || null,
+            reporter_phone: phone.trim() || null,
+            reporter_email: email.trim() || null,
+            message: msg.trim(),
+          }),
+        });
+
+        const j = await r.json().catch(() => null);
+
+        if (!r.ok) {
+          setStatus(j?.error ?? "Failed.");
+          return;
+        }
+
+        const now = new Date().toLocaleTimeString();
+        setSentTime(now);
+        setStatus(`Message sent at ${now}`);
+        setMsg("");
+        return;
+      }
+
       setStatus("Requesting location permission...");
 
       const deviceLocation = await getDeviceLocation();
@@ -123,7 +152,7 @@ export default function ContactClient({
         }),
       });
 
-      const j = await r.json();
+      const j = await r.json().catch(() => null);
 
       if (!r.ok) {
         setStatus(j?.error ?? "Failed.");
@@ -176,15 +205,18 @@ export default function ContactClient({
         </div>
       )}
 
-      {(mode === "emergency" || mode === "location_only") && sentTime && (
-        <div className="card" style={{ background: "#fff7ed" }}>
-          <b>
-            {mode === "emergency"
-              ? `Emergency alert sent at ${sentTime}`
-              : `Location reported at ${sentTime}`}
-          </b>
-        </div>
-      )}
+      {(mode === "emergency" || mode === "location_only" || mode === "contact") &&
+        sentTime && (
+          <div className="card" style={{ background: "#fff7ed" }}>
+            <b>
+              {mode === "contact"
+                ? `Message sent at ${sentTime}`
+                : mode === "emergency"
+                ? `Emergency alert sent at ${sentTime}`
+                : `Location reported at ${sentTime}`}
+            </b>
+          </div>
+        )}
 
       <div className="card">
         <div className="grid grid2" style={{ marginBottom: 12 }}>
@@ -314,7 +346,7 @@ export default function ContactClient({
           {sending
             ? "Sending..."
             : mode === "contact"
-            ? "Send location report"
+            ? "Send message"
             : mode === "emergency"
             ? emergencyConfirm
               ? "Send emergency alert"
