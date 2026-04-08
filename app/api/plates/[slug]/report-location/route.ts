@@ -21,18 +21,10 @@ function cleanMode(value: unknown): Mode {
   return value === "sms" || value === "both" ? value : "email";
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
 function buildMapsUrl(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
 }
+
 function buildStaticMapUrl(lat: number, lng: number) {
   const key = process.env.GOOGLE_MAPS_STATIC_API_KEY;
 
@@ -40,6 +32,7 @@ function buildStaticMapUrl(lat: number, lng: number) {
 
   return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=14&size=640x320&scale=2&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${key}`;
 }
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
@@ -113,15 +106,15 @@ export async function POST(
       );
     }
 
-    const { data: phoneRows, error: phoneError } = await sb
-      .from("emergency_contacts")
-      .select("phone, enabled")
+    const { data: ownerRow, error: ownerError } = await sb
+      .from("plate_owners")
+      .select("phone_1, phone_2")
       .eq("plate_id", plate.id)
-      .eq("enabled", true);
+      .maybeSingle();
 
-    if (phoneError) {
+    if (ownerError) {
       return NextResponse.json(
-        { error: `SMS recipient lookup failed: ${phoneError.message}` },
+        { error: `Owner phone lookup failed: ${ownerError.message}` },
         { status: 500 }
       );
     }
@@ -136,14 +129,15 @@ export async function POST(
 
     const phones = Array.from(
       new Set(
-        (phoneRows ?? [])
-          .map((row) => normalizePhone(String(row.phone ?? "").trim()))
+        [ownerRow?.phone_1, ownerRow?.phone_2]
+          .map((value) => normalizePhone(String(value ?? "").trim()))
           .filter(Boolean)
       )
     );
 
     const mapUrl = buildMapsUrl(lat, lng);
     const mapImageUrl = buildStaticMapUrl(lat, lng);
+
     const html = `
 <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111827; max-width: 640px; margin: 0 auto;">
 
@@ -202,16 +196,15 @@ export async function POST(
 `;
 
     const smsLines = [
-  `CARASCAN PUBLIC REPORT LOCATION - ${plate.identifier}`,
-  reporterName ? `Name: ${reporterName}` : "",
-  reporterPhone ? `Phone: ${reporterPhone}` : "",
-  reporterEmail ? `Email: ${reporterEmail}` : "",
-  message ? `Msg: ${message}` : "",
-  "",
-  "https://www.carascan.com.au",
-].filter(Boolean);
+      `CARASCAN REPORT LOCATION - ${plate.identifier}`,
+      reporterName ? `Name: ${reporterName}` : "",
+      reporterPhone ? `Phone: ${reporterPhone}` : "",
+      reporterEmail ? `Email: ${reporterEmail}` : "",
+      message ? `Msg: ${message}` : "",
+      `Map: ${mapUrl}`,
+    ].filter(Boolean);
 
-const smsBody = smsLines.join("\n");
+    const smsBody = smsLines.join("\n");
 
     const tasks: Promise<any>[] = [];
 
@@ -229,7 +222,7 @@ const smsBody = smsLines.join("\n");
       return NextResponse.json(
         {
           error:
-            "No recipients found for the selected report delivery mode. Check email setup or enabled phone contacts.",
+            "No recipients found for the selected report delivery mode. Check owner email or owner phone setup.",
         },
         { status: 400 }
       );
