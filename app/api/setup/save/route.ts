@@ -89,18 +89,37 @@ export async function POST(req: Request) {
         ? normalizePhone(body.owner_phone_2)
         : "";
 
-    const emergencyContacts = Array.isArray(body.emergency_contacts)
-      ? body.emergency_contacts
-          .slice(0, 3)
-          .map((c) => ({
-            plate_id: tokenRow.plate_id,
-            name: c.name?.trim() ?? "",
-            phone: c.phone ? normalizePhone(c.phone) : "",
-            email: c.email?.trim() ?? "",
-            enabled: c.enabled !== false,
-          }))
-          .filter((c) => c.name || c.phone || c.email)
-      : [];
+    // 🔹 get plan from plate
+const { data: plateRow, error: plateLookupError } = await supabase
+  .from("plates")
+  .select("emergency_plan")
+  .eq("id", tokenRow.plate_id)
+  .maybeSingle();
+
+if (plateLookupError) {
+  return NextResponse.json(
+    { error: `Plate lookup failed: ${plateLookupError.message}` },
+    { status: 500 }
+  );
+}
+
+// 🔹 determine limit
+const emergencyContactLimit =
+  plateRow?.emergency_plan === "10" ? 10 : 3;
+
+// 🔹 apply limit
+const emergencyContacts = Array.isArray(body.emergency_contacts)
+  ? body.emergency_contacts
+      .slice(0, emergencyContactLimit)
+      .map((c) => ({
+        plate_id: tokenRow.plate_id,
+        name: c.name?.trim() ?? "",
+        phone: c.phone ? normalizePhone(c.phone) : "",
+        email: c.email?.trim() ?? "",
+        enabled: c.enabled !== false,
+      }))
+      .filter((c) => c.name || c.phone || c.email)
+  : [];
 
     const { error: profileError } = await supabase
       .from("plate_profiles")
