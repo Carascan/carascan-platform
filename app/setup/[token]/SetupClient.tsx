@@ -111,7 +111,6 @@ export default function SetupClient({ token }: SetupClientProps) {
 
   const [caravanName, setCaravanName] = useState("");
   const [bio, setBio] = useState("");
-  const [contactEnabled, setContactEnabled] = useState(true);
   const [contactChannel, setContactChannel] = useState("email");
   const [reportChannel, setReportChannel] = useState("email");
   const [ownerPhone1, setOwnerPhone1] = useState("");
@@ -171,12 +170,16 @@ export default function SetupClient({ token }: SetupClientProps) {
 
         setCaravanName(data.profile?.caravan_name ?? "");
         setBio(data.profile?.bio ?? "");
-        setContactEnabled(Boolean(data.plate?.contact_enabled));
 
         const incomingContactChannel =
-          data.plate?.preferred_contact_channel || "email";
+          data.plate?.contact_enabled === false
+            ? "disabled"
+            : data.plate?.preferred_contact_channel || "email";
+
         setContactChannel(
-          incomingContactChannel === "sms" || incomingContactChannel === "both"
+          incomingContactChannel === "sms" ||
+            incomingContactChannel === "both" ||
+            incomingContactChannel === "disabled"
             ? incomingContactChannel
             : "email"
         );
@@ -300,12 +303,14 @@ export default function SetupClient({ token }: SetupClientProps) {
     setSaveError("");
 
     try {
+      const virtualDoorknockEnabled = contactChannel !== "disabled";
+
       const payload = {
         token,
         caravan_name: caravanName.trim(),
         bio: bio.trim(),
-        contact_enabled: contactEnabled,
-        contact_channel: contactChannel,
+        contact_enabled: virtualDoorknockEnabled,
+        contact_channel: virtualDoorknockEnabled ? contactChannel : "email",
         report_channel: reportChannel,
         owner_phone_1: ownerPhone1,
         owner_phone_2: ownerPhone2,
@@ -408,7 +413,7 @@ export default function SetupClient({ token }: SetupClientProps) {
             </p>
           </section>
 
-          <div style={styles.previewCard}>
+          <div style={styles.previewOnlyWrap}>
             <div style={styles.previewWrap}>
               {plateSvg ? (
                 <div
@@ -459,6 +464,7 @@ export default function SetupClient({ token }: SetupClientProps) {
                   <option value="email">Email</option>
                   <option value="sms">SMS</option>
                   <option value="both">Both</option>
+                  <option value="disabled">Opt out</option>
                 </select>
               </label>
 
@@ -494,15 +500,6 @@ export default function SetupClient({ token }: SetupClientProps) {
                 onChange={(e) => setOwnerPhone2(e.target.value)}
                 placeholder="Optional"
               />
-            </label>
-
-            <label style={styles.checkboxRow}>
-              <input
-                type="checkbox"
-                checked={contactEnabled}
-                onChange={(e) => setContactEnabled(e.target.checked)}
-              />
-              Enable Virtual Doorknock
             </label>
 
             <h2 style={styles.h2}>
@@ -649,15 +646,11 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 24,
     boxShadow: "0 14px 34px rgba(17,24,39,0.08)",
   },
-  previewCard: {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
-    borderRadius: 16,
-    padding: 24,
+  previewOnlyWrap: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    boxShadow: "0 14px 34px rgba(17,24,39,0.08)",
+    padding: "6px 0 10px",
   },
   h2: {
     margin: "0 0 16px 0",
@@ -701,13 +694,6 @@ const styles: Record<string, React.CSSProperties> = {
     resize: "vertical",
     background: "#fff",
   },
-  checkboxRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 14,
-    color: "#111827",
-  },
   channelGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -743,11 +729,12 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    border: "1px solid #e5e7eb",
+    border: "1px solid rgba(255,255,255,0.25)",
     borderRadius: 10,
-    background: "#f8fafc",
-    color: "#6b7280",
+    background: "rgba(255,255,255,0.10)",
+    color: "#F3F1EC",
     margin: "0 auto",
+    backdropFilter: "blur(6px)",
   },
   button: {
     padding: "12px 18px",
