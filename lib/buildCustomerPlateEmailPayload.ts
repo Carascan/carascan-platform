@@ -1,3 +1,4 @@
+import { ENV } from "./env";
 import { buildSetupUrl } from "./plate";
 import { BuildPlateAssetsResult } from "./buildPlateAssets";
 
@@ -7,6 +8,9 @@ export type CustomerPlateEmailPayload = {
   text: string;
   html: string;
 };
+
+const LOGO_URL =
+  "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
 
 function escapeHtml(value: string) {
   return value
@@ -26,57 +30,117 @@ export function buildCustomerPlateEmailPayload(
   }
 ): CustomerPlateEmailPayload {
   const setupUrl = buildSetupUrl(input.setupToken);
+  const helpUrl = `${ENV.APP_BASE_URL}/help`;
   const name = input.customerName?.trim() || "there";
+  const safeName = escapeHtml(name);
+  const safeIdentifier = escapeHtml(assets.identifier);
+
+  const subject = `Welcome to Carascan - Carascan Setup Required (${assets.identifier})`;
 
   const text = [
-    `Hi ${name},`,
+    `G'day ${name},`,
     ``,
-    `Thanks for your Carascan order.`,
-    `Your plate reference is ${assets.identifier}.`,
+    `Welcome to community, and thanks for your order.`,
     ``,
-    `Setup your plate:`,
+    `We're a big travelling community, side-by-side but still at arms length. We don't need to know everything about each other, but just to know we're all looking out for each other while we do our own thing.`,
+    ``,
+    `Plate reference: ${assets.identifier}`,
+    ``,
+    `Complete setup:`,
     setupUrl,
     ``,
     `Your plate is not active yet.`,
-    `Complete setup to activate your Carascan page.`,
+    `Please complete setup to activate your Carascan page.`,
     ``,
     `Plate URL after activation:`,
     assets.plateUrl,
+    ``,
+    `If you need any help, please reach out to the Carascan team through the help page:`,
+    helpUrl,
   ].join("\n");
 
   const html = `
-    <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111827;">
-      <h2 style="margin:0 0 16px 0;">Carascan Order</h2>
+    <div style="margin:0;padding:24px 12px;background:#f3f4f6;">
+      <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+        <div style="padding:28px 28px 16px 28px;border-bottom:1px solid #e5e7eb;background:#ffffff;text-align:center;">
+          <img
+            src="${LOGO_URL}"
+            alt="Carascan"
+            style="display:block;margin:0 auto;max-width:220px;width:100%;height:auto;border:0;outline:none;text-decoration:none;"
+          />
+        </div>
 
-      <p>Hi ${escapeHtml(name)},</p>
+        <div style="padding:32px 28px 20px 28px;font-family:Arial,Helvetica,sans-serif;line-height:1.65;color:#1f2937;font-size:16px;">
+          <p style="margin:0 0 18px 0;">G'day ${safeName},</p>
 
-      <p>Thanks for your Carascan order.</p>
+          <p style="margin:0 0 18px 0;">Welcome to community, and thanks for your order.</p>
 
-      <p><strong>Plate reference:</strong> ${escapeHtml(assets.identifier)}</p>
+          <p style="margin:0 0 22px 0;">
+            We're a big travelling community, side-by-side but still at arms length.
+            We don't need to know everything about each other, but just to know we're
+            all looking out for each other while we do our own thing.
+          </p>
 
-      <p style="margin:20px 0;">
-        <a href="${setupUrl}" style="display:inline-block;padding:12px 16px;background:#111827;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;">
-          Complete Setup
-        </a>
-      </p>
+          <p style="margin:0 0 20px 0;">
+            <strong>Plate reference:</strong> ${safeIdentifier}
+          </p>
 
-      <p>Your plate is not active yet.</p>
-      <p>Please complete setup to activate your Carascan page.</p>
+          <div style="margin:0 0 24px 0;">
+            <a
+              href="${setupUrl}"
+              style="display:inline-block;padding:14px 22px;background:#111827;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:16px;"
+            >
+              Complete Setup
+            </a>
+          </div>
 
-      <hr style="margin:24px 0;" />
+          <p style="margin:0 0 12px 0;">Your plate is not active yet.</p>
+          <p style="margin:0 0 24px 0;">Please complete setup to activate your Carascan page.</p>
 
-      <p><strong>Plate URL after activation:</strong></p>
-      <p>
-        <a href="${assets.plateUrl}" style="color:#2563eb;">
-          ${assets.plateUrl}
-        </a>
-      </p>
+          <div style="margin:0 0 24px 0;padding:16px 18px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;">
+            <p style="margin:0 0 8px 0;font-weight:700;color:#111827;">Setup link</p>
+            <p style="margin:0;word-break:break-word;">
+              <a href="${setupUrl}" style="color:#2563eb;text-decoration:underline;">${setupUrl}</a>
+            </p>
+          </div>
+
+          <div style="margin:0 0 24px 0;padding:16px 18px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;">
+            <p style="margin:0 0 8px 0;font-weight:700;color:#111827;">Plate URL after activation</p>
+            <p style="margin:0;word-break:break-word;">
+              <a href="${assets.plateUrl}" style="color:#2563eb;text-decoration:underline;">
+                ${assets.plateUrl}
+              </a>
+            </p>
+          </div>
+
+          <p style="margin:0 0 14px 0;">
+            If you need any help, please reach out to the Carascan team through the help page.
+          </p>
+
+          <div style="margin:0 0 24px 0;">
+            <a
+              href="${helpUrl}"
+              style="display:inline-block;padding:14px 22px;background:#ffffff;color:#111827;text-decoration:none;border-radius:10px;font-weight:700;font-size:16px;border:1px solid #d1d5db;"
+            >
+              Help Page
+            </a>
+          </div>
+
+          <div style="text-align:center;padding-top:8px;">
+            <img
+              src="${LOGO_URL}"
+              alt="Carascan"
+              style="display:block;margin:0 auto;max-width:180px;width:100%;height:auto;border:0;outline:none;text-decoration:none;"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   `;
 
   return {
     to: input.customerEmail,
-    subject: `Your Carascan plate order – ${assets.identifier}`,
+    subject,
     text,
     html,
   };
