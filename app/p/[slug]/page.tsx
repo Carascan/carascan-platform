@@ -2,9 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { buildPlateSvg } from "@/lib/laserSvg";
+import NavBar from "@/components/NavBar";
 
 const LOGO_URL =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
+
+const BACKGROUND_IMAGE_URL =
+  "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/home/carascan-beach-drone-capture.jpg";
 
 const CONTACT_CHAR_LIMIT = 500;
 const REPORT_CHAR_LIMIT = 500;
@@ -354,9 +358,7 @@ export default function PlatePage({
       const loc = await requestCurrentLocation();
       setEmergencyLocation(loc);
 
-      const message = [emergencyMessage.trim()]
-  .filter(Boolean)
-  .join("\n\n");
+      const message = [emergencyMessage.trim()].filter(Boolean).join("\n\n");
 
       const r = await fetch(`/api/plates/${encodeURIComponent(slug)}/emergency`, {
         method: "POST",
@@ -392,163 +394,58 @@ export default function PlatePage({
   }
 
   if (loading) {
-  return (
-    <>
-      <header
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 50,
-          background: "rgba(255,255,255,0.92)",
-          backdropFilter: "blur(10px)",
-          borderBottom: "1px solid #e5e7eb",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: "0 auto",
-            padding: "16px 20px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <a href="/" style={{ display: "flex", alignItems: "center" }}>
-            <img src={LOGO_URL} alt="Carascan" style={{ height: 28 }} />
-          </a>
-
-          <a
-            href="https://www.carascan.com.au/help"
-            style={{
-  textDecoration: "none",
-  padding: "10px 16px",
-  borderRadius: 999,
-  border: "1px solid #111827",
-  fontSize: 14,
-  fontWeight: 600,
-  color: "#ffffff",
-  background: "#111827",
-}}
-          >
-            Need help?
-          </a>
-        </div>
-      </header>
-
-      <main style={{ ...styles.page, minHeight: "calc(100vh - 61px)" }}>
-        <div style={styles.wrap}>
-          <div style={styles.card}>Loading...</div>
-        </div>
-      </main>
-    </>
-  );
-}
+    return (
+      <>
+        <NavBar variant="inner" />
+        <main style={styles.page}>
+          <Background />
+          <div style={styles.wrap}>
+            <div style={styles.heroCard}>
+              <h1 style={styles.heroTitle}>Loading plate...</h1>
+              <p style={styles.heroText}>Please wait while Carascan loads this plate.</p>
+            </div>
+          </div>
+        </main>
+      </>
+    );
+  }
 
   if (loadError || !data) {
+    return (
+      <>
+        <NavBar variant="inner" />
+        <main style={styles.page}>
+          <Background />
+          <div style={styles.wrap}>
+            <div style={styles.heroCard}>
+              <h1 style={styles.heroTitle}>Plate not available</h1>
+              <p style={styles.heroText}>{loadError || "Plate not found."}</p>
+            </div>
+          </div>
+        </main>
+      </>
+    );
+  }
+
   return (
     <>
-      <header
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 50,
-          background: "rgba(255,255,255,0.92)",
-          backdropFilter: "blur(10px)",
-          borderBottom: "1px solid #e5e7eb",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: "0 auto",
-            padding: "16px 20px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <a href="/" style={{ display: "flex", alignItems: "center" }}>
-            <img src={LOGO_URL} alt="Carascan" style={{ height: 28 }} />
-          </a>
+      <NavBar variant="inner" />
 
-          <a
-            href="https://www.carascan.com.au/help"
-            style={{
-  textDecoration: "none",
-  padding: "10px 16px",
-  borderRadius: 999,
-  border: "1px solid #111827",
-  fontSize: 14,
-  fontWeight: 600,
-  color: "#ffffff",
-  background: "#111827",
-}}
-          >
-            Need help?
-          </a>
-        </div>
-      </header>
+      <main style={styles.page}>
+        <Background />
 
-      <main style={{ ...styles.page, minHeight: "calc(100vh - 61px)" }}>
         <div style={styles.wrap}>
-          <div style={styles.card}>{loadError || "Plate not found."}</div>
-        </div>
-      </main>
-    </>
-  );
-}
+          <section style={styles.heroCard}>
+            <div style={styles.kicker}>Carascan public plate</div>
+            <h1 style={styles.heroTitle}>
+              Secure contact and emergency access for {identifier}
+            </h1>
+            {caravanName ? (
+              <p style={styles.heroSubText}>{caravanName}</p>
+            ) : null}
+          </section>
 
-  return (
-  <>
-    <header
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        background: "rgba(255,255,255,0.92)",
-        backdropFilter: "blur(10px)",
-        borderBottom: "1px solid #e5e7eb",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          padding: "16px 20px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <a href="/" style={{ display: "flex", alignItems: "center" }}>
-          <img src={LOGO_URL} alt="Carascan" style={{ height: 28 }} />
-        </a>
-
-        <a
-          href={`/help?plate=${encodeURIComponent(identifier)}`}
-          style={{
-  textDecoration: "none",
-  padding: "10px 16px",
-  borderRadius: 999,
-  border: "1px solid #111827",
-  fontSize: 14,
-  fontWeight: 600,
-  color: "#ffffff",
-  background: "#111827",
-}}
-        >
-          Need help?
-        </a>
-      </div>
-    </header>
-
-    <main style={{ ...styles.page, minHeight: "calc(100vh - 61px)" }}>
-      <div style={styles.wrap}>
-        <div style={styles.card}>
-          <div style={{ textAlign: "center", marginBottom: 24 }}>
-            
-
+          <div style={styles.previewOnlyWrap}>
             <div style={styles.platePreviewWrap}>
               <div
                 className="plate-svg"
@@ -556,34 +453,30 @@ export default function PlatePage({
                 dangerouslySetInnerHTML={{ __html: previewSvg }}
               />
             </div>
-
-            <p style={styles.sub}>
-              Secure contact and emergency access for <strong>{identifier}</strong>
-            </p>
-
-            {caravanName ? <p style={styles.caravanName}>{caravanName}</p> : null}
           </div>
 
           {bio ? (
-            <div style={styles.bioBox}>
+            <div style={styles.infoCard}>
               <p style={styles.bioText}>{bio}</p>
             </div>
           ) : null}
 
-          <div style={styles.actionBox}>
+          <div style={styles.card}>
             <h3 style={styles.actionsHeading}>Actions</h3>
 
             <div style={styles.topButtonGrid}>
               {data.plate.contact_enabled ? (
                 <button
-  type="button"
-  onClick={() =>
-    setOpenPanel(openPanel === "contact" ? null : "contact")
-  }
-  style={styles.primaryButton}
->
-  {openPanel === "contact" ? "Hide Virtual Doorknock" : "Virtual Doorknock"}
-</button>
+                  type="button"
+                  onClick={() =>
+                    setOpenPanel(openPanel === "contact" ? null : "contact")
+                  }
+                  style={styles.primaryButton}
+                >
+                  {openPanel === "contact"
+                    ? "Hide Virtual Doorknock"
+                    : "Virtual Doorknock"}
+                </button>
               ) : (
                 <div style={styles.disabledBox}>Contact is disabled</div>
               )}
@@ -605,7 +498,7 @@ export default function PlatePage({
 
             {openPanel === "contact" && data.plate.contact_enabled ? (
               <div style={styles.panel}>
-                <h3 style={{ marginTop: 0 }}>Contact Owner</h3>
+                <h3 style={styles.panelHeading}>Contact Owner</h3>
                 <p style={styles.sub}>
                   Send a short message to the owner via their selected contact
                   channel: <strong>{preferredChannelLabel}</strong>.
@@ -664,10 +557,11 @@ export default function PlatePage({
 
             {openPanel === "report-location" ? (
               <div style={styles.panel}>
-                <h3 style={{ marginTop: 0 }}>Report Location</h3>
+                <h3 style={styles.panelHeading}>Report Location</h3>
                 <p style={styles.sub}>
-                  Your device will ask for location permission when you send the report.
-                  Current delivery channel: <strong>{reportChannelLabel}</strong>.
+                  Your device will ask for location permission when you send the
+                  report. Current delivery channel:{" "}
+                  <strong>{reportChannelLabel}</strong>.
                 </p>
 
                 <div style={styles.fieldGrid}>
@@ -705,7 +599,9 @@ export default function PlatePage({
 
                   {reportLocation ? (
                     <div style={styles.locationBox}>
-                      <div><strong>Latest reported location</strong></div>
+                      <div>
+                        <strong>Latest reported location</strong>
+                      </div>
                       <div>
                         {reportLocation.latitude}, {reportLocation.longitude}
                       </div>
@@ -751,9 +647,10 @@ export default function PlatePage({
 
                 {openPanel === "emergency" ? (
                   <div style={styles.panel}>
-                    <h3 style={{ marginTop: 0 }}>Emergency Alert</h3>
+                    <h3 style={styles.panelHeading}>Emergency Alert</h3>
                     <p style={styles.sub}>
-                      Your device will ask for location permission when you send the alert.
+                      Your device will ask for location permission when you send
+                      the alert.
                     </p>
 
                     <div style={styles.fieldGrid}>
@@ -795,7 +692,9 @@ export default function PlatePage({
 
                       {emergencyLocation ? (
                         <div style={styles.locationBox}>
-                          <div><strong>Latest emergency location</strong></div>
+                          <div>
+                            <strong>Latest emergency location</strong>
+                          </div>
                           <div>
                             {emergencyLocation.latitude}, {emergencyLocation.longitude}
                           </div>
@@ -834,54 +733,118 @@ export default function PlatePage({
             Owner details are not displayed publicly. Messages are relayed securely.
           </p>
         </div>
-      </div>
 
-      <style jsx>{`
-        .plate-svg :global(svg) {
-          display: block;
-          width: 100%;
-          max-width: 100%;
-          height: auto;
-        }
-
-        .plate-svg :global(image) {
-          max-width: 100%;
-        }
-
-        @media (max-width: 640px) {
-          .plate-svg {
+        <style jsx>{`
+          .plate-svg :global(svg) {
+            display: block;
             width: 100%;
+            max-width: 100%;
+            height: auto;
           }
-        }
-      `}</style>
-    </main>
-</>
-);
+
+          .plate-svg :global(image) {
+            max-width: 100%;
+          }
+
+          @media (max-width: 640px) {
+            .plate-svg {
+              width: 100%;
+            }
+          }
+        `}</style>
+      </main>
+    </>
+  );
 }
+
+function Background() {
+  return (
+    <>
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          backgroundImage: `url(${BACKGROUND_IMAGE_URL})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          zIndex: 0,
+        }}
+      />
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background:
+            "linear-gradient(180deg, rgba(17,24,39,0.76) 0%, rgba(17,24,39,0.64) 30%, rgba(246,247,249,0.96) 100%)",
+          zIndex: 0,
+        }}
+      />
+    </>
+  );
+}
+
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
-    padding: "32px 20px",
-    background: "#f7f7f8",
+    position: "relative",
+    padding: "32px 20px 56px",
     fontFamily: "Arial, sans-serif",
   },
   wrap: {
-    maxWidth: 760,
+    position: "relative",
+    zIndex: 1,
+    maxWidth: 860,
     margin: "0 auto",
+    display: "grid",
+    gap: 20,
   },
-  card: {
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
+  heroCard: {
+    background: "rgba(20,26,32,0.72)",
+    border: "1px solid rgba(255,255,255,0.12)",
     borderRadius: 18,
-    padding: 28,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+    padding: 24,
+    color: "#F3F1EC",
+    boxShadow: "0 18px 40px rgba(0,0,0,0.24)",
+    backdropFilter: "blur(8px)",
+  },
+  kicker: {
+    fontSize: 12,
+    fontWeight: 700,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+    color: "#D7D2C8",
+    marginBottom: 10,
+  },
+  heroTitle: {
+    margin: "0 0 10px 0",
+    fontSize: 34,
+    lineHeight: 1.15,
+  },
+  heroText: {
+    margin: 0,
+    fontSize: 16,
+    lineHeight: 1.65,
+    color: "#E5E7EB",
+  },
+  heroSubText: {
+    margin: "12px 0 0 0",
+    fontSize: 20,
+    color: "#F3F1EC",
+    fontWeight: 700,
+  },
+  previewOnlyWrap: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: "6px 0 10px",
   },
   platePreviewWrap: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     width: "100%",
-    margin: "0 auto 18px",
+    margin: "0 auto",
     overflow: "hidden",
   },
   platePreviewFrame: {
@@ -889,23 +852,12 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: 430,
     margin: "0 auto",
   },
-  sub: {
-    margin: 0,
-    color: "#4b5563",
-    lineHeight: 1.6,
-  },
-  caravanName: {
-    margin: "10px 0 0 0",
-    color: "#111827",
-    fontSize: 22,
-    fontWeight: 700,
-  },
-  bioBox: {
-    background: "#f9fafb",
+  infoCard: {
+    background: "#ffffff",
     border: "1px solid #e5e7eb",
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 18,
-    marginBottom: 20,
+    boxShadow: "0 14px 34px rgba(17,24,39,0.08)",
   },
   bioText: {
     margin: 0,
@@ -913,17 +865,24 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.6,
     textAlign: "center",
   },
-  actionBox: {
-    background: "#f9fafb",
+  card: {
+    background: "#ffffff",
     border: "1px solid #e5e7eb",
-    borderRadius: 14,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: 16,
+    padding: 24,
+    boxShadow: "0 14px 34px rgba(17,24,39,0.08)",
+  },
+  sub: {
+    margin: 0,
+    color: "#4b5563",
+    lineHeight: 1.6,
   },
   actionsHeading: {
     marginTop: 0,
     marginBottom: 14,
     textAlign: "center",
+    fontSize: 22,
+    color: "#111827",
   },
   topButtonGrid: {
     display: "grid",
@@ -981,6 +940,11 @@ const styles: Record<string, React.CSSProperties> = {
     display: "grid",
     gap: 14,
   },
+  panelHeading: {
+    marginTop: 0,
+    marginBottom: 0,
+    color: "#111827",
+  },
   fieldGrid: {
     display: "grid",
     gap: 12,
@@ -992,6 +956,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "12px 14px",
     fontSize: 15,
     boxSizing: "border-box",
+    background: "#fff",
   },
   textarea: {
     width: "100%",
@@ -1001,6 +966,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 15,
     boxSizing: "border-box",
     resize: "vertical",
+    background: "#fff",
   },
   helperText: {
     fontSize: 13,
@@ -1037,7 +1003,7 @@ const styles: Record<string, React.CSSProperties> = {
   footer: {
     margin: 0,
     fontSize: 14,
-    color: "#6b7280",
+    color: "#E5E7EB",
     textAlign: "center",
   },
 };
