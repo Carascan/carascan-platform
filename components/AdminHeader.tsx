@@ -40,7 +40,7 @@ export default function AdminHeader({
         }}
       >
         <a
-          href="/admin"
+          href="/admin/orders"
           style={{
             display: "inline-block",
             padding: "10px 14px",

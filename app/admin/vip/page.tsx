@@ -26,6 +26,11 @@ function randToken(len = 48) {
   return crypto.randomBytes(Math.ceil(len / 2)).toString("hex").slice(0, len);
 }
 
+function identifierToNumber(identifier: string) {
+  const match = /^CSN-(\d{6})$/.exec(identifier);
+  return match ? Number(match[1]) : null;
+}
+
 async function loadLogoSvgDataUrl(logoUrl: string): Promise<string> {
   try {
     const response = await fetch(logoUrl, { cache: "no-store" });
@@ -296,6 +301,74 @@ export default async function VipPage({
   }>;
 }) {
   const params = (await searchParams) ?? {};
+  const sb = supabaseAdmin();
+
+  const identifiers = Array.from({ length: 20 }, (_, i) =>
+    formatIdentifier(180 + i)
+  );
+
+  const { data: plates } = await sb
+    .from("plates")
+    .select("id, identifier, slug")
+    .in("identifier", identifiers)
+    .order("identifier", { ascending: true });
+
+  const plateIds = (plates ?? []).map((p) => p.id);
+
+  const { data: tokens } =
+    plateIds.length > 0
+      ? await sb
+          .from("plate_setup_tokens")
+          .select("plate_id, revoked_at")
+          .in("plate_id", plateIds)
+      : { data: [] as Array<{ plate_id: string; revoked_at: string | null }> };
+
+  const allocatedPlateIds = new Set(
+    (tokens ?? []).filter((t) => !t.revoked_at).map((t) => t.plate_id)
+  );
+
+  const allocatedPlates = (plates ?? []).filter((p) => allocatedPlateIds.has(p.id));
+  const unallocatedPlates = (plates ?? []).filter((p) => !allocatedPlateIds.has(p.id));
+
+  const allocatedSorted = allocatedPlates
+    .map((p) => p.identifier)
+    .sort((a, b) => (identifierToNumber(a) ?? 0) - (identifierToNumber(b) ?? 0));
+
+  const unallocatedSorted = unallocatedPlates
+    .map((p) => p.identifier)
+    .sort((a, b) => (identifierToNumber(a) ?? 0) - (identifierToNumber(b) ?? 0));
+
+  const successIdentifier = params.success === "1" ? params.identifier ?? null : null;
+
+  const previousPlate =
+    successIdentifier
+      ? allocatedSorted
+          .filter((identifier) => identifier !== successIdentifier)
+          .slice(-1)[0] ?? null
+      : allocatedSorted.slice(-1)[0] ?? null;
+
+  const currentPlate =
+    successIdentifier ?? unallocatedSorted[0] ?? null;
+
+  const nextPlate =
+    successIdentifier
+      ? unallocatedSorted[0] ?? null
+      : unallocatedSorted[1] ?? null;
+
+  const summaryBoxes = [
+    {
+      label: "Previous plate sent",
+      value: previousPlate ?? "None sent yet",
+    },
+    {
+      label: "Current plate being sent",
+      value: currentPlate ?? "None available",
+    },
+    {
+      label: "Next plate",
+      value: nextPlate ?? "None remaining",
+    },
+  ];
 
   return (
     <main
@@ -315,6 +388,52 @@ export default async function VipPage({
           title="VIP Plate Allocation"
           subtitle="Allocate the next available trial plate and send setup as if purchased."
         />
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: 14,
+            marginBottom: 18,
+          }}
+        >
+          {summaryBoxes.map((box) => (
+            <div
+              key={box.label}
+              style={{
+                background: "#ffffff",
+                border: "1px solid #e5e7eb",
+                borderRadius: 14,
+                padding: 16,
+                boxShadow: "0 10px 24px rgba(17,24,39,0.06)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: 0.4,
+                  textTransform: "uppercase",
+                  color: "#6b7280",
+                  marginBottom: 8,
+                }}
+              >
+                {box.label}
+              </div>
+
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: 800,
+                  color: "#111827",
+                  lineHeight: 1.2,
+                }}
+              >
+                {box.value}
+              </div>
+            </div>
+          ))}
+        </div>
 
         <div
           style={{
