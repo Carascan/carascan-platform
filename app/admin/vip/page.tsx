@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { redirect } from "next/navigation";
 import AdminHeader from "@/components/AdminHeader";
+import VipSendButton from "@/components/VipSendButton";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { ENV } from "@/lib/env";
 import { buildPlateAssets } from "@/lib/buildPlateAssets";
@@ -108,7 +109,9 @@ async function allocateVipPlate(formData: FormData) {
 
   const name = String(formData.get("name") || "").trim();
   const address = String(formData.get("address") || "").trim();
-  const email = String(formData.get("email") || "").trim();
+  const email = String(formData.get("email") || "")
+    .trim()
+    .toLowerCase();
 
   if (!name || !address || !email) {
     redirect("/admin/vip?error=Missing%20required%20fields");
@@ -155,9 +158,25 @@ async function allocateVipPlate(formData: FormData) {
     );
   }
 
-  const allocatedPlateIds = new Set(
-    (tokens ?? []).filter((t) => !t.revoked_at).map((t) => t.plate_id)
+  const activeTokens = (tokens ?? []).filter((t) => !t.revoked_at);
+
+  const existingEmailAllocation = activeTokens.find(
+    (t) => (t.email ?? "").trim().toLowerCase() === email
   );
+
+  if (existingEmailAllocation) {
+    const existingPlate = plates.find((p) => p.id === existingEmailAllocation.plate_id);
+
+    redirect(
+      `/admin/vip?error=${encodeURIComponent(
+        `This email has already been allocated ${
+          existingPlate?.identifier ?? "a VIP trial plate"
+        }.`
+      )}`
+    );
+  }
+
+  const allocatedPlateIds = new Set(activeTokens.map((t) => t.plate_id));
 
   const availablePlate = plates.find((p) => !allocatedPlateIds.has(p.id));
 
@@ -338,22 +357,9 @@ export default async function VipPage({
     .map((p) => p.identifier)
     .sort((a, b) => (identifierToNumber(a) ?? 0) - (identifierToNumber(b) ?? 0));
 
-  const successIdentifier = params.success === "1" ? params.identifier ?? null : null;
-
-  const previousPlate =
-    successIdentifier
-      ? allocatedSorted
-          .filter((identifier) => identifier !== successIdentifier)
-          .slice(-1)[0] ?? null
-      : allocatedSorted.slice(-1)[0] ?? null;
-
-  const currentPlate =
-    successIdentifier ?? unallocatedSorted[0] ?? null;
-
-  const nextPlate =
-    successIdentifier
-      ? unallocatedSorted[0] ?? null
-      : unallocatedSorted[1] ?? null;
+  const previousPlate = allocatedSorted.slice(-1)[0] ?? null;
+  const currentPlate = unallocatedSorted[0] ?? null;
+  const nextPlate = unallocatedSorted[1] ?? null;
 
   const summaryBoxes = [
     {
@@ -565,21 +571,7 @@ export default async function VipPage({
               />
             </label>
 
-            <button
-              type="submit"
-              style={{
-                padding: "12px 18px",
-                borderRadius: 10,
-                border: "none",
-                cursor: "pointer",
-                fontWeight: 700,
-                fontSize: 14,
-                background: "#111827",
-                color: "#fff",
-              }}
-            >
-              Send
-            </button>
+            <VipSendButton />
           </form>
         </div>
       </div>
