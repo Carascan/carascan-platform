@@ -1,4 +1,3 @@
-// components/AdminHeader.tsx
 type AdminHeaderProps = {
   title: string;
   subtitle?: string;
@@ -30,6 +29,50 @@ export default function AdminHeader({
       {subtitle ? (
         <p style={{ margin: 0, color: "#4b5563" }}>{subtitle}</p>
       ) : null}
+
+      <div
+        style={{
+          marginTop: 18,
+          display: "flex",
+          justifyContent: "center",
+          gap: 10,
+          flexWrap: "wrap",
+        }}
+      >
+        <a
+          href="/admin"
+          style={{
+            display: "inline-block",
+            padding: "10px 14px",
+            borderRadius: 10,
+            border: "1px solid #d1d5db",
+            background: "#ffffff",
+            color: "#111827",
+            textDecoration: "none",
+            fontWeight: 700,
+            fontSize: 14,
+          }}
+        >
+          Admin
+        </a>
+
+        <a
+          href="/admin/vip"
+          style={{
+            display: "inline-block",
+            padding: "10px 14px",
+            borderRadius: 10,
+            border: "1px solid #111827",
+            background: "#111827",
+            color: "#ffffff",
+            textDecoration: "none",
+            fontWeight: 700,
+            fontSize: 14,
+          }}
+        >
+          VIP
+        </a>
+      </div>
     </div>
   );
 }
