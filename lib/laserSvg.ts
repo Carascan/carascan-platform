@@ -158,13 +158,13 @@ export function buildPlateSvg({
   </g>
 
   <g
-    id="RIVET_MARKERS"
-    fill="none"
-    stroke="black"
-    stroke-width="0.15"
-    stroke-linecap="square"
-    vector-effect="non-scaling-stroke"
-  >
+  id="RIVET_MARKERS"
+  fill="none"
+  stroke="blue"
+  stroke-width="0.15"
+  stroke-linecap="square"
+  vector-effect="non-scaling-stroke"
+>
     ${rivetMarkers}
   </g>
 </svg>`;
