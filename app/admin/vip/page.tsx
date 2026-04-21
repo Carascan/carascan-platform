@@ -6,9 +6,11 @@ import { ENV } from "@/lib/env";
 import { buildPlateAssets } from "@/lib/buildPlateAssets";
 import { buildManufacturingEmailPayload } from "@/lib/buildManufacturingEmailPayload";
 import { buildCustomerPlateEmailPayload } from "@/lib/buildCustomerPlateEmailPayload";
+import { buildVipTrialEmailPayload } from "@/lib/buildVipTrialEmailPayload";
 import { buildShippingLabelSvg } from "@/lib/shippingLabelSvg";
 import { sendManufacturingEmail } from "@/lib/notifyEmail";
 import { sendCustomerPlateEmail } from "@/lib/sendCustomerPlateEmail";
+import { sendVipTrialEmail } from "@/lib/sendVipTrialEmail";
 
 const LOGO_URL_FALLBACK =
   "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
@@ -111,7 +113,9 @@ async function allocateVipPlate(formData: FormData) {
   const logoUrl = ENV.PLATE_LOGO_SVG_URL ?? LOGO_URL_FALLBACK;
   const logoImageHref = await loadLogoSvgDataUrl(logoUrl);
 
-  const identifiers = Array.from({ length: 20 }, (_, i) => formatIdentifier(180 + i));
+  const identifiers = Array.from({ length: 20 }, (_, i) =>
+    formatIdentifier(180 + i)
+  );
 
   const { data: plates, error: plateError } = await sb
     .from("plates")
@@ -120,7 +124,11 @@ async function allocateVipPlate(formData: FormData) {
     .order("identifier", { ascending: true });
 
   if (plateError) {
-    redirect(`/admin/vip?error=${encodeURIComponent(`Plate lookup failed: ${plateError.message}`)}`);
+    redirect(
+      `/admin/vip?error=${encodeURIComponent(
+        `Plate lookup failed: ${plateError.message}`
+      )}`
+    );
   }
 
   if (!plates || plates.length === 0) {
@@ -135,13 +143,15 @@ async function allocateVipPlate(formData: FormData) {
     .in("plate_id", plateIds);
 
   if (tokenError) {
-    redirect(`/admin/vip?error=${encodeURIComponent(`Token lookup failed: ${tokenError.message}`)}`);
+    redirect(
+      `/admin/vip?error=${encodeURIComponent(
+        `Token lookup failed: ${tokenError.message}`
+      )}`
+    );
   }
 
   const allocatedPlateIds = new Set(
-    (tokens ?? [])
-      .filter((t) => !t.revoked_at)
-      .map((t) => t.plate_id)
+    (tokens ?? []).filter((t) => !t.revoked_at).map((t) => t.plate_id)
   );
 
   const availablePlate = plates.find((p) => !allocatedPlateIds.has(p.id));
@@ -175,7 +185,9 @@ async function allocateVipPlate(formData: FormData) {
   }
 
   const setupToken = randToken(48);
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString();
+  const expiresAt = new Date(
+    Date.now() + 1000 * 60 * 60 * 24 * 14
+  ).toISOString();
 
   const { error: tokenInsertError } = await sb.from("plate_setup_tokens").insert({
     token: setupToken,
@@ -251,7 +263,19 @@ async function allocateVipPlate(formData: FormData) {
   const customerResult = await sendCustomerPlateEmail(customerPayload);
 
   if (!customerResult.ok) {
-    redirect("/admin/vip?error=Customer%20email%20failed");
+    redirect("/admin/vip?error=Customer%20setup%20email%20failed");
+  }
+
+  const vipPayload = buildVipTrialEmailPayload({
+    customerEmail: email,
+    customerName: name,
+    identifier: availablePlate.identifier,
+  });
+
+  const vipResult = await sendVipTrialEmail(vipPayload);
+
+  if (!vipResult.ok) {
+    redirect("/admin/vip?error=VIP%20trial%20email%20failed");
   }
 
   redirect(
