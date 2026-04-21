@@ -286,7 +286,6 @@ export default function SetupClient({ token }: SetupClientProps) {
       identifier: loadState.data.plate.identifier,
       qrImageHref: embeddedQrHref || qrUrl,
       logoImageHref: logoUrl,
-      includeCrosshair: false,
     });
   }, [loadState, embeddedQrHref, qrUrl, logoUrl]);
 

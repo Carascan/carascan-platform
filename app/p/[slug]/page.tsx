@@ -226,14 +226,13 @@ export default function PlatePage({
     };
   }, [qrUrl]);
 
-  const previewSvg = useMemo(() => {
+    const previewSvg = useMemo(() => {
     if (!identifier) return "";
 
     return buildPlateSvg({
       identifier,
       qrImageHref: embeddedQrHref || qrUrl,
       logoImageHref: logoUrl,
-      includeCrosshair: false,
     });
   }, [identifier, embeddedQrHref, qrUrl, logoUrl]);
 
