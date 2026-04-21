@@ -42,20 +42,19 @@ export function buildCustomerPlateEmailPayload(
     ``,
     `Welcome to community, and thanks for your order.`,
     ``,
-    `We're a big travelling community, side-by-side but still at arms length. We don't need to know everything about each other, but just to know we're all looking out for each other while we do our own thing.`,
+    `We're a big travelling community in Australia, side-by-side but still at arms length. We don't need to know everything about each other, but just to know we're all looking out for each other while we explore and relax in our own unique way.`,
     ``,
     `Plate reference: ${assets.identifier}`,
     ``,
     `Complete setup:`,
     setupUrl,
     ``,
-    `Your plate is not active yet.`,
-    `Please complete setup to activate your Carascan page.`,
+    `Your plate is not active yet. Click the link above and you will be directed to set up your Carascan profile. You can enter a caravan name and bio if you choose, and also provide phone numbers for SMS contact to you and a partner, along with your emergency contacts.`,
     ``,
     `Plate URL after activation:`,
     assets.plateUrl,
     ``,
-    `If you need any help, please reach out to the Carascan team through the help page:`,
+    `If you need any help, please reach out to the Carascan team through the help page or email us at manufacture@carascan.com.au.`,
     helpUrl,
   ].join("\n");
 
@@ -76,9 +75,9 @@ export function buildCustomerPlateEmailPayload(
           <p style="margin:0 0 18px 0;">Welcome to community, and thanks for your order.</p>
 
           <p style="margin:0 0 22px 0;">
-            We're a big travelling community, side-by-side but still at arms length.
-            We don't need to know everything about each other, but just to know we're
-            all looking out for each other while we do our own thing.
+            We're a big travelling community in Australia, side-by-side but still at arms length.
+            We don't need to know everything about each other, but just to know we're all looking
+            out for each other while we explore and relax in our own unique way.
           </p>
 
           <p style="margin:0 0 20px 0;">
@@ -94,15 +93,11 @@ export function buildCustomerPlateEmailPayload(
             </a>
           </div>
 
-          <p style="margin:0 0 12px 0;">Your plate is not active yet.</p>
-          <p style="margin:0 0 24px 0;">Please complete setup to activate your Carascan page.</p>
-
-          <div style="margin:0 0 24px 0;padding:16px 18px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;">
-            <p style="margin:0 0 8px 0;font-weight:700;color:#111827;">Setup link</p>
-            <p style="margin:0;word-break:break-word;">
-              <a href="${setupUrl}" style="color:#2563eb;text-decoration:underline;">${setupUrl}</a>
-            </p>
-          </div>
+          <p style="margin:0 0 24px 0;">
+            Your plate is not active yet. Click the link above and you will be directed to set up your
+            Carascan profile. You can enter a caravan name and bio if you choose, and also provide phone
+            numbers for SMS contact to you and a partner, along with your emergency contacts.
+          </p>
 
           <div style="margin:0 0 24px 0;padding:16px 18px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;">
             <p style="margin:0 0 8px 0;font-weight:700;color:#111827;">Plate URL after activation</p>
@@ -113,25 +108,18 @@ export function buildCustomerPlateEmailPayload(
             </p>
           </div>
 
-          <p style="margin:0 0 14px 0;">
-            If you need any help, please reach out to the Carascan team through the help page.
+          <p style="margin:0 0 18px 0;text-align:center;">
+            If you need any help, please reach out to the Carascan team through the help page or email us at
+            <a href="mailto:manufacture@carascan.com.au" style="color:#2563eb;text-decoration:underline;"> manufacture@carascan.com.au</a>.
           </p>
 
-          <div style="margin:0 0 24px 0;">
+          <div style="margin:0 0 8px 0;text-align:center;">
             <a
               href="${helpUrl}"
               style="display:inline-block;padding:14px 22px;background:#ffffff;color:#111827;text-decoration:none;border-radius:10px;font-weight:700;font-size:16px;border:1px solid #d1d5db;"
             >
               Help Page
             </a>
-          </div>
-
-          <div style="text-align:center;padding-top:8px;">
-            <img
-              src="${LOGO_URL}"
-              alt="Carascan"
-              style="display:block;margin:0 auto;max-width:180px;width:100%;height:auto;border:0;outline:none;text-decoration:none;"
-            />
           </div>
         </div>
       </div>
