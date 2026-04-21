@@ -1,5 +1,21 @@
 import { sendEmail } from "@/lib/notifyEmail";
 
+/**
+ * ⚠️ LEGACY FUNCTION
+ *
+ * This file is no longer used in the main manufacturing flow.
+ * The active system uses:
+ *   buildManufacturingEmailPayload + sendManufacturingEmail (notifyEmail.ts)
+ *
+ * This version only sends links and does NOT support:
+ * - attachments
+ * - SVG files
+ * - QR buffers
+ * - shipping labels
+ *
+ * Keep for reference only. Do not extend.
+ */
+
 type Input = {
   to: string | string[];
   identifier: string;

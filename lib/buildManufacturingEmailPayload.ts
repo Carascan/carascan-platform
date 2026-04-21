@@ -78,6 +78,7 @@ export function buildManufacturingEmailPayload(input: {
   svgPublicUrl?: string | null;
   qrPublicUrl?: string | null;
   metadataPublicUrl?: string | null;
+  shippingLabelSvg?: string | null;
 }): ManufacturingEmailPayload {
   const customerName = input.customerName?.trim() || "Not provided";
   const customerEmail = input.customerEmail?.trim() || "Not provided";
@@ -125,6 +126,14 @@ export function buildManufacturingEmailPayload(input: {
     });
   }
 
+  if (input.shippingLabelSvg) {
+    attachments.push({
+      filename: `${input.identifier}-shipping-label.svg`,
+      content: Buffer.from(input.shippingLabelSvg, "utf8").toString("base64"),
+      contentType: "image/svg+xml",
+    });
+  }
+
   const text = [
     `Hi team,`,
     ``,
@@ -151,6 +160,7 @@ export function buildManufacturingEmailPayload(input: {
     input.svgContent ? `- ${input.identifier}-plate.svg` : null,
     input.qrPngBuffer ? `- ${input.identifier}-qr.png` : null,
     input.metadata !== undefined ? `- ${input.identifier}-metadata.json` : null,
+    input.shippingLabelSvg ? `- ${input.identifier}-shipping-label.svg` : null,
     input.svgPublicUrl ? `SVG public URL: ${input.svgPublicUrl}` : null,
     input.qrPublicUrl ? `QR public URL: ${input.qrPublicUrl}` : null,
     input.metadataPublicUrl ? `Metadata public URL: ${input.metadataPublicUrl}` : null,
@@ -208,7 +218,8 @@ export function buildManufacturingEmailPayload(input: {
           <div style="font-size:15px;font-weight:700;margin:0 0 10px 0;">Attached production pack</div>
           ${input.svgContent ? `<p style="margin:0 0 8px 0;">• ${escapeHtml(input.identifier)}-plate.svg</p>` : ""}
           ${input.qrPngBuffer ? `<p style="margin:0 0 8px 0;">• ${escapeHtml(input.identifier)}-qr.png</p>` : ""}
-          ${input.metadata !== undefined ? `<p style="margin:0;">• ${escapeHtml(input.identifier)}-metadata.json</p>` : ""}
+          ${input.metadata !== undefined ? `<p style="margin:0 0 8px 0;">• ${escapeHtml(input.identifier)}-metadata.json</p>` : ""}
+          ${input.shippingLabelSvg ? `<p style="margin:0;">• ${escapeHtml(input.identifier)}-shipping-label.svg</p>` : ""}
         </div>
       `
           : ""

@@ -9,6 +9,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { buildPlateAssets } from "@/lib/buildPlateAssets";
 import { buildManufacturingEmailPayload } from "@/lib/buildManufacturingEmailPayload";
 import { buildCustomerPlateEmailPayload } from "@/lib/buildCustomerPlateEmailPayload";
+import { buildShippingLabelSvg } from "@/lib/shippingLabelSvg";
 import { sendManufacturingEmail } from "@/lib/notifyEmail";
 import { sendCustomerPlateEmail } from "@/lib/sendCustomerPlateEmail";
 import { ENV } from "@/lib/env";
@@ -333,6 +334,16 @@ export async function POST(req: Request) {
           : [],
       });
 
+      const duplicateShippingLabelSvg = buildShippingLabelSvg({
+        name: duplicateCustomerName ?? "",
+        line1: duplicateAddress?.line1 ?? "",
+        line2: duplicateAddress?.line2 ?? "",
+        city: duplicateAddress?.city ?? "",
+        state: duplicateAddress?.state ?? "",
+        postcode: duplicateAddress?.postal_code ?? "",
+        logoUrl: duplicateLogoUrl,
+      });
+
       const duplicateManufacturingPayload = buildManufacturingEmailPayload({
         to: MANUFACTURING_EMAIL_TO,
         identifier: plate.identifier,
@@ -355,6 +366,7 @@ export async function POST(req: Request) {
         svgContent: duplicateAssets.plateSvg,
         qrPngBuffer: duplicateAssets.qrPngBuffer,
         metadata: duplicateAssets.metadata,
+        shippingLabelSvg: duplicateShippingLabelSvg,
       });
 
       console.log("[stripe-webhook] sending manufacturing email (duplicate path)", {
@@ -630,6 +642,16 @@ export async function POST(req: Request) {
       status: "setup_pending",
     });
 
+    const shippingLabelSvg = buildShippingLabelSvg({
+      name: customerName ?? "",
+      line1: addr?.line1 ?? "",
+      line2: addr?.line2 ?? "",
+      city: addr?.city ?? "",
+      state: addr?.state ?? "",
+      postcode: addr?.postal_code ?? "",
+      logoUrl,
+    });
+
     const manufacturingPayload = buildManufacturingEmailPayload({
       to: MANUFACTURING_EMAIL_TO,
       identifier: plate.identifier,
@@ -655,6 +677,7 @@ export async function POST(req: Request) {
       svgPublicUrl: savedAssets.svgPublicUrl,
       qrPublicUrl: savedAssets.qrPublicUrl,
       metadataPublicUrl: savedAssets.metadataPublicUrl,
+      shippingLabelSvg,
     });
 
     console.log("[stripe-webhook] sending manufacturing email", {
