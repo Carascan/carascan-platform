@@ -3,6 +3,12 @@
 import PlatePreviewGenerator from "./PlatePreviewGenerator";
 import SectionHeader from "@/components/home/SectionHeader";
 
+const DEMO_IDENTIFIER = "CSN-000001";
+const DEMO_QR_IMAGE_HREF =
+  "https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=https%3A%2F%2Fcarascan.com.au%2Fp%2Fdemo";
+const DEMO_LOGO_IMAGE_HREF =
+  "https://pzlehlwkarefpcoirfhk.supabase.co/storage/v1/object/public/assets/carascan-logo-84x9_2.svg";
+
 export default function PlatePreviewSection() {
   return (
     <section
@@ -26,12 +32,16 @@ export default function PlatePreviewSection() {
           maxWidth={760}
         />
 
-                <div
+        <div
           style={{
             marginTop: 18,
           }}
         >
-          <PlatePreviewGenerator />
+          <PlatePreviewGenerator
+            identifier={DEMO_IDENTIFIER}
+            qrImageHref={DEMO_QR_IMAGE_HREF}
+            logoImageHref={DEMO_LOGO_IMAGE_HREF}
+          />
         </div>
       </div>
     </section>
