@@ -21,17 +21,17 @@ export function buildVipTrialEmailPayload(input: {
   customerEmail: string;
   customerName?: string;
   identifier: string;
-}) {
+}): VipTrialEmailPayload {
   const name = input.customerName?.trim() || "there";
   const safeName = escapeHtml(name);
   const safeIdentifier = escapeHtml(input.identifier);
 
-  const subject = \Welcome to the Carascan trial group (\)\;
+  const subject = `Welcome to the Carascan trial group (${input.identifier})`;
 
   const text = [
-    \G'day \,\,
+    `G'day ${name},`,
     "",
-    \You have been allocated a Carascan trial plate: \.\,
+    `You have been allocated a Carascan trial plate: ${input.identifier}.`,
     "",
     "You are part of the first Carascan trial group.",
     "This trial plate has been provided free of charge.",
@@ -45,21 +45,31 @@ export function buildVipTrialEmailPayload(input: {
     "Carascan",
   ].join("\n");
 
-  const html = \
+  const html = `
     <div style="margin:0;padding:24px 12px;background:#f3f4f6;">
       <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
         <div style="padding:28px 28px 16px 28px;border-bottom:1px solid #e5e7eb;background:#ffffff;text-align:center;">
-          <img src="\" alt="Carascan" style="display:block;margin:0 auto;max-width:220px;width:100%;height:auto;" />
+          <img
+            src="${LOGO_URL}"
+            alt="Carascan"
+            style="display:block;margin:0 auto;max-width:220px;width:100%;height:auto;border:0;outline:none;text-decoration:none;"
+          />
         </div>
 
         <div style="padding:32px 28px 20px 28px;font-family:Arial,Helvetica,sans-serif;line-height:1.65;color:#1f2937;font-size:16px;">
-          <p style="margin:0 0 18px 0;">G'day \,</p>
+          <p style="margin:0 0 18px 0;">G'day ${safeName},</p>
 
-          <p style="margin:0 0 18px 0;">You have been allocated a Carascan trial plate.</p>
+          <p style="margin:0 0 18px 0;">
+            You have been allocated a Carascan trial plate.
+          </p>
 
-          <p style="margin:0 0 20px 0;"><strong>Plate reference:</strong> \</p>
+          <p style="margin:0 0 20px 0;">
+            <strong>Plate reference:</strong> ${safeIdentifier}
+          </p>
 
-          <p style="margin:0 0 18px 0;">You are part of the first Carascan trial group.</p>
+          <p style="margin:0 0 18px 0;">
+            You are part of the first Carascan trial group.
+          </p>
 
           <p style="margin:0 0 18px 0;">
             This trial plate has been provided <strong>free of charge</strong>.
@@ -77,12 +87,16 @@ export function buildVipTrialEmailPayload(input: {
           </p>
 
           <div style="text-align:center;padding-top:8px;">
-            <img src="\" alt="Carascan" style="max-width:180px;width:100%;height:auto;" />
+            <img
+              src="${LOGO_URL}"
+              alt="Carascan"
+              style="display:block;margin:0 auto;max-width:180px;width:100%;height:auto;border:0;outline:none;text-decoration:none;"
+            />
           </div>
         </div>
       </div>
     </div>
-  \;
+  `;
 
   return {
     to: input.customerEmail,
