@@ -26,7 +26,6 @@ export function buildVipTrialEmailPayload(input: {
 }): VipTrialEmailPayload {
   const name = input.customerName?.trim() || "there";
   const safeName = escapeHtml(name);
-  const safeIdentifier = escapeHtml(input.identifier);
 
   const subject = `Welcome to Carascan (${input.identifier})`;
 
@@ -43,6 +42,8 @@ export function buildVipTrialEmailPayload(input: {
     `No purchase. No subscription. Full premium access.`,
     ``,
     `Please check your separate setup email and complete your setup to activate your plate.`,
+    ``,
+    `Keep an eye on your letter box because your plate is on its way.`,
     ``,
     `Happy trails.`,
     ``,
@@ -86,11 +87,6 @@ export function buildVipTrialEmailPayload(input: {
             to help when it matters.
           </p>
 
-          <div style="margin:0 0 22px 0;padding:16px 18px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;">
-            <p style="margin:0 0 8px 0;font-weight:700;color:#111827;">Plate reference</p>
-            <p style="margin:0;"><strong>${safeIdentifier}</strong></p>
-          </div>
-
           <p style="margin:0 0 18px 0;">
             In an emergency scenario, a simple scan can alert your nominated contacts instantly —
             providing location and a way to respond quickly.
@@ -111,7 +107,7 @@ export function buildVipTrialEmailPayload(input: {
           </p>
 
           <div style="margin:0 0 22px 0;padding:16px 18px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;">
-            <p style="margin:0 0 8px 0;font-weight:700;color:#065f46;">Your trial access</p>
+            <p style="margin:0 0 8px 0;font-weight:700;color:#065f46;">Your VIP Product</p>
             <p style="margin:0;">
               This plate has been provided <strong>free for life</strong> —
               no purchase, no subscription, full premium access (10 emergency contacts).
@@ -125,6 +121,10 @@ export function buildVipTrialEmailPayload(input: {
           <p style="margin:0 0 18px 0;">
             I appreciate your support and feedback — if anything doesn’t work or could be improved,
             I’d genuinely like to hear it.
+          </p>
+
+          <p style="margin:0 0 18px 0;">
+            Keep an eye on your letter box because your plate is on its way.
           </p>
 
           <p style="margin:0 0 22px 0;">
